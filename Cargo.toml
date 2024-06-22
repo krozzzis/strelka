@@ -1,0 +1,15 @@
+[package]
+name = "p3"
+version = "0.1.0"
+edition = "2021"
+authors = ["krozzzis"]
+
+[profile.release]
+strip = "debuginfo"
+lto = "thin"
+
+[dependencies]
+
+[dependencies.iced]
+version = "0.12.1"
+features = ["canvas"]
