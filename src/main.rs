@@ -1,14 +1,15 @@
 use iced::mouse::{self, Cursor, Interaction};
-use iced::widget::{row, column, button};
 use iced::widget::canvas::path;
 use iced::widget::canvas::{self, event::Status, Cache, Canvas, Event, Frame, Geometry, Program};
+use iced::widget::{button, column, row};
 use iced::Color;
 use iced::Length;
 use iced::Point;
 use iced::Rectangle;
 use iced::Renderer;
 use iced::Theme;
-use iced::{Alignment, Element, Sandbox, Settings};
+use iced::{executor, keyboard, Command, Subscription};
+use iced::{Alignment, Application, Element, Settings};
 
 #[derive(Debug, Clone)]
 pub struct Stroke {
@@ -47,18 +48,21 @@ pub enum AppMessage {
     ClearStrokes,
 }
 
-impl Sandbox for App {
+impl Application for App {
     type Message = AppMessage;
+    type Theme = Theme;
+    type Executor = executor::Default;
+    type Flags = ();
 
-    fn new() -> Self {
-        App::default()
+    fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        (App::default(), Command::none())
     }
 
     fn title(&self) -> String {
         String::from("P3")
     }
 
-    fn update(&mut self, message: Self::Message) {
+    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
             Self::Message::AddStroke(x) => {
                 self.strokes.push(x);
@@ -71,7 +75,7 @@ impl Sandbox for App {
             }
 
             Self::Message::EndStroke => {
-                if (!self.canvas_state.stroke.points.is_empty()) {
+                if !self.canvas_state.stroke.points.is_empty() {
                     self.strokes.push(self.canvas_state.stroke.clone());
                     self.canvas_state.stroke.points.clear();
                     self.canvas_state.cache.clear();
@@ -92,6 +96,7 @@ impl Sandbox for App {
                 self.canvas_state.cache.clear();
             }
         }
+        Command::none()
     }
 
     fn view(&self) -> Element<Self::Message> {
@@ -103,16 +108,37 @@ impl Sandbox for App {
         .height(Length::Fill);
 
         let colors = row![
-            button("Black").on_press(AppMessage::ChangeStrokeColor(Color::new(0.1, 0.1, 0.1, 1.0))),
-            button("Red").on_press(AppMessage::ChangeStrokeColor(Color::new(1.0, 0.1, 0.1, 1.0))),
-            button("Blue").on_press(AppMessage::ChangeStrokeColor(Color::new(0.1, 0.1, 1.0, 1.0))),
-            button("Yellow").on_press(AppMessage::ChangeStrokeColor(Color::new(1.0, 1.0, 0.1, 1.0))),
+            button("Black").on_press(AppMessage::ChangeStrokeColor(Color::new(
+                0.1, 0.1, 0.1, 1.0
+            ))),
+            button("Red").on_press(AppMessage::ChangeStrokeColor(Color::new(
+                1.0, 0.1, 0.1, 1.0
+            ))),
+            button("Blue").on_press(AppMessage::ChangeStrokeColor(Color::new(
+                0.1, 0.1, 1.0, 1.0
+            ))),
+            button("Yellow").on_press(AppMessage::ChangeStrokeColor(Color::new(
+                1.0, 1.0, 0.1, 1.0
+            ))),
         ];
 
         column![colors, canvas]
-        .padding(10)
-        .align_items(Alignment::Center)
-        .into()
+            .padding(10)
+            .align_items(Alignment::Center)
+            .into()
+    }
+
+    fn subscription(&self) -> Subscription<Self::Message> {
+        keyboard::on_key_press(|key, modifiers| match key.as_ref() {
+            keyboard::Key::Character("z") => {
+                if modifiers.control() {
+                    Some(AppMessage::RemoveLastStroke)
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
     }
 }
 
@@ -207,22 +233,19 @@ impl<'a> Program<AppMessage> for Field<'a> {
         match event {
             Event::Mouse(mouse_event) => match mouse_event {
                 mouse::Event::ButtonPressed(mouse::Button::Right) => {
-                    if let Some(cursor_pos) = cursor.position_in(bounds) {
+                    if let Some(_cursor_pos) = cursor.position_in(bounds) {
                         (Status::Captured, Some(AppMessage::RemoveLastStroke))
                     } else {
                         (Status::Ignored, None)
                     }
-                },
+                }
 
                 mouse::Event::ButtonPressed(mouse::Button::Left) => {
                     if let Some(cursor_pos) = cursor.position_in(bounds) {
                         match state.mouse {
                             FieldMouse::Idle => {
                                 state.mouse = FieldMouse::Stroking;
-                                (
-                                    Status::Captured,
-                                    None,
-                                )
+                                (Status::Captured, None)
                             }
                             FieldMouse::Stroking => (
                                 Status::Captured,
@@ -232,7 +255,7 @@ impl<'a> Program<AppMessage> for Field<'a> {
                     } else {
                         (Status::Ignored, None)
                     }
-                },
+                }
 
                 mouse::Event::ButtonReleased(mouse::Button::Left) => {
                     match state.mouse {
@@ -244,20 +267,18 @@ impl<'a> Program<AppMessage> for Field<'a> {
                     (Status::Captured, Some(AppMessage::EndStroke))
                 }
 
-                mouse::Event::CursorMoved { .. } => {
-                    match state.mouse {
-                        FieldMouse::Stroking => {
-                            if let Some(cursor_pos) = cursor.position_in(bounds) {
-                                (
-                                    Status::Captured,
-                                    Some(AppMessage::AddPointToStroke(cursor_pos)),
-                                )
-                            } else {
-                                (Status::Captured, Some(AppMessage::EndStroke))
-                            }
-                        },
-                        FieldMouse::Idle => (Status::Captured, None),
+                mouse::Event::CursorMoved { .. } => match state.mouse {
+                    FieldMouse::Stroking => {
+                        if let Some(cursor_pos) = cursor.position_in(bounds) {
+                            (
+                                Status::Captured,
+                                Some(AppMessage::AddPointToStroke(cursor_pos)),
+                            )
+                        } else {
+                            (Status::Captured, Some(AppMessage::EndStroke))
+                        }
                     }
+                    FieldMouse::Idle => (Status::Captured, None),
                 },
 
                 _ => (Status::Ignored, None),
