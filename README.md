@@ -1,7 +1,8 @@
 # Building
 
 ```bash
-git clone git@github.com:krozzzis/p3.git
+git clone https://github.com/krozzzis/p3
+cd p3
 cargo build
 ```
 
