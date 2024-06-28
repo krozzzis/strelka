@@ -27,13 +27,7 @@ impl Application for App {
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
         let app = Self {
-            scene: Scene {
-                strokes: vec![Stroke {
-                    points: vec![Point::new(10.0, 10.0), Point::new(20.0, 15.0)],
-                    width: 5.0,
-                    color: Color::BLACK,
-                }],
-            },
+            scene: Scene::new(),
         };
         (app, Command::none())
     }
@@ -43,7 +37,6 @@ impl Application for App {
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
-        println!("{message:?}");
         match message {
             AppMessage::AddObject(stroke) => {
                 self.scene.add_object(stroke);

@@ -39,7 +39,6 @@ impl<'a, Message> Component<Message> for SceneEditor<'a, Message> {
     type Event = EditorMessage;
 
     fn update(&mut self, _state: &mut Self::State, event: Self::Event) -> Option<Message> {
-        println!("{event:?}");
         match event {
             EditorMessage::AddPointToPending(point) => {
                 self.state.pending_stroke.points.push(point);
