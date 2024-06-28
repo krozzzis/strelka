@@ -9,12 +9,7 @@ strip = "debuginfo"
 lto = "thin"
 
 [dependencies]
-rand = "0.8.5"
 
 [dependencies.iced]
 version = "0.12.1"
-features = ["canvas"]
-
-[dependencies.iced_aw]
-version = "0.9.3"
-features = ["color_picker"]
+features = ["canvas", "debug", "webgl", "lazy"]

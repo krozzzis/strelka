@@ -1,37 +1,22 @@
+mod scene;
 mod stroke;
-mod canvas;
 
-use iced::widget::{button, text, column, row};
-use iced::Color;
-use iced::Length;
-use iced::{Point, Size};
-use iced::Rectangle;
-use iced::Renderer;
-use iced::Theme;
-use iced::widget::canvas::{Canvas, Cache};
-use iced::{executor, keyboard, Command, Subscription, Vector};
-use iced::{Alignment, Application, Element, Settings};
+use iced::{executor, keyboard, Command, Subscription};
+use iced::{Application, Element, Settings};
+use iced::{Color, Point, Theme};
 
-use stroke::Stroke;
-use canvas::*;
+use scene::*;
 
+use crate::stroke::Stroke;
 
 #[derive(Default)]
 pub struct App {
-    canvas_state: CanvasState,
-    strokes: Vec<Stroke>,
-    tool: FieldTool,
+    scene: Scene,
 }
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
-    AddStroke(Stroke),
-    AddPointToStroke(Point),
-    ChangeStrokeColor(Color),
-    EndStroke,
-    RemoveLastStroke,
-    ClearStrokes,
-    ChangeTool(FieldTool),
+    AddObject(Stroke),
 }
 
 impl Application for App {
@@ -41,7 +26,16 @@ impl Application for App {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        (App::default(), Command::none())
+        let app = Self {
+            scene: Scene {
+                strokes: vec![Stroke {
+                    points: vec![Point::new(10.0, 10.0), Point::new(20.0, 15.0)],
+                    width: 5.0,
+                    color: Color::BLACK,
+                }],
+            },
+        };
+        (app, Command::none())
     }
 
     fn title(&self) -> String {
@@ -49,107 +43,29 @@ impl Application for App {
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+        println!("{message:?}");
         match message {
-            Self::Message::ChangeTool(x) => {
-                self.tool = x;
-                self.canvas_state.cache.clear();
-            }
-
-            Self::Message::AddStroke(x) => {
-                self.strokes.push(x);
-                self.canvas_state.cache.clear();
-            }
-
-            Self::Message::AddPointToStroke(x) => {
-                self.canvas_state.stroke.points.push(x);
-                self.canvas_state.stroke.calculate_bb();
-            }
-
-            Self::Message::EndStroke => {
-                if !self.canvas_state.stroke.points.is_empty() {
-                    println!("Stroke len: {} points", self.canvas_state.stroke.points.len());
-                    self.strokes.push(self.canvas_state.stroke.clone());
-                    self.canvas_state.stroke.points.clear();
-                    self.canvas_state.cache.clear();
-                }
-            }
-
-            Self::Message::ChangeStrokeColor(x) => {
-                self.canvas_state.stroke.color = x;
-            }
-
-            Self::Message::ClearStrokes => {
-                self.strokes.clear();
-                self.canvas_state.cache.clear();
-            }
-
-            Self::Message::RemoveLastStroke => {
-                self.strokes.pop();
-                self.canvas_state.cache.clear();
+            AppMessage::AddObject(stroke) => {
+                self.scene.add_object(stroke);
             }
         }
         Command::none()
     }
 
     fn view(&self) -> Element<Self::Message> {
-        let canvas = Canvas::new(Field {
-            strokes: &self.strokes,
-            canvas_state: &self.canvas_state,
-            tool: self.tool,
-        })
-        .width(Length::Fill)
-        .height(Length::Fill);
-
-        let tool_text = text(format!("Current tool: {}", match self.tool {
-            FieldTool::Pen => "Pen",
-            FieldTool::Select => "Select",
-        }));
-
-        let tools = row![
-            tool_text.size(18),
-            button("Pen (1)").on_press(AppMessage::ChangeTool(FieldTool::Pen)),
-            button("Select (2)").on_press(AppMessage::ChangeTool(FieldTool::Select)),
-        ];
-
-        let colors = row![
-            button("Black").on_press(AppMessage::ChangeStrokeColor(Color::new(
-                0.1, 0.1, 0.1, 1.0
-            ))),
-            button("Red").on_press(AppMessage::ChangeStrokeColor(Color::new(
-                1.0, 0.1, 0.1, 1.0
-            ))),
-            button("Blue").on_press(AppMessage::ChangeStrokeColor(Color::new(
-                0.1, 0.1, 1.0, 1.0
-            ))),
-            button("Yellow").on_press(AppMessage::ChangeStrokeColor(Color::new(
-                1.0, 1.0, 0.1, 1.0
-            ))),
-        ];
-
-        column![tools, colors, canvas]
-            .padding(10)
-            .align_items(Alignment::Center)
-            .into()
+        let editor: SceneEditor<AppMessage> =
+            scene_editor(&self.scene).on_added_object(AppMessage::AddObject);
+        editor.into()
     }
 
     fn subscription(&self) -> Subscription<Self::Message> {
         keyboard::on_key_press(|key, modifiers| match key.as_ref() {
-            keyboard::Key::Character("z") => {
-                if modifiers.control() {
-                    Some(AppMessage::RemoveLastStroke)
-                } else {
-                    None
-                }
-            }
+            keyboard::Key::Character("z") => None,
 
-            keyboard::Key::Character("1") => Some(AppMessage::ChangeTool(FieldTool::Pen)),
-            keyboard::Key::Character("2") => Some(AppMessage::ChangeTool(FieldTool::Select)),
-            
             _ => None,
         })
     }
 }
-
 
 fn main() -> iced::Result {
     App::run(Settings {
