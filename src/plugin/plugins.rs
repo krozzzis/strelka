@@ -17,4 +17,8 @@ impl Plugin for ExamplePlugin {
     fn on_load(&mut self) {
         println!("Example plugin loaded");
     }
+
+    fn on_unload(&mut self) {
+        println!("Example plugin unloaded");
+    }
 }

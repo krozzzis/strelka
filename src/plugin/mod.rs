@@ -24,4 +24,5 @@ pub trait Plugin {
     }
 
     fn on_load(&mut self) {}
+    fn on_unload(&mut self) {}
 }
