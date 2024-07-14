@@ -1,22 +1,32 @@
+mod camera;
+mod plugin;
 mod scene;
-mod stroke;
 
-use iced::{executor, keyboard, Command, Subscription};
+use iced::{executor, Command};
 use iced::{Application, Element, Settings};
 use iced::{Color, Point, Theme};
 
-use scene::*;
+use std::sync::Arc;
 
-use crate::stroke::Stroke;
+use crate::{
+    plugin::{ExamplePlugin, Plugin, PluginHost},
+    scene::{Spline, *},
+};
 
 #[derive(Default)]
 pub struct App {
     scene: Scene,
+    debug: bool,
+    plugin_host: PluginHost,
 }
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
-    AddObject(Stroke),
+    SendPluginAction {
+        name: String,
+        action: Arc<plugin::Action>,
+    },
+    SetDebug(bool),
 }
 
 impl Application for App {
@@ -26,37 +36,55 @@ impl Application for App {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
+        let mut host = PluginHost::new();
+        host.register_plugin(
+            "core.example",
+            Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
+        );
+
         let app = Self {
-            scene: Scene::new(),
+            scene: Scene::new()
+                .add_spline(Spline {
+                    points: vec![Point::new(50.0, 50.0), Point::new(60.0, 120.0)],
+                    color: Color::BLACK,
+                    width: 3.0,
+                })
+                .add_rectangle(Rectangle {
+                    position: Point::new(200.0, 150.0),
+                    w: 150.0,
+                    h: 200.0,
+                    color: Color::new(1.0, 0.0, 0.0, 1.0),
+                    width: 5.0,
+                }),
+            debug: false,
+            plugin_host: host,
         };
+
         (app, Command::none())
     }
 
     fn title(&self) -> String {
-        String::from("P3")
+        String::from("p3")
     }
 
     fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
         match message {
-            AppMessage::AddObject(stroke) => {
-                self.scene.add_object(stroke);
+            AppMessage::SetDebug(state) => {
+                self.debug = state;
+            }
+
+            AppMessage::SendPluginAction { name, action } => {
+                self.plugin_host.send_action(name, action);
             }
         }
         Command::none()
     }
 
     fn view(&self) -> Element<Self::Message> {
-        let editor: SceneEditor<AppMessage> =
-            scene_editor(&self.scene).on_added_object(AppMessage::AddObject);
+        let editor: Canvas<AppMessage> = canvas(&self.scene)
+            .on_plugin_action(|a, b| AppMessage::SendPluginAction { name: a, action: b });
+
         editor.into()
-    }
-
-    fn subscription(&self) -> Subscription<Self::Message> {
-        keyboard::on_key_press(|key, modifiers| match key.as_ref() {
-            keyboard::Key::Character("z") => None,
-
-            _ => None,
-        })
     }
 }
 

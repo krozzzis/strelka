@@ -1,9 +1,9 @@
-mod editor;
+mod canvas;
+mod object;
 mod program;
-mod renderer;
 mod scene;
 
-pub use editor::*;
+pub use canvas::*;
+pub use object::*;
 use program::*;
-pub use renderer::*;
 pub use scene::*;

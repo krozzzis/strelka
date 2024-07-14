@@ -12,4 +12,8 @@ lto = "thin"
 
 [dependencies.iced]
 version = "0.12.1"
-features = ["canvas", "debug", "webgl", "lazy"]
+features = ["canvas", "debug", "webgl", "lazy", "advanced"]
+
+[dependencies.iced_aw]
+version = "0.9.3"
+features = ["menu", "floating_element"]

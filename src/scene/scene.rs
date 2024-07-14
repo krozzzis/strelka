@@ -1,18 +1,32 @@
-use crate::stroke::Stroke;
+use iced::widget::canvas::Frame;
 
-#[derive(Default, Debug, Clone)]
+use crate::{camera::Camera, scene::Spline, Object, Rectangle};
+
+#[derive(Default)]
 pub struct Scene {
-    pub strokes: Vec<Stroke>,
+    pub objects: Vec<Box<dyn Object>>,
 }
 
 impl Scene {
     pub fn new() -> Self {
         Scene {
-            strokes: Vec::new(),
+            objects: Vec::new(),
         }
     }
 
-    pub fn add_object(&mut self, object: Stroke) {
-        self.strokes.push(object);
+    pub fn draw(&self, frame: &mut Frame, _camera: &Camera) {
+        for object in &self.objects {
+            object.render(frame);
+        }
+    }
+
+    pub fn add_spline(mut self, object: Spline) -> Self {
+        self.objects.push(Box::new(object));
+        self
+    }
+
+    pub fn add_rectangle(mut self, object: Rectangle) -> Self {
+        self.objects.push(Box::new(object));
+        self
     }
 }
