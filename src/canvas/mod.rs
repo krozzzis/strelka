@@ -1,9 +1,9 @@
-mod canvas;
 mod object;
 mod program;
 mod scene;
+mod widget;
 
-pub use canvas::*;
 pub use object::*;
 use program::*;
 pub use scene::*;
+pub use widget::*;

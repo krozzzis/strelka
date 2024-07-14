@@ -1,6 +1,6 @@
 mod camera;
+mod canvas;
 mod plugin;
-mod scene;
 
 use iced::{executor, Command};
 use iced::{Application, Element, Settings};
@@ -9,14 +9,14 @@ use iced::{Color, Point, Theme};
 use std::sync::Arc;
 
 use crate::{
+    canvas::{canvas, Canvas, Rectangle, Scene, Spline},
     plugin::{ExamplePlugin, Plugin, PluginHost},
-    scene::{Spline, *},
 };
 
 #[derive(Default)]
 pub struct App {
-    scene: Scene,
     debug: bool,
+    scene: Scene,
     plugin_host: PluginHost,
 }
 
@@ -36,28 +36,30 @@ impl Application for App {
     type Flags = ();
 
     fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
-        let mut host = PluginHost::new();
-        host.register_plugin(
+        let mut plugin_host = PluginHost::new();
+        plugin_host.register_plugin(
             "core.example",
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
 
+        let scene = Scene::new()
+            .add_spline(Spline {
+                points: vec![Point::new(50.0, 50.0), Point::new(60.0, 120.0)],
+                color: Color::BLACK,
+                width: 3.0,
+            })
+            .add_rectangle(Rectangle {
+                position: Point::new(200.0, 150.0),
+                w: 150.0,
+                h: 200.0,
+                color: Color::new(1.0, 0.0, 0.0, 1.0),
+                width: 5.0,
+            });
+
         let app = Self {
-            scene: Scene::new()
-                .add_spline(Spline {
-                    points: vec![Point::new(50.0, 50.0), Point::new(60.0, 120.0)],
-                    color: Color::BLACK,
-                    width: 3.0,
-                })
-                .add_rectangle(Rectangle {
-                    position: Point::new(200.0, 150.0),
-                    w: 150.0,
-                    h: 200.0,
-                    color: Color::new(1.0, 0.0, 0.0, 1.0),
-                    width: 5.0,
-                }),
+            scene,
+            plugin_host,
             debug: false,
-            plugin_host: host,
         };
 
         (app, Command::none())

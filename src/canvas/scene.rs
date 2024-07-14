@@ -1,6 +1,10 @@
 use iced::widget::canvas::Frame;
 
-use crate::{camera::Camera, scene::Spline, Object, Rectangle};
+use crate::{
+    camera::Camera,
+    canvas::{Object, Spline},
+    Rectangle,
+};
 
 #[derive(Default)]
 pub struct Scene {

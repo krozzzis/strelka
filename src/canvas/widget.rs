@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use crate::{
+    canvas::{CanvasProgram, Scene, Spline},
     plugin,
-    scene::{CanvasProgram, Scene, Spline},
 };
 
+use iced::widget::Canvas as IcedCanvas;
 use iced::widget::{canvas::Cache, component, Component};
-use iced::{widget, Element, Length};
+use iced::{Element, Length};
 
 #[derive(Debug, Clone)]
 pub enum EditorMessage {
@@ -66,7 +67,7 @@ impl<'a, Message> Component<Message> for Canvas<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let canvas = widget::Canvas::new(CanvasProgram {
+        let canvas = IcedCanvas::new(CanvasProgram {
             cache: &self.cache,
             scene: self.scene,
         })

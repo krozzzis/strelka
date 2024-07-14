@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
-use crate::{camera::Camera, scene::Scene};
-use crate::{plugin, scene::EditorMessage};
+use crate::{
+    camera::Camera,
+    canvas::{EditorMessage, Scene},
+    plugin,
+};
 
 use iced::{
     keyboard::{key::Named, Key},
