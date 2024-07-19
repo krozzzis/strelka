@@ -1,60 +1,67 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::plugin::{self, Plugin};
+use crate::plugin::{self, Plugin, PluginHandler, PluginInfo, PluginStatus};
+
+pub type PluginId = String;
 
 #[derive(Default)]
 pub struct PluginHost {
-    pub plugins: HashMap<String, Box<dyn Plugin>>,
-    pub plugins_loaded: HashMap<String, bool>,
+    pub plugins: HashMap<PluginId, PluginHandler>,
 }
 
 impl PluginHost {
     pub fn new() -> Self {
         Self {
             plugins: HashMap::new(),
-            plugins_loaded: HashMap::new(),
         }
     }
 
-    pub fn get_plugin_names(&self) -> Vec<String> {
-        self.plugins.keys().cloned().collect()
+    pub fn get_plugin_ids(&self) -> Vec<String> {
+        self.plugins
+            .iter()
+            .map(|(id, _handler)| id.clone())
+            .collect()
     }
 
-    pub fn is_plugin_loaded(&self, plugin: &str) -> Option<bool> {
-        self.plugins_loaded.get(plugin).cloned()
+    /// Returns `Some(PluginStatus)` if plugin with given id is registered
+    /// otherwise returns `None`
+    pub fn get_plugin_status(&self, id: &str) -> Option<PluginStatus> {
+        self.plugins.get(id).map(|handler| handler.status)
     }
 
-    pub fn load_plugin(&mut self, plugin: &str) {
-        if let Some(plugin_load) = self.plugins_loaded.get_mut(plugin) {
-            if let Some(plugin) = self.plugins.get_mut(plugin) {
-                *plugin_load = true;
-                plugin.on_load();
-            }
+    pub fn load_plugin(&mut self, id: &str) {
+        if let Some(plugin) = self.plugins.get_mut(id) {
+            plugin.state.load();
+            plugin.status = PluginStatus::Loaded;
         }
     }
 
-    pub fn unload_plugin(&mut self, plugin: &str) {
-        if let Some(plugin_load) = self.plugins_loaded.get_mut(plugin) {
-            if let Some(plugin) = self.plugins.get_mut(plugin) {
-                *plugin_load = false;
-                plugin.on_unload();
-            }
+    pub fn unload_plugin(&mut self, id: &str) {
+        if let Some(plugin) = self.plugins.get_mut(id) {
+            plugin.state.unload();
+            plugin.status = PluginStatus::Unloaded;
         }
     }
 
+    /// Register plugin in host with given `id`, `PluginInfo` and State
     pub fn register_plugin<S: Into<String> + Clone>(
         &mut self,
-        name: S,
+        id: S,
+        info: PluginInfo,
         mut plugin: Box<dyn Plugin>,
     ) {
-        plugin.on_load();
-        self.plugins.insert(name.clone().into(), plugin);
-        self.plugins_loaded.insert(name.into(), true);
+        plugin.load();
+        let handler = PluginHandler {
+            info,
+            status: PluginStatus::Loaded,
+            state: plugin,
+        };
+        self.plugins.insert(id.into(), handler);
     }
 
-    pub fn send_action(&mut self, name: String, message: Arc<plugin::Action>) {
+    pub fn send_action(&mut self, name: String, action: Arc<plugin::Action>) {
         if let Some(plugin) = self.plugins.get_mut(&name) {
-            let _result = plugin.take_action(message);
+            let _result = plugin.state.take_action(action);
         }
     }
 }

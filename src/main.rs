@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use crate::{
     canvas::{canvas, Canvas, Rectangle, Scene, Spline},
-    plugin::{ExamplePlugin, Plugin, PluginHost},
+    plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo, PluginStatus},
 };
 
 #[derive(Default)]
@@ -27,7 +27,7 @@ pub struct App {
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     SendPluginAction {
-        name: String,
+        id: PluginId,
         action: Arc<plugin::Action>,
     },
     LoadPlugin(String, bool),
@@ -44,10 +44,12 @@ impl Application for App {
         let mut plugin_host = PluginHost::new();
         plugin_host.register_plugin(
             "core.example",
+            PluginInfo::new().name("ExamplePlugin"),
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
         plugin_host.register_plugin(
             "core.example2",
+            PluginInfo::new().name("ExamplePlugin2"),
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
 
@@ -84,15 +86,15 @@ impl Application for App {
                 self.debug = state;
             }
 
-            AppMessage::LoadPlugin(name, load) => {
+            AppMessage::LoadPlugin(id, load) => {
                 if load {
-                    self.plugin_host.load_plugin(&name);
+                    self.plugin_host.load_plugin(&id);
                 } else {
-                    self.plugin_host.unload_plugin(&name);
+                    self.plugin_host.unload_plugin(&id);
                 }
             }
 
-            AppMessage::SendPluginAction { name, action } => {
+            AppMessage::SendPluginAction { id: name, action } => {
                 self.plugin_host.send_action(name, action);
             }
         }
@@ -101,28 +103,37 @@ impl Application for App {
 
     fn view(&self) -> Element<Self::Message> {
         let mut plugin_entries = Vec::new();
-        for name in self.plugin_host.get_plugin_names() {
-            let load = self.plugin_host.is_plugin_loaded(&name);
+        let mut plugin_ids = self.plugin_host.get_plugin_ids();
+        plugin_ids.sort_unstable();
+        for id in plugin_ids {
+            let plugin_state = self.plugin_host.get_plugin_status(&id);
+            let loaded: bool = match plugin_state {
+                Some(PluginStatus::Loaded) => true,
+                Some(PluginStatus::Unloaded) => false,
+                _ => false,
+            };
 
-            if let Some(load) = load {
-                let entry = row![
-                    text(name.clone()).width(Length::Fixed(128.0)),
-                    Toggler::new(
-                        if load {
-                            "Loaded".to_string()
-                        } else {
-                            "Unloaded".to_string()
-                        },
-                        load,
-                        move |state| AppMessage::LoadPlugin(name.clone(), state)
-                    )
-                    .width(Length::Shrink)
-                ]
+            let entry = row![
+                text(id.clone()).width(Length::Fixed(128.0)),
+                Toggler::new(
+                    if loaded {
+                        "Loaded".to_string()
+                    } else {
+                        "Unloaded".to_string()
+                    },
+                    loaded,
+                    move |state| AppMessage::LoadPlugin(id.clone(), state)
+                )
                 .width(Length::Shrink)
-                .spacing(4.0);
+            ]
+            .spacing(8.0);
 
-                plugin_entries.push(Container::new(entry).padding(Padding::from(8.0)).into());
-            }
+            plugin_entries.push(
+                Container::new(entry)
+                    .padding(Padding::from(8.0))
+                    .width(Length::Shrink)
+                    .into(),
+            );
         }
         let plugins_list = Container::new(Column::from_vec(vec![
             text("Plugins:").into(),
@@ -131,10 +142,10 @@ impl Application for App {
         .padding(8.0);
 
         let canvas_renderer: Canvas<AppMessage> = canvas(&self.scene)
-            .on_plugin_action(|a, b| AppMessage::SendPluginAction { name: a, action: b });
+            .on_plugin_action(|a, b| AppMessage::SendPluginAction { id: a, action: b });
 
         row![
-            plugins_list.width(Length::Fixed(280.0)),
+            plugins_list.width(Length::Fixed(300.0)),
             Container::new(canvas_renderer).width(Length::Fill)
         ]
         .spacing(8.0)

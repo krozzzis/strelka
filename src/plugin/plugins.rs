@@ -14,11 +14,11 @@ impl Plugin for ExamplePlugin {
         }
     }
 
-    fn on_load(&mut self) {
+    fn load(&mut self) {
         println!("Example plugin loaded");
     }
 
-    fn on_unload(&mut self) {
+    fn unload(&mut self) {
         println!("Example plugin unloaded");
     }
 }
