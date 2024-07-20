@@ -3,24 +3,35 @@ mod canvas;
 mod plugin;
 
 use iced::{
-    executor,
-    widget::{row, text, Column, Container, Scrollable, Toggler},
-    Command, Length, Padding,
+    border::Radius,
+    keyboard::{self, Key},
+    widget::{
+        center,
+        container::{self, Style},
+        mouse_area, opaque, stack, text, Container,
+    },
+    Font, Length, Subscription,
 };
-use iced::{Application, Element, Settings};
-use iced::{Color, Point, Theme};
+use iced::{Color, Element, Point, Settings};
 
 use std::sync::Arc;
 
 use crate::{
     canvas::{canvas, Canvas, Rectangle, Scene, Spline},
-    plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo, PluginStatus},
+    plugin::{plugin_list, ExamplePlugin, Plugin, PluginEntry, PluginHost, PluginId, PluginInfo},
 };
 
-#[derive(Default)]
+#[derive(Debug, Clone, Copy)]
+pub enum ActiveWindow {
+    None,
+    Plugins,
+    Actions,
+}
+
 pub struct App {
     debug: bool,
     scene: Scene,
+    window: ActiveWindow,
     plugin_host: PluginHost,
 }
 
@@ -31,25 +42,33 @@ pub enum AppMessage {
         action: Arc<plugin::Action>,
     },
     LoadPlugin(String, bool),
+    SetActiveWindow(ActiveWindow),
     SetDebug(bool),
 }
 
-impl Application for App {
-    type Message = AppMessage;
-    type Theme = Theme;
-    type Executor = executor::Default;
-    type Flags = ();
-
-    fn new(_flags: Self::Flags) -> (Self, Command<Self::Message>) {
+impl Default for App {
+    fn default() -> Self {
         let mut plugin_host = PluginHost::new();
         plugin_host.register_plugin(
-            "core.example",
-            PluginInfo::new().name("ExamplePlugin"),
+            PluginInfo::new()
+                .name("ExamplePlugin")
+                .id("core.example")
+                .author("krozzzis")
+                .version("1.0")
+                .description("An example plugin that do nothing)"),
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
+
         plugin_host.register_plugin(
-            "core.example2",
-            PluginInfo::new().name("ExamplePlugin2"),
+            PluginInfo::new().name("ExamplePlugin2").id("core.example2"),
+            Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
+        );
+
+        plugin_host.register_plugin(
+            PluginInfo::new()
+                .name("ExamplePlugin3")
+                .id("core.example3")
+                .description("Yet another example plugin that do nothing"),
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
 
@@ -67,21 +86,26 @@ impl Application for App {
                 width: 5.0,
             });
 
-        let app = Self {
+        Self {
             scene,
+            window: ActiveWindow::None,
             plugin_host,
             debug: false,
-        };
-
-        (app, Command::none())
+        }
     }
+}
 
+impl App {
     fn title(&self) -> String {
         String::from("p3")
     }
 
-    fn update(&mut self, message: Self::Message) -> Command<Self::Message> {
+    fn update(&mut self, message: AppMessage) {
         match message {
+            AppMessage::SetActiveWindow(window) => {
+                self.window = window;
+            }
+
             AppMessage::SetDebug(state) => {
                 self.debug = state;
             }
@@ -98,64 +122,82 @@ impl Application for App {
                 self.plugin_host.send_action(name, action);
             }
         }
-        Command::none()
     }
 
-    fn view(&self) -> Element<Self::Message> {
-        let mut plugin_entries = Vec::new();
-        let mut plugin_ids = self.plugin_host.get_plugin_ids();
-        plugin_ids.sort_unstable();
-        for id in plugin_ids {
-            let plugin_state = self.plugin_host.get_plugin_status(&id);
-            let loaded: bool = match plugin_state {
-                Some(PluginStatus::Loaded) => true,
-                Some(PluginStatus::Unloaded) => false,
-                _ => false,
-            };
-
-            let entry = row![
-                text(id.clone()).width(Length::Fixed(128.0)),
-                Toggler::new(
-                    if loaded {
-                        "Loaded".to_string()
-                    } else {
-                        "Unloaded".to_string()
-                    },
-                    loaded,
-                    move |state| AppMessage::LoadPlugin(id.clone(), state)
-                )
-                .width(Length::Shrink)
-            ]
-            .spacing(8.0);
-
-            plugin_entries.push(
-                Container::new(entry)
-                    .padding(Padding::from(8.0))
-                    .width(Length::Shrink)
-                    .into(),
-            );
-        }
-        let plugins_list = Container::new(Column::from_vec(vec![
-            text("Plugins:").into(),
-            Scrollable::new(Column::from_vec(plugin_entries)).into(),
-        ]))
-        .padding(8.0);
-
+    fn view(&self) -> Element<AppMessage> {
         let canvas_renderer: Canvas<AppMessage> = canvas(&self.scene)
             .on_plugin_action(|a, b| AppMessage::SendPluginAction { id: a, action: b });
 
-        row![
-            plugins_list.width(Length::Fixed(300.0)),
-            Container::new(canvas_renderer).width(Length::Fill)
-        ]
-        .spacing(8.0)
-        .into()
+        match self.window {
+            ActiveWindow::Plugins => {
+                let plugin_list = Container::new(plugin_list(
+                    self.plugin_host.get_plugin_entries(),
+                    AppMessage::LoadPlugin,
+                ))
+                .style(|_theme| {
+                    let mut style: Style = Color::WHITE.into();
+                    style.border.radius = Radius::new(16.0);
+                    style
+                })
+                .width(Length::Fixed(512.0))
+                .padding(16.0);
+
+                modal(
+                    Container::new(canvas_renderer).width(Length::Fill),
+                    plugin_list,
+                    AppMessage::SetActiveWindow(ActiveWindow::None),
+                )
+            }
+
+            _ => Container::new(canvas_renderer).width(Length::Fill).into(),
+        }
+    }
+
+    fn subscription(&self) -> Subscription<AppMessage> {
+        keyboard::on_key_press(|key, modifiers| match key.as_ref() {
+            Key::Character("p") if modifiers.command() => {
+                Some(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
+            }
+            _ => None,
+        })
     }
 }
 
+fn modal<'a, Message>(
+    base: impl Into<Element<'a, Message>>,
+    content: impl Into<Element<'a, Message>>,
+    on_blur: Message,
+) -> Element<'a, Message>
+where
+    Message: Clone + 'a,
+{
+    stack![
+        base.into(),
+        mouse_area(center(opaque(content)).style(|_theme| {
+            container::Style {
+                background: Some(
+                    Color {
+                        a: 0.8,
+                        ..Color::BLACK
+                    }
+                    .into(),
+                ),
+                ..container::Style::default()
+            }
+        }))
+        .on_press(on_blur)
+    ]
+    .into()
+}
+
 fn main() -> iced::Result {
-    App::run(Settings {
-        antialiasing: true,
-        ..Settings::default()
-    })
+    iced::application(App::title, App::update, App::view)
+        .subscription(App::subscription)
+        .settings(Settings {
+            antialiasing: true,
+            ..Settings::default()
+        })
+        .centered()
+        // .font(include_bytes!("../fonts/Inter-Regular.ttf").as_slice())
+        .run()
 }

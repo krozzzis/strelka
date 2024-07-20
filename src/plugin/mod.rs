@@ -38,11 +38,12 @@ pub trait Plugin {
 
 #[derive(Debug, Default, Clone)]
 pub struct PluginInfo {
-    name: String,
-    author: Option<String>,
-    description: Option<String>,
-    license: Option<String>,
-    version: Option<String>,
+    pub name: String,
+    pub id: String,
+    pub author: Option<String>,
+    pub description: Option<String>,
+    pub license: Option<String>,
+    pub version: Option<String>,
 }
 
 impl PluginInfo {
@@ -52,6 +53,11 @@ impl PluginInfo {
 
     pub fn name<S: Into<String>>(mut self, name: S) -> Self {
         self.name = name.into();
+        self
+    }
+
+    pub fn id<S: Into<String>>(mut self, id: S) -> Self {
+        self.id = id.into();
         self
     }
 

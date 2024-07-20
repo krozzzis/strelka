@@ -74,9 +74,6 @@ impl<'a, Message> Component<Message> for Canvas<'a, Message> {
         .width(Length::Fill)
         .height(Length::Fill);
 
-        // let stack = floating_element(canvas, toolbox).anchor(floating_element::Anchor::North);
-
-        // stack.into()
         canvas.into()
     }
 }
