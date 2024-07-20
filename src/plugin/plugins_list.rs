@@ -1,9 +1,7 @@
 use iced::{
     alignment::Vertical,
     border::Radius,
-    widget::{
-        column, component, container::Style, row, text, Column, Component, Container, Toggler,
-    },
+    widget::{column, component, container::Style, row, text, Component, Container, Toggler},
     Color, Element, Font, Length, Pixels,
 };
 
@@ -76,7 +74,6 @@ where
     };
     let meta_font = Font {
         weight: iced::font::Weight::Normal,
-        // family: iced::font::Family::Name("Inter"),
         ..Font::default()
     };
     let desc_font = Font {

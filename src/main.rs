@@ -4,13 +4,13 @@ mod plugin;
 
 use iced::{
     border::Radius,
-    keyboard::{self, Key},
+    keyboard::{self, key::Named, Key},
     widget::{
-        center,
+        button, center,
         container::{self, Style},
-        mouse_area, opaque, stack, text, Container,
+        mouse_area, opaque, row, stack, text, text_input, Container,
     },
-    Font, Length, Subscription,
+    Length, Subscription,
 };
 use iced::{Color, Element, Point, Settings};
 
@@ -18,7 +18,7 @@ use std::sync::Arc;
 
 use crate::{
     canvas::{canvas, Canvas, Rectangle, Scene, Spline},
-    plugin::{plugin_list, ExamplePlugin, Plugin, PluginEntry, PluginHost, PluginId, PluginInfo},
+    plugin::{plugin_list, ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -128,6 +128,8 @@ impl App {
         let canvas_renderer: Canvas<AppMessage> = canvas(&self.scene)
             .on_plugin_action(|a, b| AppMessage::SendPluginAction { id: a, action: b });
 
+        let primary_screen = Container::new(canvas_renderer).width(Length::Fill);
+
         match self.window {
             ActiveWindow::Plugins => {
                 let plugin_list = Container::new(plugin_list(
@@ -143,23 +145,54 @@ impl App {
                 .padding(16.0);
 
                 modal(
-                    Container::new(canvas_renderer).width(Length::Fill),
+                    primary_screen,
                     plugin_list,
                     AppMessage::SetActiveWindow(ActiveWindow::None),
                 )
             }
 
-            _ => Container::new(canvas_renderer).width(Length::Fill).into(),
+            ActiveWindow::Actions => {
+                let action_entry = Container::new(
+                    row![text_input("Action", ""), button(text("Send"))].spacing(8.0),
+                )
+                .style(|_theme| {
+                    let mut style: Style = Color::WHITE.into();
+                    style.border.radius = Radius::new(16.0);
+                    style
+                })
+                .width(Length::Fixed(512.0))
+                .padding(16.0);
+
+                modal(
+                    primary_screen,
+                    action_entry,
+                    AppMessage::SetActiveWindow(ActiveWindow::None),
+                )
+            }
+            _ => primary_screen.into(),
         }
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {
-        keyboard::on_key_press(|key, modifiers| match key.as_ref() {
-            Key::Character("p") if modifiers.command() => {
-                Some(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
-            }
-            _ => None,
-        })
+        match self.window {
+            ActiveWindow::None => keyboard::on_key_press(|key, modifiers| match key.as_ref() {
+                Key::Character("p") if modifiers.command() => {
+                    Some(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
+                }
+
+                Key::Character("r") if modifiers.command() => {
+                    Some(AppMessage::SetActiveWindow(ActiveWindow::Actions))
+                }
+
+                _ => None,
+            }),
+
+            _ => keyboard::on_key_press(|key, _modifiers| match key.as_ref() {
+                Key::Named(Named::Escape) => Some(AppMessage::SetActiveWindow(ActiveWindow::None)),
+
+                _ => None,
+            }),
+        }
     }
 }
 
@@ -198,6 +231,5 @@ fn main() -> iced::Result {
             ..Settings::default()
         })
         .centered()
-        // .font(include_bytes!("../fonts/Inter-Regular.ttf").as_slice())
         .run()
 }
