@@ -54,6 +54,7 @@ pub struct App {
     grid_state: pane_grid::State<PaneType>,
     icons: IconStorage,
     note_content: Content,
+    opened_directory: Option<PathBuf>,
     current_file: Option<PathBuf>,
     directory_content: Option<Vec<PathBuf>>,
     plugin_host: PluginHost,
@@ -69,8 +70,10 @@ pub enum AppMessage {
     SetActiveWindow(ActiveWindow),
     SetDebug(bool),
     SetDirectoryContent(Vec<PathBuf>),
-    SetEditorContent(String),
+    OpenedFile(Result<(PathBuf, String), ()>),
+    PickFile(Option<PathBuf>),
     OpenFile(PathBuf),
+    OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action),
 }
 
@@ -132,6 +135,7 @@ Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu 
 Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
             directory_content: None,
             current_file: None,
+            opened_directory: Some(PathBuf::from("./content/")),
             debug: false,
         }
     }
@@ -153,18 +157,40 @@ async fn get_files(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
     files
 }
 
-async fn get_content(path: impl Into<PathBuf>) -> String {
-    let content = fs::read_to_string(&path.into())
-        .await
-        .unwrap_or(String::new());
-    content
+async fn open_file(path: impl Into<PathBuf>) -> Result<(PathBuf, String), ()> {
+    let path = path.into();
+    let content = fs::read_to_string(&path).await.map_err(|_| ())?;
+    Ok((path, content))
+}
+
+async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> {
+    let handler = if let Some(dir) = directory {
+        rfd::AsyncFileDialog::new().set_directory(dir)
+    } else {
+        rfd::AsyncFileDialog::new()
+    }
+    .pick_file()
+    .await;
+
+    if let Some(path) = handler {
+        let content = open_file(path.path()).await.map_err(|_| ())?;
+        Ok(content)
+    } else {
+        Err(())
+    }
 }
 
 impl App {
     fn new() -> (Self, Task<AppMessage>) {
+        let app = Self::default();
+        let dir = app.opened_directory.clone();
         (
-            Self::default(),
-            Task::perform(get_files("./"), AppMessage::SetDirectoryContent),
+            app,
+            if let Some(dir) = dir {
+                Task::perform(get_files(dir), AppMessage::SetDirectoryContent)
+            } else {
+                Task::none()
+            },
         )
     }
 
@@ -200,13 +226,26 @@ impl App {
 
             AppMessage::SetDirectoryContent(content) => self.directory_content = Some(content),
 
-            AppMessage::SetEditorContent(content) => {
-                self.note_content = Content::with_text(&content)
+            AppMessage::OpenedFile(result) => {
+                if let Ok((path, content)) = result {
+                    self.note_content = Content::with_text(&content);
+                    self.current_file = Some(path);
+                }
+            }
+
+            AppMessage::PickFile(dir) => {
+                return Task::perform(pick_file(dir), AppMessage::OpenedFile);
             }
 
             AppMessage::OpenFile(path) => {
-                self.current_file = Some(path.clone());
-                return Task::perform(get_content(path), AppMessage::SetEditorContent);
+                return Task::perform(open_file(path), AppMessage::OpenedFile);
+            }
+
+            AppMessage::OpenDirectory(path) => {
+                if path.is_dir() {
+                    self.opened_directory = Some(path.clone());
+                    return Task::perform(get_files(path), AppMessage::SetDirectoryContent);
+                }
             }
         }
         Task::none()
@@ -369,6 +408,8 @@ impl App {
                 Key::Character("r") if modifiers.command() => {
                     Some(AppMessage::SetActiveWindow(ActiveWindow::Actions))
                 }
+
+                Key::Character("o") if modifiers.command() => Some(AppMessage::PickFile(None)),
 
                 _ => None,
             }),
