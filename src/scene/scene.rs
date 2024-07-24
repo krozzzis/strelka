@@ -2,7 +2,7 @@ use iced::widget::canvas::Frame;
 
 use crate::{
     camera::Camera,
-    canvas::{Object, Spline},
+    scene::{Object, Spline},
     Rectangle,
 };
 

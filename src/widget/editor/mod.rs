@@ -11,12 +11,12 @@ use iced::{
 use crate::styles;
 
 /// Text editor widget
-pub struct Editor<'a, Message> {
+pub struct NoteEditor<'a, Message> {
     content: &'a Content,
     on_action: Box<dyn Fn(text_editor::Action) -> Message>,
 }
 
-impl<'a, Message> Editor<'a, Message> {
+impl<'a, Message> NoteEditor<'a, Message> {
     pub fn new<F>(content: &'a Content, on_action: F) -> Self
     where
         F: 'static + Fn(text_editor::Action) -> Message,
@@ -28,7 +28,7 @@ impl<'a, Message> Editor<'a, Message> {
     }
 }
 
-impl<'a, Message> Component<Message> for Editor<'a, Message> {
+impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
     type State = ();
 
     type Event = Message;
@@ -65,11 +65,11 @@ impl<'a, Message> Component<Message> for Editor<'a, Message> {
     }
 }
 
-impl<'a, Message> From<Editor<'a, Message>> for Element<'a, Message>
+impl<'a, Message> From<NoteEditor<'a, Message>> for Element<'a, Message>
 where
     Message: 'a,
 {
-    fn from(editor: Editor<'a, Message>) -> Self {
+    fn from(editor: NoteEditor<'a, Message>) -> Self {
         component(editor)
     }
 }

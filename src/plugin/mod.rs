@@ -17,7 +17,7 @@ pub enum PluginStatus {
 }
 
 /// Plugin action
-/// 
+///
 /// Used for sending actions from application to plugin
 #[derive(Debug)]
 pub struct Action {
@@ -89,7 +89,7 @@ impl PluginInfo {
 }
 
 /// Plugin handler
-/// 
+///
 /// Stores info, plugin state and plugin status
 pub struct PluginHandler {
     pub info: PluginInfo,

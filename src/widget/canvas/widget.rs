@@ -1,16 +1,14 @@
 use std::sync::Arc;
 
-use crate::{
-    canvas::{CanvasProgram, Scene, Spline},
-    plugin,
-};
+use crate::scene::Scene;
+use crate::{plugin, widget::canvas::CanvasProgram};
 
 use iced::widget::Canvas as IcedCanvas;
 use iced::widget::{canvas::Cache, component, Component};
 use iced::{Element, Length};
 
 #[derive(Debug, Clone)]
-pub enum EditorMessage {
+pub enum CanvasMessage {
     SendPluginAction {
         plugin: String,
         action: Arc<plugin::Action>,
@@ -20,7 +18,6 @@ pub enum EditorMessage {
 pub struct Canvas<'a, Message> {
     scene: &'a Scene,
     cache: Cache,
-    add_object: Option<Box<dyn Fn(Spline) -> Message>>,
     plugin_take_action: Option<Box<dyn Fn(String, Arc<plugin::Action>) -> Message>>,
 }
 
@@ -29,14 +26,8 @@ impl<'a, Message> Canvas<'a, Message> {
         Self {
             scene,
             cache: Cache::default(),
-            add_object: None,
             plugin_take_action: None,
         }
-    }
-
-    pub fn on_added_object(mut self, func: impl Fn(Spline) -> Message + 'static) -> Self {
-        self.add_object = Some(Box::new(func));
-        self
     }
 
     pub fn on_plugin_action(
@@ -50,11 +41,11 @@ impl<'a, Message> Canvas<'a, Message> {
 
 impl<'a, Message> Component<Message> for Canvas<'a, Message> {
     type State = ();
-    type Event = EditorMessage;
+    type Event = CanvasMessage;
 
     fn update(&mut self, _state: &mut Self::State, event: Self::Event) -> Option<Message> {
         match event {
-            EditorMessage::SendPluginAction {
+            CanvasMessage::SendPluginAction {
                 plugin,
                 action: message,
             } => {

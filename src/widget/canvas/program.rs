@@ -1,10 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    camera::Camera,
-    canvas::{EditorMessage, Scene},
-    plugin,
-};
+use crate::{camera::Camera, plugin, scene::Scene, widget::canvas::CanvasMessage};
 
 use iced::{
     keyboard::{key::Named, Key},
@@ -26,7 +22,7 @@ pub struct CanvasProgram<'a> {
     pub scene: &'a Scene,
 }
 
-impl<'a> Program<EditorMessage> for CanvasProgram<'a> {
+impl<'a> Program<CanvasMessage> for CanvasProgram<'a> {
     type State = CanvasProgramState;
 
     fn draw(
@@ -65,7 +61,7 @@ impl<'a> Program<EditorMessage> for CanvasProgram<'a> {
         event: Event,
         _bounds: Rectangle,
         _cursor: Cursor,
-    ) -> (Status, Option<EditorMessage>) {
+    ) -> (Status, Option<CanvasMessage>) {
         match event {
             Event::Keyboard(event) => match event {
                 iced::keyboard::Event::KeyPressed {
@@ -76,7 +72,7 @@ impl<'a> Program<EditorMessage> for CanvasProgram<'a> {
                 } => {
                     return (
                         Status::Captured,
-                        Some(EditorMessage::SendPluginAction {
+                        Some(CanvasMessage::SendPluginAction {
                             plugin: String::from("core.example"),
                             action: Arc::new(plugin::Action::new(
                                 String::from("say"),

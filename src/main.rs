@@ -1,9 +1,9 @@
 mod camera;
-mod canvas;
-mod editor;
 mod icons;
 mod plugin;
+mod scene;
 mod styles;
+mod widget;
 
 use iced::widget::{
     button,
@@ -28,10 +28,11 @@ use tokio::fs;
 use std::{borrow::Cow, ffi::OsStr, path::PathBuf, sync::Arc};
 
 use crate::{
-    canvas::{canvas, Rectangle, Scene, Spline},
-    editor::Editor,
     icons::IconStorage,
     plugin::{plugin_list, ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo},
+    scene::{Rectangle, Scene, Spline},
+    widget::canvas::canvas,
+    widget::editor::NoteEditor,
 };
 
 pub enum PaneType {
@@ -256,7 +257,7 @@ impl App {
             let content: Element<_> = match *pane {
                 PaneType::TextEditor => {
                     let editor = center(
-                        Container::new(Editor::new(
+                        Container::new(NoteEditor::new(
                             &self.note_content,
                             AppMessage::TextEditorAction,
                         ))
