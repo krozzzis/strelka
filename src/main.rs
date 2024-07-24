@@ -261,7 +261,7 @@ impl App {
                             AppMessage::TextEditorAction,
                         ))
                         .padding(32.0)
-                        .width(Length::Fixed(500.0)),
+                        .width(Length::Fixed(700.0)),
                     );
                     column![
                         Container::new(
@@ -312,6 +312,11 @@ impl App {
                         Container::new(
                             row![
                                 button(Svg::new(self.icons.settings.clone()))
+                                    .padding(Padding::new(2.0))
+                                    .width(Length::Fixed(28.0))
+                                    .height(Length::Fixed(28.0)),
+                                button(Svg::new(self.icons.file_open.clone()))
+                                    .on_press(AppMessage::PickFile(self.opened_directory.clone()))
                                     .padding(Padding::new(2.0))
                                     .width(Length::Fixed(28.0))
                                     .height(Length::Fixed(28.0)),

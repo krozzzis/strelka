@@ -58,7 +58,7 @@ impl<'a, Message> Component<Message> for Editor<'a, Message> {
                     }),
             )
             .padding(32.0)
-            .max_width(Pixels::from(500.0)),
+            .max_width(Pixels::from(700.0)),
         ));
         editor.into()
     }
