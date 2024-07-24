@@ -1,25 +1,44 @@
 mod camera;
 mod canvas;
+mod editor;
+mod icons;
 mod plugin;
+mod styles;
 
+use iced::widget::{
+    button,
+    button::Style as ButtonStyle,
+    center, column,
+    container::{self, Style},
+    mouse_area, opaque,
+    pane_grid::{self, Axis, Configuration},
+    row, stack, text,
+    text_editor::{self, Content},
+    text_input, Container, PaneGrid, Svg,
+};
 use iced::{
     border::Radius,
     keyboard::{self, key::Named, Key},
-    widget::{
-        button, center,
-        container::{self, Style},
-        mouse_area, opaque, row, stack, text, text_input, Container,
-    },
-    Length, Subscription,
+    Border, Length, Padding, Subscription, Task, Theme,
 };
 use iced::{Color, Element, Point, Settings};
 
-use std::sync::Arc;
+use tokio::fs;
+
+use std::{borrow::Cow, ffi::OsStr, path::PathBuf, sync::Arc};
 
 use crate::{
-    canvas::{canvas, Canvas, Rectangle, Scene, Spline},
+    canvas::{canvas, Rectangle, Scene, Spline},
+    editor::Editor,
+    icons::IconStorage,
     plugin::{plugin_list, ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo},
 };
+
+pub enum PaneType {
+    TextEditor,
+    Canvas,
+    FileExplorer,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum ActiveWindow {
@@ -32,6 +51,11 @@ pub struct App {
     debug: bool,
     scene: Scene,
     window: ActiveWindow,
+    grid_state: pane_grid::State<PaneType>,
+    icons: IconStorage,
+    note_content: Content,
+    current_file: Option<PathBuf>,
+    directory_content: Option<Vec<PathBuf>>,
     plugin_host: PluginHost,
 }
 
@@ -44,6 +68,10 @@ pub enum AppMessage {
     LoadPlugin(String, bool),
     SetActiveWindow(ActiveWindow),
     SetDebug(bool),
+    SetDirectoryContent(Vec<PathBuf>),
+    SetEditorContent(String),
+    OpenFile(PathBuf),
+    TextEditorAction(text_editor::Action),
 }
 
 impl Default for App {
@@ -90,17 +118,61 @@ impl Default for App {
             scene,
             window: ActiveWindow::None,
             plugin_host,
+            grid_state: pane_grid::State::with_configuration(Configuration::Split {
+                axis: Axis::Vertical,
+                ratio: 0.25,
+                a: Box::new(Configuration::Pane(PaneType::FileExplorer)),
+                b: Box::new(Configuration::Pane(PaneType::TextEditor)),
+            }),
+            icons: IconStorage::new(),
+            note_content: Content::with_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
+
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
+
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
+            directory_content: None,
+            current_file: None,
             debug: false,
         }
     }
 }
 
+async fn get_files(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let dir_path = dir.into();
+
+    let mut dir_entries = fs::read_dir(dir_path).await.unwrap();
+
+    while let Some(entry) = dir_entries.next_entry().await.unwrap() {
+        let path = entry.path();
+        if path.is_file() {
+            files.push(path);
+        }
+    }
+
+    files
+}
+
+async fn get_content(path: impl Into<PathBuf>) -> String {
+    let content = fs::read_to_string(&path.into())
+        .await
+        .unwrap_or(String::new());
+    content
+}
+
 impl App {
+    fn new() -> (Self, Task<AppMessage>) {
+        (
+            Self::default(),
+            Task::perform(get_files("./"), AppMessage::SetDirectoryContent),
+        )
+    }
+
     fn title(&self) -> String {
         String::from("p3")
     }
 
-    fn update(&mut self, message: AppMessage) {
+    fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
             AppMessage::SetActiveWindow(window) => {
                 self.window = window;
@@ -121,14 +193,128 @@ impl App {
             AppMessage::SendPluginAction { id: name, action } => {
                 self.plugin_host.send_action(name, action);
             }
+
+            AppMessage::TextEditorAction(action) => {
+                self.note_content.perform(action);
+            }
+
+            AppMessage::SetDirectoryContent(content) => self.directory_content = Some(content),
+
+            AppMessage::SetEditorContent(content) => {
+                self.note_content = Content::with_text(&content)
+            }
+
+            AppMessage::OpenFile(path) => {
+                self.current_file = Some(path.clone());
+                return Task::perform(get_content(path), AppMessage::SetEditorContent);
+            }
         }
+        Task::none()
     }
 
     fn view(&self) -> Element<AppMessage> {
-        let canvas_renderer: Canvas<AppMessage> = canvas(&self.scene)
-            .on_plugin_action(|a, b| AppMessage::SendPluginAction { id: a, action: b });
+        let grid = PaneGrid::new(&self.grid_state, |_id, pane, _is_maximized| {
+            let content: Element<_> = match *pane {
+                PaneType::TextEditor => {
+                    let editor = center(
+                        Container::new(Editor::new(
+                            &self.note_content,
+                            AppMessage::TextEditorAction,
+                        ))
+                        .padding(32.0)
+                        .width(Length::Fixed(500.0)),
+                    );
+                    column![
+                        Container::new(
+                            text(if let Some(path) = &self.current_file {
+                                String::from(
+                                    path.file_name()
+                                        .unwrap_or(OsStr::new(""))
+                                        .to_str()
+                                        .unwrap_or(""),
+                                )
+                            } else {
+                                String::new()
+                            })
+                            .size(20.0)
+                        )
+                        .padding(8.0),
+                        editor,
+                    ]
+                    .into()
+                }
 
-        let primary_screen = Container::new(canvas_renderer).width(Length::Fill);
+                PaneType::Canvas => {
+                    let canvas_renderer =
+                        Container::new(canvas(&self.scene).on_plugin_action(|a, b| {
+                            AppMessage::SendPluginAction { id: a, action: b }
+                        }));
+                    canvas_renderer.into()
+                }
+
+                PaneType::FileExplorer => {
+                    let mut files: Vec<Element<_>> = Vec::new();
+                    if let Some(content) = &self.directory_content {
+                        for file in content {
+                            files.push(
+                                button(text(file.file_name().unwrap().to_str().unwrap()))
+                                    .on_press(AppMessage::OpenFile(file.clone()))
+                                    .padding(0.0)
+                                    .style(|theme: &Theme, _status| ButtonStyle {
+                                        background: None,
+                                        text_color: theme.palette().text,
+                                        ..Default::default()
+                                    })
+                                    .into(),
+                            );
+                        }
+                    }
+                    column![
+                        Container::new(
+                            row![
+                                button(Svg::new(self.icons.settings.clone()))
+                                    .padding(Padding::new(2.0))
+                                    .width(Length::Fixed(28.0))
+                                    .height(Length::Fixed(28.0)),
+                                button(Svg::new(self.icons.plugins.clone()))
+                                    .on_press(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
+                                    .padding(Padding::new(2.0))
+                                    .width(Length::Fixed(28.0))
+                                    .height(Length::Fixed(28.0)),
+                                button(Svg::new(self.icons.action.clone()))
+                                    .on_press(AppMessage::SetActiveWindow(ActiveWindow::Actions))
+                                    .padding(Padding::new(2.0))
+                                    .width(Length::Fixed(28.0))
+                                    .height(Length::Fixed(28.0)),
+                            ]
+                            .spacing(4.0)
+                            .padding(Padding::ZERO.bottom(4.0))
+                        )
+                        .style(|_| Color::new(0.95, 0.95, 0.95, 1.0).into()),
+                        if files.is_empty() {
+                            Container::new(text("Nothing"))
+                        } else {
+                            Container::new(column(files).spacing(8.0))
+                        },
+                    ]
+                    .padding(4.0)
+                    .into()
+                }
+            };
+            Container::new(content)
+                .style(|_theme| container::Style {
+                    border: Border {
+                        color: Color::new(0.85, 0.85, 0.85, 1.0),
+                        width: 1.0,
+                        radius: Radius::new(0.0),
+                    },
+                    ..Default::default()
+                })
+                .into()
+        });
+        let primary_screen = Container::new(grid)
+            .width(Length::Fill)
+            .height(Length::Fill);
 
         match self.window {
             ActiveWindow::Plugins => {
@@ -230,6 +416,8 @@ fn main() -> iced::Result {
             antialiasing: true,
             ..Settings::default()
         })
+        .font(Cow::Borrowed(styles::INTER_REGULAR_FONT_BYTES))
+        .theme(|_| Theme::CatppuccinLatte)
         .centered()
-        .run()
+        .run_with(App::new)
 }

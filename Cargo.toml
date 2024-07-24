@@ -5,12 +5,17 @@ edition = "2021"
 authors = ["krozzzis"]
 
 [profile.release]
-strip = "debuginfo"
-lto = "thin"
+strip = true
+lto = true
 
 [dependencies]
+cosmic-text = "0.12"
+
+[dependencies.tokio]
+version = "1.39.1"
+features = ["fs"]
 
 [dependencies.iced]
 git = "https://github.com/iced-rs/iced"
 rev = "c851e67734ec0c761adfd7881c576856ea38734b"
-features = ["canvas", "debug", "webgl", "lazy", "advanced"]
+features = ["canvas", "debug", "webgl", "lazy", "advanced", "svg", "tokio"]
