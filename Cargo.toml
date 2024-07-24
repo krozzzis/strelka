@@ -18,5 +18,5 @@ features = ["fs"]
 
 [dependencies.iced]
 git = "https://github.com/iced-rs/iced"
-rev = "c851e67734ec0c761adfd7881c576856ea38734b"
+rev = "a8c772eb8ab8854ec87b963d855966ee0ad5ea51"
 features = ["canvas", "debug", "webgl", "lazy", "advanced", "svg", "tokio"]
