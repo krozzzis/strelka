@@ -3,6 +3,7 @@ mod plugins;
 mod plugins_list;
 
 pub use host::*;
+use iced::keyboard::{Key, Modifiers};
 pub use plugins::*;
 pub use plugins_list::*;
 
@@ -19,7 +20,7 @@ pub enum PluginStatus {
 /// Plugin action
 ///
 /// Used for sending messages from application to plugin
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PluginMessage {
     pub kind: String,
     pub payload: String,
@@ -37,8 +38,12 @@ pub trait Plugin {
         None
     }
 
-    fn load(&mut self) {}
-    fn unload(&mut self) {}
+    fn load(&mut self) -> Option<PluginAction> {
+        None
+    }
+    fn unload(&mut self) -> Option<PluginAction> {
+        None
+    }
 }
 
 /// Plugin information
@@ -97,7 +102,14 @@ pub struct PluginHandler {
     pub state: Box<dyn Plugin>,
 }
 
+#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+pub struct Hotkey {
+    pub key: Key,
+    pub modifiers: Modifiers,
+}
+
 #[derive(Debug, Clone)]
 pub enum PluginAction {
     SendNotification(Arc<String>),
+    RegisterHotkey(Hotkey, Arc<PluginMessage>),
 }

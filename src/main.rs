@@ -6,20 +6,24 @@ mod scene;
 mod styles;
 mod widget;
 
-use iced::widget::{
-    button::{self, Style as ButtonStyle},
-    center, column,
-    container::{self, Style},
-    horizontal_space, mouse_area, opaque,
-    pane_grid::{self, Axis, Configuration},
-    row, stack, text,
-    text_editor::{self, Content},
-    text_input, vertical_space, Button, Container, PaneGrid, Svg,
-};
 use iced::{
+    advanced::graphics::core::SmolStr,
     border::Radius,
     keyboard::{self, key::Named, Key},
     Border, Length, Padding, Subscription, Task, Theme,
+};
+use iced::{
+    keyboard::Modifiers,
+    widget::{
+        button::{self, Style as ButtonStyle},
+        center, column,
+        container::{self, Style},
+        horizontal_space, mouse_area, opaque,
+        pane_grid::{self, Axis, Configuration},
+        row, stack, text,
+        text_editor::{self, Content},
+        text_input, vertical_space, Button, Container, PaneGrid, Svg,
+    },
 };
 use iced::{Color, Element, Point, Settings};
 
@@ -27,14 +31,19 @@ use tokio::fs;
 use widget::notificaton::notification_list;
 
 use std::{
-    borrow::Cow, collections::VecDeque, ffi::OsStr, path::PathBuf, sync::Arc, time::Duration,
+    borrow::Cow,
+    collections::{HashMap, VecDeque},
+    ffi::OsStr,
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
 };
 
 use crate::{
     icons::IconStorage,
     notification::{Notification, NotificationList},
     plugin::{
-        plugin_list, ExamplePlugin, Plugin, PluginAction, PluginHost, PluginId, PluginInfo,
+        plugin_list, ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo,
         PluginMessage,
     },
     scene::{Rectangle, Scene, Spline},
@@ -65,6 +74,7 @@ pub struct App {
     current_file: Option<PathBuf>,
     directory_content: Option<Vec<PathBuf>>,
     plugin_host: PluginHost<AppMessage>,
+    hotkeys: HashMap<Hotkey, AppMessage>,
     notifications: NotificationList,
 }
 
@@ -74,7 +84,7 @@ pub enum AppMessage {
         id: PluginId,
         message: Arc<plugin::PluginMessage>,
     },
-    PluginAction(PluginAction),
+    PluginAction(PluginId, PluginAction),
     LoadPlugin(PluginId, bool),
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
@@ -86,6 +96,7 @@ pub enum AppMessage {
     OpenFile(PathBuf),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action),
+    OnKeyPress(Key, Modifiers),
 }
 
 impl Default for App {
@@ -102,6 +113,26 @@ impl Default for App {
         );
 
         let scene = Scene::new();
+
+        let mut hotkeys = HashMap::new();
+
+        // Ctrl-o open file
+        hotkeys.insert(
+            Hotkey {
+                key: Key::Character(SmolStr::new_inline("o")),
+                modifiers: Modifiers::CTRL,
+            },
+            AppMessage::PickFile(None),
+        );
+
+        // Ctrl-p plugins list
+        hotkeys.insert(
+            Hotkey {
+                key: Key::Character(SmolStr::new_inline("p")),
+                modifiers: Modifiers::CTRL,
+            },
+            AppMessage::SetActiveWindow(ActiveWindow::Plugins),
+        );
 
         Self {
             scene,
@@ -123,6 +154,7 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
             current_file: None,
             opened_directory: Some(PathBuf::from("./content/")),
             notifications: NotificationList::new(),
+            hotkeys,
             debug: false,
         }
     }
@@ -174,15 +206,22 @@ async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> 
 impl App {
     fn new() -> (Self, Task<AppMessage>) {
         let app = Self::default();
+        let mut tasks = Vec::new();
+
+        for id in app.plugin_host.get_plugin_ids() {
+            let task = Task::done(AppMessage::LoadPlugin(id.clone(), true));
+            tasks.push(task);
+        }
+
         let dir = app.opened_directory.clone();
-        (
-            app,
-            if let Some(dir) = dir {
-                Task::perform(get_files(dir), AppMessage::SetDirectoryContent)
-            } else {
-                Task::none()
-            },
-        )
+        if let Some(dir) = dir {
+            tasks.push(Task::perform(
+                get_files(dir),
+                AppMessage::SetDirectoryContent,
+            ));
+        }
+
+        (app, Task::batch(tasks))
     }
 
     fn title(&self) -> String {
@@ -191,6 +230,12 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
+            AppMessage::OnKeyPress(key, modifiers) => {
+                if let Some(message) = self.on_key_press(key, modifiers) {
+                    return Task::done(message);
+                }
+            }
+
             AppMessage::SendNotification(notificaton) => {
                 let id = self.notifications.add(notificaton);
                 return Task::perform(delay(5), move |_| AppMessage::RemoveNotification(id));
@@ -200,7 +245,12 @@ impl App {
                 self.notifications.remove(id);
             }
 
-            AppMessage::PluginAction(action) => match action {
+            AppMessage::PluginAction(id, action) => match action {
+                PluginAction::RegisterHotkey(hotkey, message) => {
+                    self.hotkeys
+                        .insert(hotkey, AppMessage::SendPluginMessage { id, message });
+                }
+
                 PluginAction::SendNotification(text) => {
                     return Task::done(AppMessage::SendNotification(Arc::new(Notification {
                         text: text.to_string(),
@@ -208,6 +258,7 @@ impl App {
                     })))
                 }
             },
+
             AppMessage::SetActiveWindow(window) => {
                 self.window = window;
             }
@@ -218,9 +269,11 @@ impl App {
 
             AppMessage::LoadPlugin(id, load) => {
                 if load {
-                    self.plugin_host.load_plugin(&id);
-                } else {
-                    self.plugin_host.unload_plugin(&id);
+                    if let Some(message) = self.plugin_host.load_plugin(&id) {
+                        return Task::done(message);
+                    }
+                } else if let Some(message) = self.plugin_host.unload_plugin(&id) {
+                    return Task::done(message);
                 }
             }
 
@@ -430,26 +483,8 @@ impl App {
 
     fn subscription(&self) -> Subscription<AppMessage> {
         match self.window {
-            ActiveWindow::None => keyboard::on_key_press(|key, modifiers| match key.as_ref() {
-                Key::Character("p") if modifiers.command() => {
-                    Some(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
-                }
-
-                Key::Character("r") if modifiers.command() => {
-                    Some(AppMessage::SetActiveWindow(ActiveWindow::Actions))
-                }
-
-                Key::Character("o") if modifiers.command() => Some(AppMessage::PickFile(None)),
-
-                Key::Character("f") if modifiers.command() => Some(AppMessage::SendPluginMessage {
-                    id: "core.example".to_owned(),
-                    message: Arc::new(PluginMessage {
-                        kind: "say".to_owned(),
-                        payload: "hello".to_owned(),
-                    }),
-                }),
-
-                _ => None,
+            ActiveWindow::None => keyboard::on_key_press(|key, modifiers| {
+                Some(AppMessage::OnKeyPress(key, modifiers))
             }),
 
             _ => keyboard::on_key_press(|key, _modifiers| match key.as_ref() {
@@ -458,6 +493,15 @@ impl App {
                 _ => None,
             }),
         }
+    }
+
+    fn on_key_press(&mut self, key: Key, modifiers: Modifiers) -> Option<AppMessage> {
+        for (hotkey, message) in &self.hotkeys {
+            if hotkey.key == key && hotkey.modifiers == modifiers {
+                return Some(message.clone());
+            }
+        }
+        None
     }
 }
 
