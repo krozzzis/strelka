@@ -8,6 +8,7 @@ pub use plugins_list::*;
 
 use std::sync::Arc;
 
+/// Plugin runtime status
 #[derive(Debug, Default, Clone, Copy)]
 pub enum PluginStatus {
     Loaded,
@@ -15,6 +16,9 @@ pub enum PluginStatus {
     Unloaded,
 }
 
+/// Plugin action
+/// 
+/// Used for sending actions from application to plugin
 #[derive(Debug)]
 pub struct Action {
     pub kind: String,
@@ -27,6 +31,7 @@ impl Action {
     }
 }
 
+/// Generic plugin trait
 pub trait Plugin {
     fn take_action(&mut self, _action: Arc<Action>) -> Result<(), ()> {
         Ok(())
@@ -36,6 +41,7 @@ pub trait Plugin {
     fn unload(&mut self) {}
 }
 
+/// Plugin information
 #[derive(Debug, Default, Clone)]
 pub struct PluginInfo {
     pub name: String,
@@ -82,6 +88,9 @@ impl PluginInfo {
     }
 }
 
+/// Plugin handler
+/// 
+/// Stores info, plugin state and plugin status
 pub struct PluginHandler {
     pub info: PluginInfo,
     pub status: PluginStatus,

@@ -4,8 +4,12 @@ use crate::plugin::{self, Plugin, PluginEntry, PluginHandler, PluginInfo, Plugin
 
 pub type PluginId = String;
 
+/// Plugin host
 #[derive(Default)]
 pub struct PluginHost {
+    /// Registered plugins
+    /// Stores plugin id and plugin handler,
+    /// that contains plugin state and plugin status
     pub plugins: HashMap<PluginId, PluginHandler>,
 }
 
@@ -16,6 +20,7 @@ impl PluginHost {
         }
     }
 
+    /// Returns list of registered plugin ids
     pub fn get_plugin_ids(&self) -> Vec<String> {
         self.plugins
             .iter()
@@ -35,6 +40,7 @@ impl PluginHost {
         self.plugins.get(id).map(|handler| &handler.info)
     }
 
+    /// Load plugin with given id
     pub fn load_plugin(&mut self, id: &str) {
         if let Some(plugin) = self.plugins.get_mut(id) {
             plugin.state.load();
@@ -42,6 +48,7 @@ impl PluginHost {
         }
     }
 
+    /// Unload plugin with given id
     pub fn unload_plugin(&mut self, id: &str) {
         if let Some(plugin) = self.plugins.get_mut(id) {
             plugin.state.unload();
@@ -67,6 +74,7 @@ impl PluginHost {
         }
     }
 
+    /// Returns list of registered plugins
     pub fn get_plugin_entries(&self) -> Vec<PluginEntry> {
         let mut result = Vec::new();
         for (_id, handler) in self.plugins.iter() {

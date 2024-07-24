@@ -10,6 +10,7 @@ use iced::{
 
 use crate::styles;
 
+/// Text editor widget
 pub struct Editor<'a, Message> {
     content: &'a Content,
     on_action: Box<dyn Fn(text_editor::Action) -> Message>,

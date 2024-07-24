@@ -7,16 +7,19 @@ use iced::{
 
 use crate::plugin::{PluginId, PluginInfo, PluginStatus};
 
+/// Plugin list entry widget
 pub struct PluginEntry<'a> {
     pub info: &'a PluginInfo,
     pub status: PluginStatus,
 }
 
+/// Plugin list widget
 pub struct PluginList<'a, Message> {
     pub plugins: Vec<PluginEntry<'a>>,
     pub change_status: Box<dyn Fn(PluginId, bool) -> Message + 'a>,
 }
 
+/// Create plugin list widget
 pub fn plugin_list<'a, Message, F>(
     plugins: Vec<PluginEntry<'a>>,
     change_status: F,
@@ -61,6 +64,7 @@ where
     }
 }
 
+/// Create plugin list entry widget
 pub fn plugin_list_entry<'a, Message: 'a, F>(
     plugin: &'a PluginEntry,
     change_status: F,
