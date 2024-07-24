@@ -1,20 +1,20 @@
 mod camera;
 mod icons;
+mod notification;
 mod plugin;
 mod scene;
 mod styles;
 mod widget;
 
 use iced::widget::{
-    button,
-    button::Style as ButtonStyle,
+    button::{self, Style as ButtonStyle},
     center, column,
     container::{self, Style},
-    mouse_area, opaque,
+    horizontal_space, mouse_area, opaque,
     pane_grid::{self, Axis, Configuration},
     row, stack, text,
     text_editor::{self, Content},
-    text_input, Container, PaneGrid, Svg,
+    text_input, vertical_space, Button, Container, PaneGrid, Svg,
 };
 use iced::{
     border::Radius,
@@ -24,15 +24,21 @@ use iced::{
 use iced::{Color, Element, Point, Settings};
 
 use tokio::fs;
+use widget::notificaton::notification_list;
 
-use std::{borrow::Cow, ffi::OsStr, path::PathBuf, sync::Arc};
+use std::{
+    borrow::Cow, collections::VecDeque, ffi::OsStr, path::PathBuf, sync::Arc, time::Duration,
+};
 
 use crate::{
     icons::IconStorage,
-    plugin::{plugin_list, ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo},
+    notification::{Notification, NotificationList},
+    plugin::{
+        plugin_list, ExamplePlugin, Plugin, PluginAction, PluginHost, PluginId, PluginInfo,
+        PluginMessage,
+    },
     scene::{Rectangle, Scene, Spline},
-    widget::canvas::canvas,
-    widget::editor::NoteEditor,
+    widget::{canvas::canvas, editor::NoteEditor},
 };
 
 pub enum PaneType {
@@ -58,16 +64,20 @@ pub struct App {
     opened_directory: Option<PathBuf>,
     current_file: Option<PathBuf>,
     directory_content: Option<Vec<PathBuf>>,
-    plugin_host: PluginHost,
+    plugin_host: PluginHost<AppMessage>,
+    notifications: NotificationList,
 }
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
-    SendPluginAction {
+    SendPluginMessage {
         id: PluginId,
-        action: Arc<plugin::Action>,
+        message: Arc<plugin::PluginMessage>,
     },
-    LoadPlugin(String, bool),
+    PluginAction(PluginAction),
+    LoadPlugin(PluginId, bool),
+    SendNotification(Arc<Notification>),
+    RemoveNotification(usize),
     SetActiveWindow(ActiveWindow),
     SetDebug(bool),
     SetDirectoryContent(Vec<PathBuf>),
@@ -80,43 +90,18 @@ pub enum AppMessage {
 
 impl Default for App {
     fn default() -> Self {
-        let mut plugin_host = PluginHost::new();
+        let mut plugin_host = PluginHost::new().on_plugin_action(AppMessage::PluginAction);
         plugin_host.register_plugin(
             PluginInfo::new()
                 .name("ExamplePlugin")
                 .id("core.example")
                 .author("krozzzis")
                 .version("1.0")
-                .description("An example plugin that do nothing)"),
+                .description("An example plugin that do nothing useful)"),
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
 
-        plugin_host.register_plugin(
-            PluginInfo::new().name("ExamplePlugin2").id("core.example2"),
-            Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
-        );
-
-        plugin_host.register_plugin(
-            PluginInfo::new()
-                .name("ExamplePlugin3")
-                .id("core.example3")
-                .description("Yet another example plugin that do nothing"),
-            Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
-        );
-
-        let scene = Scene::new()
-            .add_spline(Spline {
-                points: vec![Point::new(50.0, 50.0), Point::new(60.0, 120.0)],
-                color: Color::BLACK,
-                width: 3.0,
-            })
-            .add_rectangle(Rectangle {
-                position: Point::new(200.0, 150.0),
-                w: 150.0,
-                h: 200.0,
-                color: Color::new(1.0, 0.0, 0.0, 1.0),
-                width: 5.0,
-            });
+        let scene = Scene::new();
 
         Self {
             scene,
@@ -137,6 +122,7 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
             directory_content: None,
             current_file: None,
             opened_directory: Some(PathBuf::from("./content/")),
+            notifications: NotificationList::new(),
             debug: false,
         }
     }
@@ -156,6 +142,10 @@ async fn get_files(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
     }
 
     files
+}
+
+async fn delay(secs: u64) {
+    tokio::time::sleep(Duration::new(secs, 0)).await
 }
 
 async fn open_file(path: impl Into<PathBuf>) -> Result<(PathBuf, String), ()> {
@@ -201,6 +191,23 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
+            AppMessage::SendNotification(notificaton) => {
+                let id = self.notifications.add(notificaton);
+                return Task::perform(delay(5), move |_| AppMessage::RemoveNotification(id));
+            }
+
+            AppMessage::RemoveNotification(id) => {
+                self.notifications.remove(id);
+            }
+
+            AppMessage::PluginAction(action) => match action {
+                PluginAction::SendNotification(text) => {
+                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                        text: text.to_string(),
+                        kind: notification::NotificationKind::None,
+                    })))
+                }
+            },
             AppMessage::SetActiveWindow(window) => {
                 self.window = window;
             }
@@ -217,8 +224,13 @@ impl App {
                 }
             }
 
-            AppMessage::SendPluginAction { id: name, action } => {
-                self.plugin_host.send_action(name, action);
+            AppMessage::SendPluginMessage {
+                id: name,
+                message: action,
+            } => {
+                if let Some(message) = self.plugin_host.send_message(name, action) {
+                    return Task::done(message);
+                }
             }
 
             AppMessage::TextEditorAction(action) => {
@@ -287,7 +299,7 @@ impl App {
                 PaneType::Canvas => {
                     let canvas_renderer =
                         Container::new(canvas(&self.scene).on_plugin_action(|a, b| {
-                            AppMessage::SendPluginAction { id: a, action: b }
+                            AppMessage::SendPluginMessage { id: a, message: b }
                         }));
                     canvas_renderer.into()
                 }
@@ -297,7 +309,7 @@ impl App {
                     if let Some(content) = &self.directory_content {
                         for file in content {
                             files.push(
-                                button(text(file.file_name().unwrap().to_str().unwrap()))
+                                Button::new(text(file.file_name().unwrap().to_str().unwrap()))
                                     .on_press(AppMessage::OpenFile(file.clone()))
                                     .padding(0.0)
                                     .style(|theme: &Theme, _status| ButtonStyle {
@@ -312,21 +324,21 @@ impl App {
                     column![
                         Container::new(
                             row![
-                                button(Svg::new(self.icons.settings.clone()))
+                                Button::new(Svg::new(self.icons.settings.clone()))
                                     .padding(Padding::new(2.0))
                                     .width(Length::Fixed(28.0))
                                     .height(Length::Fixed(28.0)),
-                                button(Svg::new(self.icons.file_open.clone()))
+                                Button::new(Svg::new(self.icons.file_open.clone()))
                                     .on_press(AppMessage::PickFile(self.opened_directory.clone()))
                                     .padding(Padding::new(2.0))
                                     .width(Length::Fixed(28.0))
                                     .height(Length::Fixed(28.0)),
-                                button(Svg::new(self.icons.plugins.clone()))
+                                Button::new(Svg::new(self.icons.plugins.clone()))
                                     .on_press(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
                                     .padding(Padding::new(2.0))
                                     .width(Length::Fixed(28.0))
                                     .height(Length::Fixed(28.0)),
-                                button(Svg::new(self.icons.action.clone()))
+                                Button::new(Svg::new(self.icons.action.clone()))
                                     .on_press(AppMessage::SetActiveWindow(ActiveWindow::Actions))
                                     .padding(Padding::new(2.0))
                                     .width(Length::Fixed(28.0))
@@ -357,9 +369,21 @@ impl App {
                 })
                 .into()
         });
-        let primary_screen = Container::new(grid)
-            .width(Length::Fill)
-            .height(Length::Fill);
+
+        let primary_screen = stack![
+            Container::new(grid)
+                .width(Length::Fill)
+                .height(Length::Fill),
+            row![
+                horizontal_space(),
+                column![
+                    vertical_space(),
+                    Container::new(notification_list(&self.notifications.to_vec()))
+                        .padding(16.0)
+                        .width(Length::Shrink)
+                ],
+            ],
+        ];
 
         match self.window {
             ActiveWindow::Plugins => {
@@ -384,7 +408,7 @@ impl App {
 
             ActiveWindow::Actions => {
                 let action_entry = Container::new(
-                    row![text_input("Action", ""), button(text("Send"))].spacing(8.0),
+                    row![text_input("Action", ""), Button::new(text("Send"))].spacing(8.0),
                 )
                 .style(|_theme| {
                     let mut style: Style = Color::WHITE.into();
@@ -416,6 +440,14 @@ impl App {
                 }
 
                 Key::Character("o") if modifiers.command() => Some(AppMessage::PickFile(None)),
+
+                Key::Character("f") if modifiers.command() => Some(AppMessage::SendPluginMessage {
+                    id: "core.example".to_owned(),
+                    message: Arc::new(PluginMessage {
+                        kind: "say".to_owned(),
+                        payload: "hello".to_owned(),
+                    }),
+                }),
 
                 _ => None,
             }),

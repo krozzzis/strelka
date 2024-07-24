@@ -11,14 +11,14 @@ use iced::{Element, Length};
 pub enum CanvasMessage {
     SendPluginAction {
         plugin: String,
-        action: Arc<plugin::Action>,
+        action: Arc<plugin::PluginMessage>,
     },
 }
 
 pub struct Canvas<'a, Message> {
     scene: &'a Scene,
     cache: Cache,
-    plugin_take_action: Option<Box<dyn Fn(String, Arc<plugin::Action>) -> Message>>,
+    plugin_take_action: Option<Box<dyn Fn(String, Arc<plugin::PluginMessage>) -> Message>>,
 }
 
 impl<'a, Message> Canvas<'a, Message> {
@@ -32,7 +32,7 @@ impl<'a, Message> Canvas<'a, Message> {
 
     pub fn on_plugin_action(
         mut self,
-        func: impl Fn(String, Arc<plugin::Action>) -> Message + 'static,
+        func: impl Fn(String, Arc<plugin::PluginMessage>) -> Message + 'static,
     ) -> Self {
         self.plugin_take_action = Some(Box::new(func));
         self

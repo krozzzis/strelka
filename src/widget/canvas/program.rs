@@ -74,7 +74,7 @@ impl<'a> Program<CanvasMessage> for CanvasProgram<'a> {
                         Status::Captured,
                         Some(CanvasMessage::SendPluginAction {
                             plugin: String::from("core.example"),
-                            action: Arc::new(plugin::Action::new(
+                            action: Arc::new(plugin::PluginMessage::new(
                                 String::from("say"),
                                 String::from("Hello"),
                             )),

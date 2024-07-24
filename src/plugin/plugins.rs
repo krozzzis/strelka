@@ -1,16 +1,19 @@
 use std::sync::Arc;
 
-use crate::plugin::{self, Plugin};
+use crate::plugin::{self, Plugin, PluginAction, PluginMessage};
 
 pub struct ExamplePlugin {}
 
 impl Plugin for ExamplePlugin {
-    fn take_action(&mut self, message: Arc<plugin::Action>) -> Result<(), ()> {
+    fn update(&mut self, message: Arc<PluginMessage>) -> Option<PluginAction> {
         if message.kind == "say" {
             println!("{}", message.payload);
-            Ok(())
+            Some(PluginAction::SendNotification(Arc::new(format!(
+                "Message from plugin: {}",
+                message.payload
+            ))))
         } else {
-            Err(())
+            None
         }
     }
 

@@ -1,23 +1,36 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::plugin::{self, Plugin, PluginEntry, PluginHandler, PluginInfo, PluginStatus};
+use crate::plugin::{
+    self, Plugin, PluginAction, PluginEntry, PluginHandler, PluginInfo, PluginStatus,
+};
 
 pub type PluginId = String;
 
 /// Plugin host
 #[derive(Default)]
-pub struct PluginHost {
+pub struct PluginHost<Message> {
     /// Registered plugins
     /// Stores plugin id and plugin handler,
     /// that contains plugin state and plugin status
     pub plugins: HashMap<PluginId, PluginHandler>,
+
+    pub on_plugin_action: Option<Box<dyn Fn(PluginAction) -> Message>>,
 }
 
-impl PluginHost {
+impl<Message> PluginHost<Message> {
     pub fn new() -> Self {
         Self {
             plugins: HashMap::new(),
+            on_plugin_action: None,
         }
+    }
+
+    pub fn on_plugin_action<F>(mut self, func: F) -> Self
+    where
+        F: 'static + Fn(PluginAction) -> Message,
+    {
+        self.on_plugin_action = Some(Box::new(func));
+        self
     }
 
     /// Returns list of registered plugin ids
@@ -68,9 +81,24 @@ impl PluginHost {
         self.plugins.insert(id, handler);
     }
 
-    pub fn send_action(&mut self, name: String, action: Arc<plugin::Action>) {
+    pub fn send_message(
+        &mut self,
+        name: String,
+        message: Arc<plugin::PluginMessage>,
+    ) -> Option<Message> {
         if let Some(plugin) = self.plugins.get_mut(&name) {
-            let _result = plugin.state.take_action(action);
+            let result = plugin.state.update(message);
+            if let Some(action) = result {
+                if let Some(mapper) = &self.on_plugin_action {
+                    Some(mapper(action))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        } else {
+            None
         }
     }
 

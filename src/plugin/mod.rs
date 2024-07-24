@@ -18,14 +18,14 @@ pub enum PluginStatus {
 
 /// Plugin action
 ///
-/// Used for sending actions from application to plugin
+/// Used for sending messages from application to plugin
 #[derive(Debug)]
-pub struct Action {
+pub struct PluginMessage {
     pub kind: String,
     pub payload: String,
 }
 
-impl Action {
+impl PluginMessage {
     pub fn new(kind: String, payload: String) -> Self {
         Self { kind, payload }
     }
@@ -33,8 +33,8 @@ impl Action {
 
 /// Generic plugin trait
 pub trait Plugin {
-    fn take_action(&mut self, _action: Arc<Action>) -> Result<(), ()> {
-        Ok(())
+    fn update(&mut self, _message: Arc<PluginMessage>) -> Option<PluginAction> {
+        None
     }
 
     fn load(&mut self) {}
@@ -95,4 +95,9 @@ pub struct PluginHandler {
     pub info: PluginInfo,
     pub status: PluginStatus,
     pub state: Box<dyn Plugin>,
+}
+
+#[derive(Debug, Clone)]
+pub enum PluginAction {
+    SendNotification(Arc<String>),
 }
