@@ -72,16 +72,15 @@ impl<Message> PluginHost<Message> {
         None
     }
 
+    /// Convert plugin's `PluginAction` to application's `Message`
     fn map_action(&self, id: PluginId, action: PluginAction) -> Option<Message> {
-        if let Some(mapper) = &self.on_plugin_action {
-            Some(mapper(id, action))
-        } else {
-            None
-        }
+        self.on_plugin_action
+            .as_ref()
+            .map(|mapper| mapper(id, action))
     }
 
     /// Register plugin in host with given `id`, `PluginInfo` and State
-    pub fn register_plugin(&mut self, info: PluginInfo, mut plugin: Box<dyn Plugin>) {
+    pub fn register_plugin(&mut self, info: PluginInfo, plugin: Box<dyn Plugin>) {
         let id = info.id.clone();
         let handler = PluginHandler {
             info,
@@ -91,9 +90,12 @@ impl<Message> PluginHost<Message> {
         self.plugins.insert(id.clone(), handler);
     }
 
+    /// Send a message to plugin with given `PluginId`.
+    ///
+    /// Optionally returns an Application's message, if plugin return an action.
     pub fn send_message(
         &mut self,
-        id: String,
+        id: PluginId,
         message: Arc<plugin::PluginMessage>,
     ) -> Option<Message> {
         if let Some(plugin) = self.plugins.get_mut(&id) {

@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 mod camera;
 mod icons;
 mod notification;
@@ -15,7 +17,7 @@ use iced::{
 use iced::{
     keyboard::Modifiers,
     widget::{
-        button::{self, Style as ButtonStyle},
+        button::Style as ButtonStyle,
         center, column,
         container::{self, Style},
         horizontal_space, mouse_area, opaque,
@@ -25,18 +27,13 @@ use iced::{
         text_input, vertical_space, Button, Container, PaneGrid, Svg,
     },
 };
-use iced::{Color, Element, Point, Settings};
+use iced::{Color, Element, Settings};
 
 use tokio::fs;
 use widget::notificaton::notification_list;
 
 use std::{
-    borrow::Cow,
-    collections::{HashMap, VecDeque},
-    ffi::OsStr,
-    path::PathBuf,
-    sync::Arc,
-    time::Duration,
+    borrow::Cow, collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc, time::Duration,
 };
 
 use crate::{
@@ -44,14 +41,14 @@ use crate::{
     notification::{Notification, NotificationList},
     plugin::{
         plugin_list, ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo,
-        PluginMessage,
     },
-    scene::{Rectangle, Scene, Spline},
-    widget::{canvas::canvas, editor::NoteEditor},
+    scene::{Rectangle, Scene},
+    widget::{canvas::canvas, cosmic::cosmic_editor, editor::NoteEditor},
 };
 
 pub enum PaneType {
     TextEditor,
+    Cosmic,
     Canvas,
     FileExplorer,
 }
@@ -96,6 +93,7 @@ pub enum AppMessage {
     OpenFile(PathBuf),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action),
+    CosmicAction(cosmic_text::Action),
     OnKeyPress(Key, Modifiers),
 }
 
@@ -290,6 +288,8 @@ impl App {
                 self.note_content.perform(action);
             }
 
+            AppMessage::CosmicAction(_action) => {}
+
             AppMessage::SetDirectoryContent(content) => self.directory_content = Some(content),
 
             AppMessage::OpenedFile(result) => {
@@ -354,6 +354,11 @@ impl App {
                         Container::new(canvas(&self.scene).on_plugin_action(|a, b| {
                             AppMessage::SendPluginMessage { id: a, message: b }
                         }));
+                    canvas_renderer.into()
+                }
+
+                PaneType::Cosmic => {
+                    let canvas_renderer = Container::new(cosmic_editor().width(Length::Fill));
                     canvas_renderer.into()
                 }
 
