@@ -12,7 +12,8 @@ use iced::{
     advanced::graphics::core::SmolStr,
     border::Radius,
     keyboard::{self, key::Named, Key},
-    Border, Length, Padding, Subscription, Task, Theme,
+    widget::button,
+    Background, Border, Length, Padding, Subscription, Task, Theme,
 };
 use iced::{
     keyboard::Modifiers,
@@ -43,7 +44,9 @@ use crate::{
         plugin_list, ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo,
     },
     scene::{Rectangle, Scene},
-    widget::{canvas::canvas, cosmic::cosmic_editor, editor::NoteEditor},
+    widget::{
+        canvas::canvas, cosmic::cosmic_editor, editor::NoteEditor, file_explorer::FileExplorer,
+    },
 };
 
 pub enum PaneType {
@@ -158,7 +161,7 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
     }
 }
 
-async fn get_files(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
+async fn get_directory_content(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
     let mut files = Vec::new();
     let dir_path = dir.into();
 
@@ -166,9 +169,7 @@ async fn get_files(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
 
     while let Some(entry) = dir_entries.next_entry().await.unwrap() {
         let path = entry.path();
-        if path.is_file() {
-            files.push(path);
-        }
+        files.push(path);
     }
 
     files
@@ -214,7 +215,7 @@ impl App {
         let dir = app.opened_directory.clone();
         if let Some(dir) = dir {
             tasks.push(Task::perform(
-                get_files(dir),
+                get_directory_content(dir),
                 AppMessage::SetDirectoryContent,
             ));
         }
@@ -295,7 +296,17 @@ impl App {
             AppMessage::OpenedFile(result) => {
                 if let Ok((path, content)) = result {
                     self.note_content = Content::with_text(&content);
-                    self.current_file = Some(path);
+                    self.current_file = Some(path.clone());
+                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                        text: format!(
+                            "Opened file {}",
+                            path.file_name()
+                                .unwrap_or(OsStr::new(""))
+                                .to_str()
+                                .unwrap_or("")
+                        ),
+                        kind: notification::NotificationKind::None,
+                    })));
                 }
             }
 
@@ -310,7 +321,10 @@ impl App {
             AppMessage::OpenDirectory(path) => {
                 if path.is_dir() {
                     self.opened_directory = Some(path.clone());
-                    return Task::perform(get_files(path), AppMessage::SetDirectoryContent);
+                    return Task::perform(
+                        get_directory_content(path),
+                        AppMessage::SetDirectoryContent,
+                    );
                 }
             }
         }
@@ -326,18 +340,17 @@ impl App {
                             &self.note_content,
                             AppMessage::TextEditorAction,
                         ))
-                        .padding(32.0)
+                        .padding(Padding::from([0.0, 32.0]))
                         .width(Length::Fixed(700.0)),
                     );
                     column![
                         Container::new(
                             text(if let Some(path) = &self.current_file {
-                                String::from(
-                                    path.file_name()
-                                        .unwrap_or(OsStr::new(""))
-                                        .to_str()
-                                        .unwrap_or(""),
-                                )
+                                path.file_name()
+                                    .unwrap_or(OsStr::new(""))
+                                    .to_str()
+                                    .unwrap_or("")
+                                    .to_owned()
                             } else {
                                 String::new()
                             })
@@ -362,59 +375,51 @@ impl App {
                     canvas_renderer.into()
                 }
 
-                PaneType::FileExplorer => {
-                    let mut files: Vec<Element<_>> = Vec::new();
-                    if let Some(content) = &self.directory_content {
-                        for file in content {
-                            files.push(
-                                Button::new(text(file.file_name().unwrap().to_str().unwrap()))
-                                    .on_press(AppMessage::OpenFile(file.clone()))
-                                    .padding(0.0)
-                                    .style(|theme: &Theme, _status| ButtonStyle {
-                                        background: None,
-                                        text_color: theme.palette().text,
-                                        ..Default::default()
-                                    })
-                                    .into(),
-                            );
+                PaneType::FileExplorer => Container::new(column![
+                    FileExplorer::with_content_maybe(self.directory_content.as_deref())
+                        .file_click(AppMessage::OpenFile),
+                    vertical_space(),
+                    Container::new(
+                        Button::new(Svg::new(self.icons.settings.clone()))
+                            .padding(Padding::new(2.0))
+                            .width(Length::Fixed(28.0))
+                            .height(Length::Fixed(28.0))
+                            .on_press(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
+                            .style(|_theme, status| {
+                                match status {
+                                    button::Status::Active | button::Status::Disabled => {
+                                        button::Style {
+                                            background: None,
+                                            ..Default::default()
+                                        }
+                                    }
+
+                                    button::Status::Hovered | button::Status::Pressed => {
+                                        button::Style {
+                                            background: Some(Background::Color(Color::new(
+                                                0.75, 0.75, 0.75, 1.0,
+                                            ))),
+                                            border: Border {
+                                                color: Color::TRANSPARENT,
+                                                width: 0.0,
+                                                radius: Radius::new(4.0),
+                                            },
+                                            ..Default::default()
+                                        }
+                                    }
+                                }
+                            })
+                    )
+                    .width(Length::Fill)
+                    .padding(8.0)
+                    .style(|_theme| {
+                        container::Style {
+                            background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
+                            ..Default::default()
                         }
-                    }
-                    column![
-                        Container::new(
-                            row![
-                                Button::new(Svg::new(self.icons.settings.clone()))
-                                    .padding(Padding::new(2.0))
-                                    .width(Length::Fixed(28.0))
-                                    .height(Length::Fixed(28.0)),
-                                Button::new(Svg::new(self.icons.file_open.clone()))
-                                    .on_press(AppMessage::PickFile(self.opened_directory.clone()))
-                                    .padding(Padding::new(2.0))
-                                    .width(Length::Fixed(28.0))
-                                    .height(Length::Fixed(28.0)),
-                                Button::new(Svg::new(self.icons.plugins.clone()))
-                                    .on_press(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
-                                    .padding(Padding::new(2.0))
-                                    .width(Length::Fixed(28.0))
-                                    .height(Length::Fixed(28.0)),
-                                Button::new(Svg::new(self.icons.action.clone()))
-                                    .on_press(AppMessage::SetActiveWindow(ActiveWindow::Actions))
-                                    .padding(Padding::new(2.0))
-                                    .width(Length::Fixed(28.0))
-                                    .height(Length::Fixed(28.0)),
-                            ]
-                            .spacing(4.0)
-                            .padding(Padding::ZERO.bottom(4.0))
-                        )
-                        .style(|_| Color::new(0.95, 0.95, 0.95, 1.0).into()),
-                        if files.is_empty() {
-                            Container::new(text("Nothing"))
-                        } else {
-                            Container::new(column(files).spacing(8.0))
-                        },
-                    ]
-                    .padding(4.0)
-                    .into()
-                }
+                    }),
+                ])
+                .into(),
             };
             Container::new(content)
                 .style(|_theme| container::Style {
