@@ -5,13 +5,14 @@ use std::{
 
 use iced::{
     border::Radius,
-    widget::{button, component, row, stack, text, Button, Column, Component, Container},
+    widget::{button, component, stack, text, Button, Column, Component, Container},
     Background, Border, Color, Element, Length, Padding, Renderer, Theme,
 };
 
 pub struct FileExplorer<'a, Message> {
     pub files: Vec<&'a PathBuf>,
     pub dirs: Vec<&'a PathBuf>,
+    pub opened_file: Option<&'a Path>,
     pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
 }
 
@@ -20,6 +21,7 @@ impl<'a, Message> FileExplorer<'a, Message> {
         Self {
             files: Vec::new(),
             dirs: Vec::new(),
+            opened_file: None,
             on_click: None,
         }
     }
@@ -30,6 +32,7 @@ impl<'a, Message> FileExplorer<'a, Message> {
         Self {
             files,
             dirs,
+            opened_file: None,
             on_click: None,
         }
     }
@@ -47,6 +50,18 @@ impl<'a, Message> FileExplorer<'a, Message> {
         F: 'static + Fn(PathBuf) -> Message,
     {
         self.on_click = Some(Box::new(func));
+        self
+    }
+
+    pub fn opened_file(mut self, path: &'a Path) -> Self {
+        self.opened_file = Some(path);
+        self
+    }
+
+    pub fn opened_file_maybe(mut self, path: Option<&'a Path>) -> Self {
+        if let Some(path) = path {
+            self.opened_file = Some(path);
+        }
         self
     }
 }
@@ -77,12 +92,16 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         });
 
         let files = self.files.iter().map(|path| {
-            Container::new(file_entry(path, Message::OpenFile((*path).clone())))
-                .width(Length::Fill)
-                .into()
+            Container::new(file_entry(
+                path,
+                Message::OpenFile((*path).clone()),
+                self.opened_file.map_or(false, |x| (*path).eq(x)),
+            ))
+            .width(Length::Fill)
+            .into()
         });
 
-        Container::new(Column::from_iter(dirs.chain(files)))
+        Container::new(Column::from_iter(dirs.chain(files)).spacing(4.0))
             .padding(8.0)
             .width(Length::Fill)
             .into()
@@ -104,7 +123,7 @@ pub enum Message {
     OpenDir(PathBuf),
 }
 
-fn file_entry<'a, Msg: Clone + 'a>(path: &'a Path, click: Msg) -> Element<'a, Msg> {
+fn file_entry<'a, Msg: Clone + 'a>(path: &'a Path, click: Msg, opened: bool) -> Element<'a, Msg> {
     let title = path
         .file_name()
         .unwrap_or(OsStr::new(""))
@@ -114,21 +133,35 @@ fn file_entry<'a, Msg: Clone + 'a>(path: &'a Path, click: Msg) -> Element<'a, Ms
     Button::new(title)
         .on_press(click)
         .width(Length::Fill)
-        .style(|_theme: &Theme, status| match status {
-            button::Status::Active | button::Status::Disabled => button::Style {
-                background: None,
-                ..Default::default()
-            },
+        .style(move |_theme: &Theme, status| {
+            if !opened {
+                match status {
+                    button::Status::Active | button::Status::Disabled => button::Style {
+                        background: None,
+                        ..Default::default()
+                    },
 
-            button::Status::Hovered | button::Status::Pressed => button::Style {
-                background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
-                border: Border {
-                    color: Color::TRANSPARENT,
-                    width: 0.0,
-                    radius: Radius::new(4.0),
-                },
-                ..Default::default()
-            },
+                    button::Status::Hovered | button::Status::Pressed => button::Style {
+                        background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
+                        border: Border {
+                            color: Color::TRANSPARENT,
+                            width: 0.0,
+                            radius: Radius::new(4.0),
+                        },
+                        ..Default::default()
+                    },
+                }
+            } else {
+                button::Style {
+                    background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
+                    border: Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Radius::new(4.0),
+                    },
+                    ..Default::default()
+                }
+            }
         })
         .padding(Padding::new(4.0).left(24.0))
         .into()
