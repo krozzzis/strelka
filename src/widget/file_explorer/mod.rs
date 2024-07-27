@@ -5,9 +5,13 @@ use std::{
 
 use iced::{
     border::Radius,
-    widget::{button, component, stack, text, Button, Column, Component, Container},
-    Background, Border, Color, Element, Length, Padding, Renderer, Theme,
+    widget::{
+        button, column, component, container, stack, text, Button, Column, Component, Container,
+        Space,
+    },
+    Background, Border, Color, Element, Font, Length, Padding, Renderer, Shadow, Theme, Vector,
 };
+use iced_aw::{nerd::icon_to_char, widgets::ContextMenu, Nerd};
 
 pub struct FileExplorer<'a, Message> {
     pub files: Vec<&'a PathBuf>,
@@ -80,6 +84,8 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
                     return Some(func(path));
                 }
             }
+
+            Message::NewFile => {}
         }
         None
     }
@@ -92,19 +98,64 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         });
 
         let files = self.files.iter().map(|path| {
-            Container::new(file_entry(
+            let underlay: Element<_> = Container::new(file_entry(
                 path,
                 Message::OpenFile((*path).clone()),
                 self.opened_file.map_or(false, |x| (*path).eq(x)),
             ))
             .width(Length::Fill)
+            .into();
+
+            let menu = ContextMenu::new(underlay, move || {
+                Container::new(column(vec![iced::widget::button("Open")
+                    .style(|_, _| button::Style {
+                        background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
+                        border: Border {
+                            color: Color::TRANSPARENT,
+                            width: 0.0,
+                            radius: Radius::new(4.0),
+                        },
+                        ..Default::default()
+                    })
+                    .width(Length::Fill)
+                    .on_press(Message::OpenFile((*path).clone()))
+                    .into()]))
+                .padding(8.0)
+                .width(Length::Fixed(200.0))
+                .style(|_: &Theme| container::Style {
+                    background: Some(Background::Color(Color::new(0.9, 0.9, 0.9, 1.0))),
+                    border: Border {
+                        color: Color::new(0.7, 0.7, 0.7, 1.0),
+                        width: 1.0,
+                        radius: Radius::new(4.0),
+                    },
+                    shadow: Shadow {
+                        color: Color::BLACK,
+                        offset: Vector::new(4.0, 4.0),
+                        blur_radius: 12.0,
+                    },
+                    ..Default::default()
+                })
+                .into()
+            });
+
+            menu.into()
+        });
+
+        let items = Container::new(Column::from_iter(dirs.chain(files)).spacing(4.0)).padding(8.0);
+
+        let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
+            .width(Length::Fill)
+            .height(Length::Fill);
+
+        let menu = ContextMenu::new(underlay, || {
+            column(vec![iced::widget::button("Choice 1")
+                .on_press(Message::NewFile)
+                .into()])
             .into()
         });
 
-        Container::new(Column::from_iter(dirs.chain(files)).spacing(4.0))
-            .padding(8.0)
-            .width(Length::Fill)
-            .into()
+        stack![menu, items].into()
     }
 }
 
@@ -121,6 +172,7 @@ where
 pub enum Message {
     OpenFile(PathBuf),
     OpenDir(PathBuf),
+    NewFile,
 }
 
 fn file_entry<'a, Msg: Clone + 'a>(path: &'a Path, click: Msg, opened: bool) -> Element<'a, Msg> {
@@ -196,10 +248,12 @@ fn dir_entry<'a, Msg: Clone + 'a>(path: &'a Path, click: Msg) -> Element<'a, Msg
             })
             .padding(Padding::new(4.0).left(24.0))
             .into(),
-        Container::new(text(">"))
-            .width(Length::Fixed(8.0))
-            .padding(Padding::from([4.0, 8.0]))
-            .into(),
+        Container::new(
+            text(icon_to_char(Nerd::CaretRight)).font(Font::with_name("Symbols Nerd Font")),
+        )
+        .width(Length::Fixed(8.0))
+        .padding(Padding::from([4.0, 8.0]))
+        .into(),
     ])
     .into()
 }
