@@ -1,17 +1,13 @@
-use std::{
-    ffi::OsStr,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use iced::{
     border::Radius,
-    widget::{
-        button, column, component, container, stack, text, Button, Column, Component, Container,
-        Space,
-    },
-    Background, Border, Color, Element, Font, Length, Padding, Renderer, Shadow, Theme, Vector,
+    widget::{column, component, container, stack, Component, Container, Space},
+    Border, Color, Element, Length, Renderer, Shadow, Theme, Vector,
 };
-use iced_aw::{nerd::icon_to_char, widgets::ContextMenu, Nerd};
+use iced_aw::widgets::ContextMenu;
+
+use crate::widget::list::{list, ListItem};
 
 pub struct FileExplorer<'a, Message> {
     pub files: Vec<&'a PathBuf>,
@@ -92,66 +88,45 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme, Renderer> {
         let dirs = self.dirs.iter().map(|path| {
-            Container::new(dir_entry(path, Message::OpenDir((*path).clone())))
-                .width(Length::Fill)
-                .into()
+            ListItem::new(get_directory_name(path).unwrap_or(String::from("NaN")))
+                .click(Message::OpenDir((*path).clone()))
         });
 
         let files = self.files.iter().map(|path| {
-            let underlay: Element<_> = Container::new(file_entry(
-                path,
-                Message::OpenFile((*path).clone()),
-                self.opened_file.map_or(false, |x| (*path).eq(x)),
-            ))
-            .width(Length::Fill)
-            .into();
-
-            let menu = ContextMenu::new(underlay, move || {
-                Container::new(column(vec![iced::widget::button("Open")
-                    .style(|_, _| button::Style {
-                        background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
-                        border: Border {
-                            color: Color::TRANSPARENT,
-                            width: 0.0,
-                            radius: Radius::new(4.0),
-                        },
-                        ..Default::default()
-                    })
-                    .width(Length::Fill)
-                    .on_press(Message::OpenFile((*path).clone()))
-                    .into()]))
-                .padding(8.0)
-                .width(Length::Fixed(200.0))
-                .style(|_: &Theme| container::Style {
-                    background: Some(Background::Color(Color::new(0.9, 0.9, 0.9, 1.0))),
-                    border: Border {
-                        color: Color::new(0.7, 0.7, 0.7, 1.0),
-                        width: 1.0,
-                        radius: Radius::new(4.0),
-                    },
-                    shadow: Shadow {
-                        color: Color::BLACK,
-                        offset: Vector::new(4.0, 4.0),
-                        blur_radius: 12.0,
-                    },
-                    ..Default::default()
-                })
-                .into()
-            });
-
-            menu.into()
+            ListItem::new(get_file_name(path).unwrap_or(String::from("NaN")))
+                .click(Message::OpenFile((*path).clone()))
         });
 
-        let items = Container::new(Column::from_iter(dirs.chain(files)).spacing(4.0)).padding(8.0);
+        let items = list(
+            dirs.chain(files)
+                .map(|x| x.into())
+                .collect::<Vec<Element<_>>>(),
+        );
 
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
             .height(Length::Fill);
 
         let menu = ContextMenu::new(underlay, || {
-            column(vec![iced::widget::button("Choice 1")
-                .on_press(Message::NewFile)
-                .into()])
+            container(list(vec![ListItem::new("New file")
+                .click(Message::NewFile)
+                .into()]))
+            .padding(4.0)
+            .width(Length::Fixed(200.0))
+            .style(|_| container::Style {
+                background: Some(Color::new(0.95, 0.95, 0.95, 1.0).into()),
+                border: Border {
+                    color: Color::new(0.7, 0.7, 0.7, 1.0),
+                    width: 1.0,
+                    radius: Radius::new(4.0),
+                },
+                shadow: Shadow {
+                    color: Color::BLACK,
+                    offset: Vector::new(4.0, 4.0),
+                    blur_radius: 4.0,
+                },
+                ..Default::default()
+            })
             .into()
         });
 
@@ -175,85 +150,15 @@ pub enum Message {
     NewFile,
 }
 
-fn file_entry<'a, Msg: Clone + 'a>(path: &'a Path, click: Msg, opened: bool) -> Element<'a, Msg> {
-    let title = path
-        .file_name()
-        .unwrap_or(OsStr::new(""))
-        .to_str()
-        .unwrap_or("");
-
-    Button::new(title)
-        .on_press(click)
-        .width(Length::Fill)
-        .style(move |_theme: &Theme, status| {
-            if !opened {
-                match status {
-                    button::Status::Active | button::Status::Disabled => button::Style {
-                        background: None,
-                        ..Default::default()
-                    },
-
-                    button::Status::Hovered | button::Status::Pressed => button::Style {
-                        background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
-                        border: Border {
-                            color: Color::TRANSPARENT,
-                            width: 0.0,
-                            radius: Radius::new(4.0),
-                        },
-                        ..Default::default()
-                    },
-                }
-            } else {
-                button::Style {
-                    background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
-                    border: Border {
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: Radius::new(4.0),
-                    },
-                    ..Default::default()
-                }
-            }
-        })
-        .padding(Padding::new(4.0).left(24.0))
-        .into()
+fn get_directory_name(path: &Path) -> Option<String> {
+    path.parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|os_str| os_str.to_str())
+        .map(String::from)
 }
 
-fn dir_entry<'a, Msg: Clone + 'a>(path: &'a Path, click: Msg) -> Element<'a, Msg> {
-    let title = path
-        .file_name()
-        .unwrap_or(OsStr::new(""))
-        .to_str()
-        .unwrap_or("");
-
-    stack([
-        Button::new(title)
-            .on_press(click)
-            .width(Length::Fill)
-            .style(|_theme: &Theme, status| match status {
-                button::Status::Active | button::Status::Disabled => button::Style {
-                    background: None,
-                    ..Default::default()
-                },
-
-                button::Status::Hovered | button::Status::Pressed => button::Style {
-                    background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
-                    border: Border {
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: Radius::new(4.0),
-                    },
-                    ..Default::default()
-                },
-            })
-            .padding(Padding::new(4.0).left(24.0))
-            .into(),
-        Container::new(
-            text(icon_to_char(Nerd::CaretRight)).font(Font::with_name("Symbols Nerd Font")),
-        )
-        .width(Length::Fixed(8.0))
-        .padding(Padding::from([4.0, 8.0]))
-        .into(),
-    ])
-    .into()
+fn get_file_name(path: &Path) -> Option<String> {
+    path.file_name()
+        .and_then(|os_str| os_str.to_str())
+        .map(String::from)
 }

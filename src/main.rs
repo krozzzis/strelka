@@ -376,10 +376,12 @@ impl App {
                 }
 
                 PaneType::FileExplorer => Container::new(column![
-                    FileExplorer::with_content_maybe(self.directory_content.as_deref())
-                        .opened_file_maybe(self.current_file.as_deref())
-                        .file_click(AppMessage::OpenFile),
-                    vertical_space(),
+                    Container::new(
+                        FileExplorer::with_content_maybe(self.directory_content.as_deref())
+                            .opened_file_maybe(self.current_file.as_deref())
+                            .file_click(AppMessage::OpenFile)
+                    )
+                    .height(Length::Fill),
                     Container::new(
                         Button::new(Svg::new(self.icons.settings.clone()))
                             .padding(Padding::new(2.0))
