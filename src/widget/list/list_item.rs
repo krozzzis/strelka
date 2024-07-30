@@ -1,19 +1,22 @@
 use iced::{
     border::Radius,
     widget::{button, component, text, Button, Component},
-    Background, Border, Color, Element, Length, Padding, Renderer, Theme,
+    Border, Color, Element, Length, Padding,
 };
 
-pub struct ListItem<Message>
+use crate::theme::Theme;
+
+pub struct ListItem<'a, Message>
 where
     Message: Clone,
 {
     title: String,
     tooltip: Option<String>,
     on_click: Option<Message>,
+    theme: Option<&'a Theme>,
 }
 
-impl<Message> ListItem<Message>
+impl<'a, Message> ListItem<'a, Message>
 where
     Message: Clone,
 {
@@ -22,6 +25,7 @@ where
             title: title.into(),
             tooltip: None,
             on_click: None,
+            theme: None,
         }
     }
 
@@ -39,9 +43,14 @@ where
         self.on_click = Some(click);
         self
     }
+
+    pub fn theme(mut self, theme: Option<&'a Theme>) -> Self {
+        self.theme = theme;
+        self
+    }
 }
 
-impl<Message> Component<Message> for ListItem<Message>
+impl<'a, Message> Component<Message> for ListItem<'a, Message>
 where
     Message: Clone,
 {
@@ -53,36 +62,42 @@ where
         Some(event)
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme, Renderer> {
-        Button::new(text(self.title.clone()))
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
+        Button::new(text(self.title.clone()).size(14.0))
             .on_press_maybe(self.on_click.clone())
             .width(Length::Fill)
             .padding(Padding::new(4.0).left(24.0))
-            .style(move |_theme: &Theme, status| match status {
-                button::Status::Active | button::Status::Disabled => button::Style {
-                    background: None,
-                    ..Default::default()
-                },
+            .style(move |_, status| {
+                let theme = self.theme.cloned().unwrap_or(Theme::default());
 
-                button::Status::Hovered | button::Status::Pressed => button::Style {
-                    background: Some(Color::new(0.85, 0.85, 0.85, 1.0).into()),
-                    border: Border {
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: Radius::new(4.0),
+                match status {
+                    button::Status::Active | button::Status::Disabled => button::Style {
+                        background: None,
+                        text_color: theme.text,
+                        ..Default::default()
                     },
-                    ..Default::default()
-                },
+
+                    button::Status::Hovered | button::Status::Pressed => button::Style {
+                        background: Some(theme.selected.into()),
+                        text_color: theme.text,
+                        border: Border {
+                            color: Color::TRANSPARENT,
+                            width: 0.0,
+                            radius: Radius::new(4.0),
+                        },
+                        ..Default::default()
+                    },
+                }
             })
             .into()
     }
 }
 
-impl<'a, Message> From<ListItem<Message>> for Element<'a, Message, Theme, Renderer>
+impl<'a, Message> From<ListItem<'a, Message>> for Element<'a, Message>
 where
     Message: Clone + 'a,
 {
-    fn from(value: ListItem<Message>) -> Self {
+    fn from(value: ListItem<'a, Message>) -> Self {
         component(value)
     }
 }

@@ -1,18 +1,19 @@
 use iced::{
     border::Radius,
     widget::{
-        center, component,
+        center, component, container,
         text_editor::{self, Content},
         Component, Container, TextEditor,
     },
-    Background, Border, Color, Element, Length, Pixels, Theme,
+    Background, Border, Color, Element, Length, Pixels,
 };
 
-use crate::styles;
+use crate::{styles, theme::Theme};
 
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {
     content: &'a Content,
+    theme: Option<&'a Theme>,
     on_action: Box<dyn Fn(text_editor::Action) -> Message>,
 }
 
@@ -23,8 +24,14 @@ impl<'a, Message> NoteEditor<'a, Message> {
     {
         Self {
             content,
+            theme: None,
             on_action: Box::new(on_action),
         }
+    }
+
+    pub fn theme(mut self, theme: &'a Theme) -> Self {
+        self.theme = Some(theme);
+        self
     }
 }
 
@@ -38,6 +45,7 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
+        let theme = self.theme.cloned().unwrap_or(Theme::default());
         let editor = Container::new(center(
             Container::new(
                 TextEditor::new(self.content)
@@ -45,22 +53,38 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
                     .height(Length::Fill)
                     .font(styles::INTER_REGULAR_FONT)
                     .size(16.0)
-                    .style(|theme: &Theme, _status| text_editor::Style {
+                    .style(move |_, _status| text_editor::Style {
                         border: Border {
                             color: Color::TRANSPARENT,
                             width: 0.0,
                             radius: Radius::new(0.0),
                         },
-                        background: Background::Color(theme.palette().background),
-                        icon: theme.palette().text,
-                        placeholder: theme.palette().primary,
-                        value: theme.palette().danger,
-                        selection: theme.palette().primary,
+                        background: theme.background.into(),
+                        icon: theme.selected,
+                        placeholder: theme.subtext,
+                        value: theme.selected,
+                        selection: theme.primary,
                     }),
             )
             .padding(32.0)
-            .max_width(Pixels::from(700.0)),
-        ));
+            .max_width(Pixels::from(700.0))
+            .style(move |_| {
+                let theme = self.theme.cloned().unwrap_or(Theme::default());
+                container::Style {
+                    background: Some(theme.background.into()),
+                    text_color: Some(theme.text),
+                    ..Default::default()
+                }
+            }),
+        ))
+        .style(move |_| {
+            let theme = self.theme.cloned().unwrap_or(Theme::default());
+            container::Style {
+                background: Some(theme.background.into()),
+                text_color: Some(theme.text),
+                ..Default::default()
+            }
+        });
         editor.into()
     }
 }

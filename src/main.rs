@@ -6,6 +6,7 @@ mod notification;
 mod plugin;
 mod scene;
 mod styles;
+mod theme;
 mod widget;
 
 use iced::{
@@ -13,12 +14,11 @@ use iced::{
     border::Radius,
     keyboard::{self, key::Named, Key},
     widget::button,
-    Background, Border, Length, Padding, Subscription, Task, Theme,
+    Background, Border, Length, Padding, Subscription, Task,
 };
 use iced::{
     keyboard::Modifiers,
     widget::{
-        button::Style as ButtonStyle,
         center, column,
         container::{self, Style},
         horizontal_space, mouse_area, opaque,
@@ -44,6 +44,7 @@ use crate::{
         plugin_list, ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo,
     },
     scene::{Rectangle, Scene},
+    theme::Theme,
     widget::{
         canvas::canvas, cosmic::cosmic_editor, editor::NoteEditor, file_explorer::FileExplorer,
     },
@@ -66,6 +67,8 @@ pub enum ActiveWindow {
 pub struct App {
     debug: bool,
     scene: Scene,
+    theme: Theme,
+    themes: HashMap<String, Theme>,
     window: ActiveWindow,
     grid_state: pane_grid::State<PaneType>,
     icons: IconStorage,
@@ -90,6 +93,7 @@ pub enum AppMessage {
     RemoveNotification(usize),
     SetActiveWindow(ActiveWindow),
     SetDebug(bool),
+    ChangeTheme(String),
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
@@ -126,18 +130,33 @@ impl Default for App {
             AppMessage::PickFile(None),
         );
 
-        // Ctrl-p plugins list
+        // Ctrl-, plugins list
         hotkeys.insert(
             Hotkey {
-                key: Key::Character(SmolStr::new_inline("p")),
+                key: Key::Character(SmolStr::new_inline(",")),
                 modifiers: Modifiers::CTRL,
             },
             AppMessage::SetActiveWindow(ActiveWindow::Plugins),
         );
 
+        // Ctrl-p set dark theme
+        hotkeys.insert(
+            Hotkey {
+                key: Key::Character(SmolStr::new_inline("p")),
+                modifiers: Modifiers::CTRL,
+            },
+            AppMessage::ChangeTheme("dark".to_owned()),
+        );
+
+        let mut themes = HashMap::new();
+        themes.insert("light".to_owned(), Theme::default());
+        themes.insert("dark".to_owned(), Theme::dark());
+
         Self {
             scene,
             window: ActiveWindow::None,
+            theme: Theme::default(),
+            themes,
             plugin_host,
             grid_state: pane_grid::State::with_configuration(Configuration::Split {
                 axis: Axis::Vertical,
@@ -229,6 +248,16 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
+            AppMessage::ChangeTheme(name) => {
+                if let Some(theme) = self.themes.get(&name) {
+                    self.theme = theme.clone();
+                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                        text: format!("Set theme: {}", name),
+                        kind: notification::NotificationKind::None,
+                    })));
+                }
+            }
+
             AppMessage::OnKeyPress(key, modifiers) => {
                 if let Some(message) = self.on_key_press(key, modifiers) {
                     return Task::done(message);
@@ -339,11 +368,11 @@ impl App {
                         Container::new(NoteEditor::new(
                             &self.note_content,
                             AppMessage::TextEditorAction,
-                        ))
+                        ).theme(&self.theme))
                         .padding(Padding::from([0.0, 32.0]))
                         .width(Length::Fixed(700.0)),
                     );
-                    column![
+                    Container::new(column![
                         Container::new(
                             text(if let Some(path) = &self.current_file {
                                 path.file_name()
@@ -356,9 +385,21 @@ impl App {
                             })
                             .size(20.0)
                         )
-                        .padding(8.0),
+                        .padding(8.0)
+                        .style(move |_| {
+                            container::Style {
+                                background: Some(self.theme.background.into()),
+                                text_color: Some(self.theme.text),
+                                ..Default::default()
+                            }
+                        }),
                         editor,
-                    ]
+                    ])
+                    .style(move |_| container::Style {
+                        background: Some(self.theme.background.into()),
+                        text_color: Some(self.theme.text),
+                        ..Default::default()
+                    })
                     .into()
                 }
 
@@ -380,6 +421,7 @@ impl App {
                         FileExplorer::with_content_maybe(self.directory_content.as_deref())
                             .opened_file_maybe(self.current_file.as_deref())
                             .file_click(AppMessage::OpenFile)
+                            .theme(&self.theme)
                     )
                     .height(Length::Fill),
                     Container::new(
@@ -388,7 +430,7 @@ impl App {
                             .width(Length::Fixed(28.0))
                             .height(Length::Fixed(28.0))
                             .on_press(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
-                            .style(|_theme, status| {
+                            .style(move |_, status| {
                                 match status {
                                     button::Status::Active | button::Status::Disabled => {
                                         button::Style {
@@ -399,9 +441,7 @@ impl App {
 
                                     button::Status::Hovered | button::Status::Pressed => {
                                         button::Style {
-                                            background: Some(Background::Color(Color::new(
-                                                0.75, 0.75, 0.75, 1.0,
-                                            ))),
+                                            background: Some(self.theme.selected.into()),
                                             border: Border {
                                                 color: Color::TRANSPARENT,
                                                 width: 0.0,
@@ -415,19 +455,24 @@ impl App {
                     )
                     .width(Length::Fill)
                     .padding(8.0)
-                    .style(|_theme| {
+                    .style(move |_| {
                         container::Style {
-                            background: Some(Background::Color(Color::new(0.85, 0.85, 0.85, 1.0))),
+                            background: Some(self.theme.background2.into()),
                             ..Default::default()
                         }
                     }),
                 ])
+                .style(move |_| container::Style {
+                    background: Some(self.theme.background.into()),
+                    text_color: Some(self.theme.text),
+                    ..Default::default()
+                })
                 .into(),
             };
             Container::new(content)
-                .style(|_theme| container::Style {
+                .style(move |_| container::Style {
                     border: Border {
-                        color: Color::new(0.85, 0.85, 0.85, 1.0),
+                        color: self.theme.border_color,
                         width: 1.0,
                         radius: Radius::new(0.0),
                     },
@@ -444,9 +489,12 @@ impl App {
                 horizontal_space(),
                 column![
                     vertical_space(),
-                    Container::new(notification_list(&self.notifications.to_vec()))
-                        .padding(16.0)
-                        .width(Length::Shrink)
+                    Container::new(notification_list(
+                        &self.notifications.to_vec(),
+                        Some(&self.theme)
+                    ))
+                    .padding(16.0)
+                    .width(Length::Shrink)
                 ],
             ],
         ];
@@ -553,7 +601,6 @@ fn main() -> iced::Result {
             ..Settings::default()
         })
         .font(Cow::Borrowed(styles::INTER_REGULAR_FONT_BYTES))
-        .theme(|_| Theme::CatppuccinLatte)
         .centered()
         .run_with(App::new)
 }

@@ -2,18 +2,23 @@ use std::path::{Path, PathBuf};
 
 use iced::{
     border::Radius,
+    overlay::menu::Catalog,
     widget::{column, component, container, stack, Component, Container, Space},
-    Border, Color, Element, Length, Renderer, Shadow, Theme, Vector,
+    Border, Color, Element, Length, Renderer, Shadow, Vector,
 };
 use iced_aw::widgets::ContextMenu;
 
-use crate::widget::list::{list, ListItem};
+use crate::{
+    theme::Theme,
+    widget::list::{list, ListItem},
+};
 
 pub struct FileExplorer<'a, Message> {
     pub files: Vec<&'a PathBuf>,
     pub dirs: Vec<&'a PathBuf>,
     pub opened_file: Option<&'a Path>,
     pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
+    pub theme: Option<&'a Theme>,
 }
 
 impl<'a, Message> FileExplorer<'a, Message> {
@@ -23,6 +28,7 @@ impl<'a, Message> FileExplorer<'a, Message> {
             dirs: Vec::new(),
             opened_file: None,
             on_click: None,
+            theme: None,
         }
     }
 
@@ -32,8 +38,7 @@ impl<'a, Message> FileExplorer<'a, Message> {
         Self {
             files,
             dirs,
-            opened_file: None,
-            on_click: None,
+            ..Self::new()
         }
     }
 
@@ -64,6 +69,11 @@ impl<'a, Message> FileExplorer<'a, Message> {
         }
         self
     }
+
+    pub fn theme(mut self, theme: &'a Theme) -> Self {
+        self.theme = Some(theme);
+        self
+    }
 }
 
 impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
@@ -86,46 +96,53 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         None
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme, Renderer> {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
         let dirs = self.dirs.iter().map(|path| {
             ListItem::new(get_directory_name(path).unwrap_or(String::from("NaN")))
                 .click(Message::OpenDir((*path).clone()))
+                .theme(self.theme)
         });
 
         let files = self.files.iter().map(|path| {
             ListItem::new(get_file_name(path).unwrap_or(String::from("NaN")))
                 .click(Message::OpenFile((*path).clone()))
+                .theme(self.theme)
         });
 
         let items = list(
             dirs.chain(files)
                 .map(|x| x.into())
                 .collect::<Vec<Element<_>>>(),
+            self.theme,
         );
 
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
             .height(Length::Fill);
 
-        let menu = ContextMenu::new(underlay, || {
-            container(list(vec![ListItem::new("New file")
-                .click(Message::NewFile)
-                .into()]))
+        let menu = ContextMenu::new(underlay, move || {
+            container(list(
+                vec![ListItem::new("New file").click(Message::NewFile).into()],
+                self.theme,
+            ))
             .padding(4.0)
             .width(Length::Fixed(200.0))
-            .style(|_| container::Style {
-                background: Some(Color::new(0.95, 0.95, 0.95, 1.0).into()),
-                border: Border {
-                    color: Color::new(0.7, 0.7, 0.7, 1.0),
-                    width: 1.0,
-                    radius: Radius::new(4.0),
-                },
-                shadow: Shadow {
-                    color: Color::BLACK,
-                    offset: Vector::new(4.0, 4.0),
-                    blur_radius: 4.0,
-                },
-                ..Default::default()
+            .style(move |_| {
+                let theme = self.theme.cloned().unwrap_or(Theme::default());
+                container::Style {
+                    background: Some(theme.background.into()),
+                    border: Border {
+                        color: theme.border_color,
+                        width: 1.0,
+                        radius: Radius::new(theme.element_radius * 2.0),
+                    },
+                    shadow: Shadow {
+                        color: Color::BLACK,
+                        offset: Vector::new(2.0, 2.0),
+                        blur_radius: 12.0,
+                    },
+                    ..Default::default()
+                }
             })
             .into()
         });
