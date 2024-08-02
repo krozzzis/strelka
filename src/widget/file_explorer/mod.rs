@@ -1,11 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use iced::{
-    border::Radius,
-    overlay::menu::Catalog,
-    widget::{column, component, container, stack, Component, Container, Space},
-    Border, Color, Element, Length, Renderer, Shadow, Vector,
-};
+use iced::widget::{component, container, stack, Component, Container, Space};
+use iced::{border::Radius, Border, Color, Element, Length, Shadow, Vector};
 use iced_aw::widgets::ContextMenu;
 
 use crate::{

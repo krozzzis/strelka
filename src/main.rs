@@ -46,7 +46,10 @@ use crate::{
     scene::{Rectangle, Scene},
     theme::Theme,
     widget::{
-        canvas::canvas, cosmic::cosmic_editor, file_explorer::FileExplorer, pane::text_editor_pane,
+        canvas::canvas,
+        cosmic::cosmic_editor,
+        file_explorer::FileExplorer,
+        pane::{file_explorer_pane, text_editor_pane},
     },
 };
 
@@ -382,60 +385,15 @@ impl App {
                     canvas_renderer.into()
                 }
 
-                PaneType::FileExplorer => Container::new(column![
-                    Container::new(
-                        FileExplorer::with_content_maybe(self.directory_content.as_deref())
-                            .opened_file_maybe(self.current_file.as_deref())
-                            .file_click(AppMessage::OpenFile)
-                            .theme(&self.theme)
-                    )
-                    .height(Length::Fill),
-                    Container::new(
-                        Button::new(Svg::new(self.icons.settings.clone()))
-                            .padding(Padding::new(2.0))
-                            .width(Length::Fixed(28.0))
-                            .height(Length::Fixed(28.0))
-                            .on_press(AppMessage::SetActiveWindow(ActiveWindow::Plugins))
-                            .style(move |_, status| {
-                                match status {
-                                    button::Status::Active | button::Status::Disabled => {
-                                        button::Style {
-                                            background: None,
-                                            ..Default::default()
-                                        }
-                                    }
-
-                                    button::Status::Hovered | button::Status::Pressed => {
-                                        button::Style {
-                                            background: Some(self.theme.selected.into()),
-                                            border: Border {
-                                                color: Color::TRANSPARENT,
-                                                width: 0.0,
-                                                radius: Radius::new(4.0),
-                                            },
-                                            ..Default::default()
-                                        }
-                                    }
-                                }
-                            })
-                    )
-                    .width(Length::Fill)
-                    .padding(8.0)
-                    .style(move |_| {
-                        container::Style {
-                            background: Some(self.theme.background2.into()),
-                            ..Default::default()
-                        }
-                    }),
-                ])
-                .style(move |_| container::Style {
-                    background: Some(self.theme.background.into()),
-                    text_color: Some(self.theme.text),
-                    ..Default::default()
-                })
-                .into(),
+                PaneType::FileExplorer => file_explorer_pane(
+                    self.directory_content.as_ref(),
+                    AppMessage::OpenFile,
+                    &self.theme,
+                ),
             };
+
             Container::new(content)
+                .padding(1.0)
                 .style(move |_| container::Style {
                     border: Border {
                         color: self.theme.border_color,
