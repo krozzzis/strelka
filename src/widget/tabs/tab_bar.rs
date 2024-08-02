@@ -1,20 +1,25 @@
+use std::borrow::Cow;
+use std::sync::Arc;
+
 use iced::{
-    widget::{button, container, row, Container},
+    widget::{container, row, Container},
     Element, Length, Padding,
 };
 
-use crate::{
-    theme::Theme,
-    widget::tabs::{tab, Tab},
-};
+use crate::{theme::Theme, widget::tabs::Tab};
 
 pub fn tab_bar<'a, Message: 'a + Clone>(
-    labels: Box<[String]>,
+    labels: Vec<(Arc<String>, Message)>,
     theme: &'a Theme,
 ) -> Element<'a, Message> {
     let tabs: Vec<Element<'_, Message>> = labels
         .into_iter()
-        .map(|label| Tab::new(label.clone()).theme(theme).into())
+        .map(|(label, msg)| {
+            Tab::new(Cow::Owned(label.as_ref().clone()))
+                .theme(theme)
+                .on_click(msg)
+                .into()
+        })
         .collect();
 
     Container::new(row(tabs).spacing(4.0))

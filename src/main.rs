@@ -31,6 +31,7 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     ffi::OsStr,
+    ops::Deref,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
@@ -43,26 +44,26 @@ use crate::{
     widget::pane::{file_explorer_pane, text_editor_pane},
 };
 
+pub type DocumentId = usize;
+
+#[derive(Debug, Clone)]
 pub enum PaneType {
-    TextEditor,
-    Cosmic,
-    Canvas,
-    FileExplorer,
+    TextEditor(DocumentId),
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum ActiveWindow {
-    None,
-    Plugins,
-    Actions,
+pub struct DocumentHandler {
+    pub text_content: Content,
+    pub path: PathBuf,
+    pub filename: Arc<String>,
 }
 
 pub struct App {
     theme: Theme,
     themes: HashMap<String, Theme>,
-    note_content: Content,
+    documents: HashMap<DocumentId, DocumentHandler>,
+    next_doc_id: DocumentId,
+    opened_doc: DocumentId,
     opened_directory: Option<PathBuf>,
-    current_file: Option<PathBuf>,
     directory_content: Option<Vec<PathBuf>>,
     plugin_host: PluginHost<AppMessage>,
     hotkeys: HashMap<Hotkey, AppMessage>,
@@ -83,9 +84,10 @@ pub enum AppMessage {
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
+    FocusDocument(DocumentId),
     OpenFile(PathBuf),
     OpenDirectory(PathBuf),
-    TextEditorAction(text_editor::Action),
+    TextEditorAction(text_editor::Action, DocumentId),
     CosmicAction(cosmic_text::Action),
     OnKeyPress(Key, Modifiers),
 }
@@ -130,14 +132,11 @@ impl Default for App {
         Self {
             theme: Theme::default(),
             themes,
+            documents: HashMap::new(),
+            next_doc_id: 1,
+            opened_doc: 0,
             plugin_host,
-            note_content: Content::with_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
-
-Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
-
-Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."),
             directory_content: None,
-            current_file: None,
             opened_directory: Some(PathBuf::from("./content/")),
             notifications: NotificationList::new(),
             hotkeys,
@@ -186,11 +185,13 @@ async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> 
     }
 }
 
-fn get_file_name(path: &Path) -> String {
-    path.file_name()
-        .and_then(|os_str| os_str.to_str())
-        .unwrap_or("")
-        .to_owned()
+fn get_file_name(path: &Path) -> Arc<String> {
+    Arc::new(
+        path.file_name()
+            .and_then(|os_str| os_str.to_str())
+            .unwrap_or("")
+            .to_owned(),
+    )
 }
 
 impl App {
@@ -220,6 +221,19 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
+            AppMessage::FocusDocument(id) => {
+                if id < self.next_doc_id {
+                    self.opened_doc = id;
+
+                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                        text: format!(
+                            "Focused document {id}",
+                        ),
+                        kind: notification::NotificationKind::None,
+                    })));
+                }
+            }
+
             AppMessage::ChangeTheme(name) => {
                 if let Some(theme) = self.themes.get(&name) {
                     self.theme = theme.clone();
@@ -278,8 +292,10 @@ impl App {
                 }
             }
 
-            AppMessage::TextEditorAction(action) => {
-                self.note_content.perform(action);
+            AppMessage::TextEditorAction(action, document) => {
+                if let Some(handler) = self.documents.get_mut(&document) {
+                    handler.text_content.perform(action);
+                }
             }
 
             AppMessage::CosmicAction(_action) => {}
@@ -288,18 +304,29 @@ impl App {
 
             AppMessage::OpenedFile(result) => {
                 if let Ok((path, content)) = result {
-                    self.note_content = Content::with_text(&content);
-                    self.current_file = Some(path.clone());
-                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                    let handler = DocumentHandler {
+                        text_content: Content::with_text(&content),
+                        path: path.clone(),
+                        filename: get_file_name(&path),
+                    };
+
+                    self.documents.insert(self.next_doc_id, handler);
+                    let focus_doc = Task::done(AppMessage::FocusDocument(self.next_doc_id));
+                    let notificaton = Task::done(AppMessage::SendNotification(Arc::new(Notification {
                         text: format!(
-                            "Opened file {}",
+                            "Opened file {} | ID: {}",
                             path.file_name()
                                 .unwrap_or(OsStr::new(""))
                                 .to_str()
-                                .unwrap_or("")
+                                .unwrap_or(""),
+                            self.next_doc_id,
                         ),
                         kind: notification::NotificationKind::None,
                     })));
+
+                    self.next_doc_id += 1;
+
+                    return Task::batch([focus_doc, notificaton])
                 }
             }
 
@@ -325,15 +352,11 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage> {
-        let current_file = self
-            .current_file
-            .clone()
-            .map_or("New file".to_owned(), move |path| get_file_name(&path));
-
         let editor = text_editor_pane(
-            &self.note_content,
+            &self.documents,
+            self.opened_doc,
             AppMessage::TextEditorAction,
-            current_file.clone(),
+            AppMessage::FocusDocument,
             &self.theme,
         );
 

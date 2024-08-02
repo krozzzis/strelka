@@ -1,21 +1,23 @@
+use std::{borrow::Cow, sync::Arc};
+
 use iced::{
     border::Radius,
-    widget::{button, component, text, Component},
+    widget::{button, component, text::{self, Fragment, IntoFragment, Span}, Component, Text},
     Border, Element,
 };
 
 use crate::theme::Theme;
 
 pub struct Tab<'a, Message> {
-    pub label: String,
+    pub label: Cow<'a, str>,
     pub theme: Option<&'a Theme>,
     pub on_click: Option<Message>,
 }
 
 impl<'a, Message> Tab<'a, Message> {
-    pub fn new(label: impl Into<String>) -> Self {
+    pub fn new(label: Cow<'a, str>) -> Self {
         Self {
-            label: label.into(),
+            label,
             theme: None,
             on_click: None,
         }
@@ -42,7 +44,7 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        button(text(self.label.clone()))
+        button(Text::new(self.label.clone()))
             .on_press_maybe(self.on_click.clone())
             .style(move |_, status| {
                 let bg_normal = self
