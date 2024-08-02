@@ -2,7 +2,11 @@ use std::{borrow::Cow, sync::Arc};
 
 use iced::{
     border::Radius,
-    widget::{button, component, text::{self, Fragment, IntoFragment, Span}, Component, Text},
+    widget::{
+        button, component,
+        text::{self, Fragment, IntoFragment, Span},
+        Component, Text,
+    },
     Border, Element,
 };
 
@@ -12,6 +16,7 @@ pub struct Tab<'a, Message> {
     pub label: Cow<'a, str>,
     pub theme: Option<&'a Theme>,
     pub on_click: Option<Message>,
+    pub selected: bool,
 }
 
 impl<'a, Message> Tab<'a, Message> {
@@ -20,6 +25,7 @@ impl<'a, Message> Tab<'a, Message> {
             label,
             theme: None,
             on_click: None,
+            selected: false,
         }
     }
 
@@ -30,6 +36,11 @@ impl<'a, Message> Tab<'a, Message> {
 
     pub fn on_click(mut self, message: Message) -> Self {
         self.on_click = Some(message);
+        self
+    }
+
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
         self
     }
 }
@@ -83,7 +94,11 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
                         ..Default::default()
                     },
                     button::Status::Active | button::Status::Disabled => button::Style {
-                        background: Some(bg_normal.into()),
+                        background: Some(if self.selected {
+                            bg_selected.into()
+                        } else {
+                            bg_normal.into()
+                        }),
                         text_color,
                         border: Border {
                             color: border_color,

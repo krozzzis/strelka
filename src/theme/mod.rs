@@ -1,4 +1,8 @@
-use iced::{border::Radius, widget::container, Border, Color};
+use iced::{
+    border::Radius,
+    widget::{button, container},
+    Border, Color,
+};
 
 #[derive(Clone)]
 pub struct Theme {
@@ -46,6 +50,22 @@ impl Theme {
                 ..Default::default()
             },
             ..Default::default()
+        }
+    }
+
+    pub fn transparent_button(&self) -> impl Fn(&iced::Theme, button::Status) -> button::Style + '_ {
+        move |_, status| match status {
+            button::Status::Hovered | button::Status::Pressed => button::Style {
+                background: None,
+                text_color: self.primary,
+                ..Default::default()
+            },
+
+            button::Status::Disabled | button::Status::Active => button::Style {
+                background: None,
+                text_color: self.text,
+                ..Default::default()
+            },
         }
     }
 }

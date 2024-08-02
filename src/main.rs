@@ -226,9 +226,7 @@ impl App {
                     self.opened_doc = id;
 
                     return Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                        text: format!(
-                            "Focused document {id}",
-                        ),
+                        text: format!("Focused document {id}",),
                         kind: notification::NotificationKind::None,
                     })));
                 }
@@ -313,21 +311,22 @@ impl App {
 
                     self.documents.insert(self.next_doc_id, handler);
                     let focus_doc = Task::done(AppMessage::FocusDocument(self.next_doc_id));
-                    let notificaton = Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                        text: format!(
-                            "Opened file {} | ID: {}",
-                            path.file_name()
-                                .unwrap_or(OsStr::new(""))
-                                .to_str()
-                                .unwrap_or(""),
-                            self.next_doc_id,
-                        ),
-                        kind: notification::NotificationKind::None,
-                    })));
+                    let notificaton =
+                        Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                            text: format!(
+                                "Opened file {} | ID: {}",
+                                path.file_name()
+                                    .unwrap_or(OsStr::new(""))
+                                    .to_str()
+                                    .unwrap_or(""),
+                                self.next_doc_id,
+                            ),
+                            kind: notification::NotificationKind::None,
+                        })));
 
                     self.next_doc_id += 1;
 
-                    return Task::batch([focus_doc, notificaton])
+                    return Task::batch([focus_doc, notificaton]);
                 }
             }
 

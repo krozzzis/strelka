@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use iced::{widget::{button, center}, Element};
+use iced::{
+    widget::{button, center},
+    Element,
+};
 use iced::{
     widget::{column, text_editor::Action, Container},
     Length,
@@ -27,7 +30,11 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
         )
         .height(Length::Fill)
     } else {
-        Container::new(center(button("Open file Ctrl+O").on_press_maybe(pick_file)))
+        Container::new(center(
+            button("Open file Ctrl+O")
+                .on_press_maybe(pick_file)
+                .style(theme.transparent_button()),
+        ))
     };
 
     let tabs = tab_bar(
@@ -35,6 +42,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
             .iter()
             .map(|(id, handler)| (handler.filename.clone(), open_document(*id)))
             .collect(),
+        None,
         theme,
     );
 

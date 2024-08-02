@@ -10,14 +10,17 @@ use crate::{theme::Theme, widget::tabs::Tab};
 
 pub fn tab_bar<'a, Message: 'a + Clone>(
     labels: Vec<(Arc<String>, Message)>,
+    selected: Option<usize>,
     theme: &'a Theme,
 ) -> Element<'a, Message> {
     let tabs: Vec<Element<'_, Message>> = labels
         .into_iter()
-        .map(|(label, msg)| {
+        .enumerate()
+        .map(|(id, (label, msg))| {
             Tab::new(Cow::Owned(label.as_ref().clone()))
                 .theme(theme)
                 .on_click(msg)
+                .selected(Some(id) == selected)
                 .into()
         })
         .collect();
