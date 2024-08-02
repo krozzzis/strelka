@@ -53,7 +53,9 @@ impl Theme {
         }
     }
 
-    pub fn transparent_button(&self) -> impl Fn(&iced::Theme, button::Status) -> button::Style + '_ {
+    pub fn transparent_button(
+        &self,
+    ) -> impl Fn(&iced::Theme, button::Status) -> button::Style + '_ {
         move |_, status| match status {
             button::Status::Hovered | button::Status::Pressed => button::Style {
                 background: None,

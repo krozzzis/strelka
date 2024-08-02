@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use iced::{
     widget::{button, center},
@@ -40,7 +40,16 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
     let tabs = tab_bar(
         documents
             .iter()
-            .map(|(id, handler)| (handler.filename.clone(), open_document(*id)))
+            .map(|(id, handler)| {
+                (
+                    Arc::new(format!(
+                        "{} {}",
+                        handler.filename,
+                        if handler.changed { "*" } else { "" }
+                    )),
+                    open_document(*id),
+                )
+            })
             .collect(),
         None,
         theme,

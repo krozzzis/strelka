@@ -31,7 +31,6 @@ use std::{
     borrow::Cow,
     collections::HashMap,
     ffi::OsStr,
-    ops::Deref,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
@@ -55,6 +54,7 @@ pub struct DocumentHandler {
     pub text_content: Content,
     pub path: PathBuf,
     pub filename: Arc<String>,
+    pub changed: bool,
 }
 
 pub struct App {
@@ -292,6 +292,9 @@ impl App {
 
             AppMessage::TextEditorAction(action, document) => {
                 if let Some(handler) = self.documents.get_mut(&document) {
+                    if action.is_edit() {
+                        handler.changed = true;
+                    }
                     handler.text_content.perform(action);
                 }
             }
@@ -307,6 +310,7 @@ impl App {
                         text_content: Content::with_text(&content),
                         path: path.clone(),
                         filename: get_file_name(&path),
+                        changed: false,
                     };
 
                     self.documents.insert(self.next_doc_id, handler);
