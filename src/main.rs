@@ -46,7 +46,7 @@ use crate::{
     scene::{Rectangle, Scene},
     theme::Theme,
     widget::{
-        canvas::canvas, cosmic::cosmic_editor, editor::NoteEditor, file_explorer::FileExplorer,
+        canvas::canvas, cosmic::cosmic_editor, file_explorer::FileExplorer, pane::text_editor_pane,
     },
 };
 
@@ -363,45 +363,11 @@ impl App {
     fn view(&self) -> Element<AppMessage> {
         let grid = PaneGrid::new(&self.grid_state, |_id, pane, _is_maximized| {
             let content: Element<_> = match *pane {
-                PaneType::TextEditor => {
-                    let editor = center(
-                        Container::new(NoteEditor::new(
-                            &self.note_content,
-                            AppMessage::TextEditorAction,
-                        ).theme(&self.theme))
-                        .padding(Padding::from([0.0, 32.0]))
-                        .width(Length::Fixed(700.0)),
-                    );
-                    Container::new(column![
-                        Container::new(
-                            text(if let Some(path) = &self.current_file {
-                                path.file_name()
-                                    .unwrap_or(OsStr::new(""))
-                                    .to_str()
-                                    .unwrap_or("")
-                                    .to_owned()
-                            } else {
-                                String::new()
-                            })
-                            .size(20.0)
-                        )
-                        .padding(8.0)
-                        .style(move |_| {
-                            container::Style {
-                                background: Some(self.theme.background.into()),
-                                text_color: Some(self.theme.text),
-                                ..Default::default()
-                            }
-                        }),
-                        editor,
-                    ])
-                    .style(move |_| container::Style {
-                        background: Some(self.theme.background.into()),
-                        text_color: Some(self.theme.text),
-                        ..Default::default()
-                    })
-                    .into()
-                }
+                PaneType::TextEditor => text_editor_pane(
+                    &self.note_content,
+                    AppMessage::TextEditorAction,
+                    &self.theme,
+                ),
 
                 PaneType::Canvas => {
                     let canvas_renderer =
