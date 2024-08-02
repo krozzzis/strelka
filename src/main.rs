@@ -25,6 +25,7 @@ use iced::{
 use iced::{Element, Settings};
 
 use tokio::fs;
+use tokio::io::AsyncWriteExt;
 use widget::notificaton::notification_list;
 
 use std::{
@@ -86,6 +87,8 @@ pub enum AppMessage {
     PickFile(Option<PathBuf>),
     FocusDocument(DocumentId),
     OpenFile(PathBuf),
+    SaveFile,
+    SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
     CosmicAction(cosmic_text::Action),
@@ -116,6 +119,15 @@ impl Default for App {
             AppMessage::PickFile(None),
         );
 
+        // Ctrl-s save file
+        hotkeys.insert(
+            Hotkey {
+                key: Key::Character(SmolStr::new_inline("s")),
+                modifiers: Modifiers::CTRL,
+            },
+            AppMessage::SaveFile,
+        );
+
         // Ctrl-p set dark theme
         hotkeys.insert(
             Hotkey {
@@ -142,6 +154,15 @@ impl Default for App {
             hotkeys,
         }
     }
+}
+
+async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()> {
+    let mut file = fs::File::create(path).await?;
+
+    file.write_all(text.as_bytes()).await?;
+
+    file.flush().await?;
+    Ok(())
 }
 
 async fn get_directory_content(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
@@ -221,6 +242,21 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
+            AppMessage::SavedFile(id) => {
+                if let Some(handler) = self.documents.get_mut(&id) {
+                    handler.changed = false;
+                }
+            }
+
+            AppMessage::SaveFile => {
+                if let Some(handler) = self.documents.get(&self.opened_doc) {
+                    let message = AppMessage::SavedFile(self.opened_doc);
+                    return Task::perform(
+                        save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
+                        move |_| message.clone(),
+                    );
+                }
+            }
             AppMessage::FocusDocument(id) => {
                 if id < self.next_doc_id {
                     self.opened_doc = id;

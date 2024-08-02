@@ -14,7 +14,7 @@ rfd = "0.14.1"
 
 [dependencies.tokio]
 version = "1.39.1"
-features = ["fs"]
+features = ["fs", "io-util"]
 
 [dependencies.iced]
 git = "https://github.com/iced-rs/iced"
