@@ -34,7 +34,12 @@ use tokio::fs;
 use widget::notificaton::notification_list;
 
 use std::{
-    borrow::Cow, collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc, time::Duration,
+    borrow::Cow,
+    collections::HashMap,
+    ffi::OsStr,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
 };
 
 use crate::{
@@ -224,6 +229,13 @@ async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> 
     }
 }
 
+fn get_file_name<'a>(path: &'a Path) -> String {
+    path.file_name()
+        .and_then(|os_str| os_str.to_str())
+        .unwrap_or("")
+        .to_owned()
+}
+
 impl App {
     fn new() -> (Self, Task<AppMessage>) {
         let app = Self::default();
@@ -364,11 +376,16 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage> {
-        let grid = PaneGrid::new(&self.grid_state, |_id, pane, _is_maximized| {
+        let current_file = self
+            .current_file
+            .clone()
+            .map_or("New file".to_owned(), move |path| get_file_name(&path));
+        let grid = PaneGrid::new(&self.grid_state, move |_id, pane, _is_maximized| {
             let content: Element<_> = match *pane {
                 PaneType::TextEditor => text_editor_pane(
                     &self.note_content,
                     AppMessage::TextEditorAction,
+                    current_file.clone(),
                     &self.theme,
                 ),
 
