@@ -11,24 +11,18 @@ mod widget;
 
 use iced::{
     advanced::graphics::core::SmolStr,
-    border::Radius,
-    keyboard::{self, key::Named, Key},
-    widget::button,
-    Background, Border, Length, Padding, Subscription, Task,
+    keyboard::{Key, Modifiers},
+    Length, Padding, Subscription, Task,
 };
 use iced::{
-    keyboard::Modifiers,
+    keyboard::on_key_press,
     widget::{
-        center, column,
-        container::{self, Style},
-        horizontal_space, mouse_area, opaque,
-        pane_grid::{self, Axis, Configuration},
-        row, stack, text,
+        column, container, horizontal_space, row, stack,
         text_editor::{self, Content},
-        text_input, vertical_space, Button, Container, PaneGrid, Svg,
+        vertical_space, Container,
     },
 };
-use iced::{Color, Element, Settings};
+use iced::{Element, Settings};
 
 use tokio::fs;
 use widget::notificaton::notification_list;
@@ -43,19 +37,10 @@ use std::{
 };
 
 use crate::{
-    icons::IconStorage,
     notification::{Notification, NotificationList},
-    plugin::{
-        plugin_list, ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo,
-    },
-    scene::{Rectangle, Scene},
+    plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
     theme::Theme,
-    widget::{
-        canvas::canvas,
-        cosmic::cosmic_editor,
-        file_explorer::FileExplorer,
-        pane::{file_explorer_pane, text_editor_pane},
-    },
+    widget::pane::{file_explorer_pane, text_editor_pane},
 };
 
 pub enum PaneType {
@@ -73,13 +58,8 @@ pub enum ActiveWindow {
 }
 
 pub struct App {
-    debug: bool,
-    scene: Scene,
     theme: Theme,
     themes: HashMap<String, Theme>,
-    window: ActiveWindow,
-    grid_state: pane_grid::State<PaneType>,
-    icons: IconStorage,
     note_content: Content,
     opened_directory: Option<PathBuf>,
     current_file: Option<PathBuf>,
@@ -99,8 +79,6 @@ pub enum AppMessage {
     LoadPlugin(PluginId, bool),
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
-    SetActiveWindow(ActiveWindow),
-    SetDebug(bool),
     ChangeTheme(String),
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
@@ -125,8 +103,6 @@ impl Default for App {
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
 
-        let scene = Scene::new();
-
         let mut hotkeys = HashMap::new();
 
         // Ctrl-o open file
@@ -136,15 +112,6 @@ impl Default for App {
                 modifiers: Modifiers::CTRL,
             },
             AppMessage::PickFile(None),
-        );
-
-        // Ctrl-, plugins list
-        hotkeys.insert(
-            Hotkey {
-                key: Key::Character(SmolStr::new_inline(",")),
-                modifiers: Modifiers::CTRL,
-            },
-            AppMessage::SetActiveWindow(ActiveWindow::Plugins),
         );
 
         // Ctrl-p set dark theme
@@ -161,18 +128,9 @@ impl Default for App {
         themes.insert("dark".to_owned(), Theme::dark());
 
         Self {
-            scene,
-            window: ActiveWindow::None,
             theme: Theme::default(),
             themes,
             plugin_host,
-            grid_state: pane_grid::State::with_configuration(Configuration::Split {
-                axis: Axis::Vertical,
-                ratio: 0.25,
-                a: Box::new(Configuration::Pane(PaneType::FileExplorer)),
-                b: Box::new(Configuration::Pane(PaneType::TextEditor)),
-            }),
-            icons: IconStorage::new(),
             note_content: Content::with_text("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. 
 
 Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. 
@@ -183,7 +141,6 @@ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deseru
             opened_directory: Some(PathBuf::from("./content/")),
             notifications: NotificationList::new(),
             hotkeys,
-            debug: false,
         }
     }
 }
@@ -229,7 +186,7 @@ async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> 
     }
 }
 
-fn get_file_name<'a>(path: &'a Path) -> String {
+fn get_file_name(path: &Path) -> String {
     path.file_name()
         .and_then(|os_str| os_str.to_str())
         .unwrap_or("")
@@ -302,14 +259,6 @@ impl App {
                 }
             },
 
-            AppMessage::SetActiveWindow(window) => {
-                self.window = window;
-            }
-
-            AppMessage::SetDebug(state) => {
-                self.debug = state;
-            }
-
             AppMessage::LoadPlugin(id, load) => {
                 if load {
                     if let Some(message) = self.plugin_host.load_plugin(&id) {
@@ -380,52 +329,35 @@ impl App {
             .current_file
             .clone()
             .map_or("New file".to_owned(), move |path| get_file_name(&path));
-        let grid = PaneGrid::new(&self.grid_state, move |_id, pane, _is_maximized| {
-            let content: Element<_> = match *pane {
-                PaneType::TextEditor => text_editor_pane(
-                    &self.note_content,
-                    AppMessage::TextEditorAction,
-                    current_file.clone(),
-                    &self.theme,
-                ),
 
-                PaneType::Canvas => {
-                    let canvas_renderer =
-                        Container::new(canvas(&self.scene).on_plugin_action(|a, b| {
-                            AppMessage::SendPluginMessage { id: a, message: b }
-                        }));
-                    canvas_renderer.into()
-                }
+        let editor = text_editor_pane(
+            &self.note_content,
+            AppMessage::TextEditorAction,
+            current_file.clone(),
+            &self.theme,
+        );
 
-                PaneType::Cosmic => {
-                    let canvas_renderer = Container::new(cosmic_editor().width(Length::Fill));
-                    canvas_renderer.into()
-                }
+        let file_explorer = file_explorer_pane(
+            self.directory_content.as_ref(),
+            AppMessage::OpenFile,
+            &self.theme,
+        );
 
-                PaneType::FileExplorer => file_explorer_pane(
-                    self.directory_content.as_ref(),
-                    AppMessage::OpenFile,
-                    &self.theme,
-                ),
-            };
-
-            Container::new(content)
-                .padding(1.0)
-                .style(move |_| container::Style {
-                    border: Border {
-                        color: self.theme.border_color,
-                        width: 1.0,
-                        radius: Radius::new(0.0),
-                    },
-                    ..Default::default()
-                })
-                .into()
-        });
+        let grid = row![
+            Container::new(file_explorer)
+                .width(Length::Fixed(350.0))
+                .padding(Padding::new(0.0).right(1.0))
+                .style(|_| {
+                    container::Style {
+                        background: Some(self.theme.border_color.into()),
+                        ..self.theme.container()
+                    }
+                }),
+            Container::new(editor),
+        ];
 
         let primary_screen = stack![
-            Container::new(grid)
-                .width(Length::Fill)
-                .height(Length::Fill),
+            Container::new(grid),
             row![
                 horizontal_space(),
                 column![
@@ -440,61 +372,11 @@ impl App {
             ],
         ];
 
-        match self.window {
-            ActiveWindow::Plugins => {
-                let plugin_list = Container::new(plugin_list(
-                    self.plugin_host.get_plugin_entries(),
-                    AppMessage::LoadPlugin,
-                ))
-                .style(|_theme| {
-                    let mut style: Style = Color::WHITE.into();
-                    style.border.radius = Radius::new(16.0);
-                    style
-                })
-                .width(Length::Fixed(512.0))
-                .padding(16.0);
-
-                modal(
-                    primary_screen,
-                    plugin_list,
-                    AppMessage::SetActiveWindow(ActiveWindow::None),
-                )
-            }
-
-            ActiveWindow::Actions => {
-                let action_entry = Container::new(
-                    row![text_input("Action", ""), Button::new(text("Send"))].spacing(8.0),
-                )
-                .style(|_theme| {
-                    let mut style: Style = Color::WHITE.into();
-                    style.border.radius = Radius::new(16.0);
-                    style
-                })
-                .width(Length::Fixed(512.0))
-                .padding(16.0);
-
-                modal(
-                    primary_screen,
-                    action_entry,
-                    AppMessage::SetActiveWindow(ActiveWindow::None),
-                )
-            }
-            _ => primary_screen.into(),
-        }
+        primary_screen.into()
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {
-        match self.window {
-            ActiveWindow::None => keyboard::on_key_press(|key, modifiers| {
-                Some(AppMessage::OnKeyPress(key, modifiers))
-            }),
-
-            _ => keyboard::on_key_press(|key, _modifiers| match key.as_ref() {
-                Key::Named(Named::Escape) => Some(AppMessage::SetActiveWindow(ActiveWindow::None)),
-
-                _ => None,
-            }),
-        }
+        on_key_press(|key, modifiers| Some(AppMessage::OnKeyPress(key, modifiers)))
     }
 
     fn on_key_press(&mut self, key: Key, modifiers: Modifiers) -> Option<AppMessage> {
@@ -505,33 +387,6 @@ impl App {
         }
         None
     }
-}
-
-fn modal<'a, Message>(
-    base: impl Into<Element<'a, Message>>,
-    content: impl Into<Element<'a, Message>>,
-    on_blur: Message,
-) -> Element<'a, Message>
-where
-    Message: Clone + 'a,
-{
-    stack![
-        base.into(),
-        mouse_area(center(opaque(content)).style(|_theme| {
-            container::Style {
-                background: Some(
-                    Color {
-                        a: 0.8,
-                        ..Color::BLACK
-                    }
-                    .into(),
-                ),
-                ..container::Style::default()
-            }
-        }))
-        .on_press(on_blur)
-    ]
-    .into()
 }
 
 fn main() -> iced::Result {
