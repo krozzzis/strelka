@@ -17,13 +17,6 @@ pub fn list<'a, Message: 'a>(
             .height(Length::Shrink),
     )
     .width(Length::Fill)
-    .style(move |_| {
-        let theme = theme.cloned().unwrap_or(Theme::default());
-        container::Style {
-            text_color: Some(theme.text),
-            background: Some(theme.background.into()),
-            ..Default::default()
-        }
-    })
+    .style(move |_| theme.map_or(Theme::default().container(), |theme| theme.container()))
     .into()
 }

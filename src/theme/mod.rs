@@ -1,4 +1,4 @@
-use iced::Color;
+use iced::{border::Radius, widget::container, Border, Color};
 
 #[derive(Clone)]
 pub struct Theme {
@@ -26,6 +26,26 @@ impl Theme {
             border_color: Color::from_rgb8(40, 40, 40),
             element_radius: 4.0,
             element_padding: 4.0,
+        }
+    }
+
+    pub fn container(&self) -> container::Style {
+        container::Style {
+            background: Some(self.background.into()),
+            text_color: Some(self.text),
+            ..Default::default()
+        }
+    }
+
+    pub fn container_with_radius(&self) -> container::Style {
+        container::Style {
+            background: Some(self.background.into()),
+            text_color: Some(self.text),
+            border: Border {
+                radius: Radius::new(self.element_radius),
+                ..Default::default()
+            },
+            ..Default::default()
         }
     }
 }

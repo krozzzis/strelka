@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use iced::widget::{container, Container};
+use iced::widget::Container;
 use iced::{Element, Length};
 
 use crate::{theme::Theme, widget::file_explorer::FileExplorer};
@@ -17,10 +17,7 @@ pub fn file_explorer_pane<'a, Message: 'a + Clone>(
     )
     .width(Length::Fill)
     .height(Length::Fill)
-    .style(move |_| container::Style {
-        background: Some(theme.background.into()),
-        ..Default::default()
-    });
+    .style(|_| theme.container());
 
     explorer.into()
 }

@@ -63,33 +63,39 @@ where
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        Button::new(text(self.title.clone()).size(14.0))
-            .on_press_maybe(self.on_click.clone())
-            .width(Length::Fill)
-            .padding(Padding::new(4.0).left(24.0))
-            .style(move |_, status| {
-                let theme = self.theme.cloned().unwrap_or(Theme::default());
+        Button::new(
+            text(self.title.clone())
+                .size(14.0)
+                .style(move |_| text::Style {
+                    color: Some(self.theme.map_or(Theme::default().text, |theme| theme.text)),
+                }),
+        )
+        .on_press_maybe(self.on_click.clone())
+        .width(Length::Fill)
+        .padding(Padding::new(4.0).left(24.0))
+        .style(move |_, status| {
+            let theme = self.theme.cloned().unwrap_or(Theme::default());
 
-                match status {
-                    button::Status::Active | button::Status::Disabled => button::Style {
-                        background: None,
-                        text_color: theme.text,
-                        ..Default::default()
-                    },
+            match status {
+                button::Status::Active | button::Status::Disabled => button::Style {
+                    background: None,
+                    text_color: theme.text,
+                    ..Default::default()
+                },
 
-                    button::Status::Hovered | button::Status::Pressed => button::Style {
-                        background: Some(theme.selected.into()),
-                        text_color: theme.text,
-                        border: Border {
-                            color: Color::TRANSPARENT,
-                            width: 0.0,
-                            radius: Radius::new(4.0),
-                        },
-                        ..Default::default()
+                button::Status::Hovered | button::Status::Pressed => button::Style {
+                    background: Some(theme.selected.into()),
+                    text_color: theme.text,
+                    border: Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Radius::new(4.0),
                     },
-                }
-            })
-            .into()
+                    ..Default::default()
+                },
+            }
+        })
+        .into()
     }
 }
 
