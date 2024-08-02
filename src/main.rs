@@ -302,6 +302,7 @@ impl App {
 
             AppMessage::SetDirectoryContent(content) => self.directory_content = Some(content),
 
+            // TODO: Should accept an document id and fill it's handler with content
             AppMessage::OpenedFile(result) => {
                 if let Ok((path, content)) = result {
                     let handler = DocumentHandler {
@@ -357,6 +358,7 @@ impl App {
             self.opened_doc,
             AppMessage::TextEditorAction,
             AppMessage::FocusDocument,
+            Some(AppMessage::PickFile(None)),
             &self.theme,
         );
 

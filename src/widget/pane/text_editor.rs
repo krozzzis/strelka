@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use iced::{widget::center, Element};
+use iced::{widget::{button, center}, Element};
 use iced::{
-    widget::{column, text, text_editor::Action, Container},
+    widget::{column, text_editor::Action, Container},
     Length,
 };
 
@@ -14,6 +14,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
     current_document: DocumentId,
     on_action: impl Fn(Action, DocumentId) -> Message + 'static,
     open_document: impl Fn(DocumentId) -> Message + 'static,
+    pick_file: Option<Message>,
     theme: &'a Theme,
 ) -> Element<'a, Message> {
     let editor = if let Some(handler) = documents.get(&current_document) {
@@ -26,7 +27,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
         )
         .height(Length::Fill)
     } else {
-        Container::new(center(text("New file")))
+        Container::new(center(button("Open file Ctrl+O").on_press_maybe(pick_file)))
     };
 
     let tabs = tab_bar(
