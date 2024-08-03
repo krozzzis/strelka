@@ -12,7 +12,7 @@ use crate::{
 pub struct FileExplorer<'a, Message> {
     pub files: Vec<&'a PathBuf>,
     pub dirs: Vec<&'a PathBuf>,
-    pub opened_file: Option<&'a Path>,
+    pub selected_file: Option<PathBuf>,
     pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
     pub theme: Option<&'a Theme>,
 }
@@ -22,7 +22,7 @@ impl<'a, Message> FileExplorer<'a, Message> {
         Self {
             files: Vec::new(),
             dirs: Vec::new(),
-            opened_file: None,
+            selected_file: None,
             on_click: None,
             theme: None,
         }
@@ -54,14 +54,14 @@ impl<'a, Message> FileExplorer<'a, Message> {
         self
     }
 
-    pub fn opened_file(mut self, path: &'a Path) -> Self {
-        self.opened_file = Some(path);
+    pub fn select_file(mut self, path: impl Into<PathBuf>) -> Self {
+        self.selected_file = Some(path.into());
         self
     }
 
-    pub fn opened_file_maybe(mut self, path: Option<&'a Path>) -> Self {
+    pub fn select_file_maybe(mut self, path: Option<impl Into<PathBuf>>) -> Self {
         if let Some(path) = path {
-            self.opened_file = Some(path);
+            self.selected_file = Some(path.into());
         }
         self
     }
@@ -102,6 +102,7 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         let files = self.files.iter().map(|path| {
             ListItem::new(get_file_name(path).unwrap_or(String::from("NaN")))
                 .click(Message::OpenFile((*path).clone()))
+                .selected(self.selected_file == Some((*path).clone()))
                 .theme(self.theme)
         });
 

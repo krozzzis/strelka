@@ -206,13 +206,11 @@ async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> 
     }
 }
 
-fn get_file_name(path: &Path) -> Arc<String> {
-    Arc::new(
-        path.file_name()
-            .and_then(|os_str| os_str.to_str())
-            .unwrap_or("")
-            .to_owned(),
-    )
+fn get_file_name(path: &Path) -> String {
+    path.file_name()
+        .and_then(|os_str| os_str.to_str())
+        .unwrap_or("")
+        .to_owned()
 }
 
 impl App {
@@ -345,7 +343,7 @@ impl App {
                     let handler = DocumentHandler {
                         text_content: Content::with_text(&content),
                         path: path.clone(),
-                        filename: get_file_name(&path),
+                        filename: Arc::new(get_file_name(&path)),
                         changed: false,
                     };
 
@@ -403,6 +401,11 @@ impl App {
 
         let file_explorer = file_explorer_pane(
             self.directory_content.as_ref(),
+            if let Some(handler) = self.documents.get(&self.opened_doc) {
+                Some(handler.path.clone())
+            } else {
+                None
+            },
             AppMessage::OpenFile,
             &self.theme,
         );

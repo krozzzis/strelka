@@ -12,6 +12,7 @@ where
 {
     title: String,
     tooltip: Option<String>,
+    selected: bool,
     on_click: Option<Message>,
     theme: Option<&'a Theme>,
 }
@@ -24,6 +25,7 @@ where
         Self {
             title: title.into(),
             tooltip: None,
+            selected: false,
             on_click: None,
             theme: None,
         }
@@ -41,6 +43,11 @@ where
 
     pub fn click(mut self, click: Message) -> Self {
         self.on_click = Some(click);
+        self
+    }
+
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
         self
     }
 
@@ -78,8 +85,17 @@ where
 
             match status {
                 button::Status::Active | button::Status::Disabled => button::Style {
-                    background: None,
+                    background: if self.selected {
+                        Some(theme.selected.into())
+                    } else {
+                        None
+                    },
                     text_color: theme.text,
+                    border: Border {
+                        color: Color::TRANSPARENT,
+                        width: 0.0,
+                        radius: Radius::new(4.0),
+                    },
                     ..Default::default()
                 },
 
