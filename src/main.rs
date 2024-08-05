@@ -5,6 +5,7 @@ mod notification;
 mod plugin;
 mod styles;
 mod theming;
+mod util;
 mod widget;
 
 use iced::{
@@ -22,24 +23,18 @@ use iced::{
 };
 use iced::{Element, Settings};
 
-use tokio::fs;
-use tokio::io::AsyncWriteExt;
 use widget::notificaton::notification_list;
 
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    ffi::OsStr,
-    path::{Path, PathBuf},
-    str::FromStr,
-    sync::Arc,
-    time::Duration,
-};
+use std::{borrow::Cow, collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
 
 use crate::{
     notification::{Notification, NotificationList},
     plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
     theming::Theme,
+    util::{
+        delay, get_directory_content, get_file_name, load_theme_from_file, open_file, pick_file,
+        save_file,
+    },
     widget::pane::{file_explorer_pane, text_editor_pane},
 };
 
@@ -154,73 +149,6 @@ impl<'a> Default for App<'a> {
             notifications: NotificationList::new(),
             hotkeys,
         }
-    }
-}
-
-async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()> {
-    let mut file = fs::File::create(path).await?;
-
-    file.write_all(text.as_bytes()).await?;
-
-    file.flush().await?;
-    Ok(())
-}
-
-async fn get_directory_content(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    let dir_path = dir.into();
-
-    let mut dir_entries = fs::read_dir(dir_path).await.unwrap();
-
-    while let Some(entry) = dir_entries.next_entry().await.unwrap() {
-        let path = entry.path();
-        files.push(path);
-    }
-
-    files
-}
-
-async fn delay(secs: u64) {
-    tokio::time::sleep(Duration::new(secs, 0)).await
-}
-
-async fn open_file(path: impl Into<PathBuf>) -> Result<(PathBuf, String), ()> {
-    let path = path.into();
-    let content = fs::read_to_string(&path).await.map_err(|_| ())?;
-    Ok((path, content))
-}
-
-async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> {
-    let handler = if let Some(dir) = directory {
-        rfd::AsyncFileDialog::new().set_directory(dir)
-    } else {
-        rfd::AsyncFileDialog::new()
-    }
-    .pick_file()
-    .await;
-
-    if let Some(path) = handler {
-        let content = open_file(path.path()).await.map_err(|_| ())?;
-        Ok(content)
-    } else {
-        Err(())
-    }
-}
-
-fn get_file_name(path: &Path) -> String {
-    path.file_name()
-        .and_then(|os_str| os_str.to_str())
-        .unwrap_or("")
-        .to_owned()
-}
-
-async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme<'static>> {
-    let theme = theming::theme::from_file(path.into()).await;
-    if let Ok(theme) = theme {
-        let iced_theme = Theme::from_theme(theme);
-        Some(iced_theme)
-    } else {
-        None
     }
 }
 
