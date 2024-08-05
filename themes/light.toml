@@ -9,14 +9,33 @@ background2 = "#eeeeee"
 text = "#000000"
 
 
-# Button
-[button.active]
-background = "#ffefff"
-text = "#800000"
-
-[button.hover]
-background = "#808080"
+# Buttons
+## Primary button
+[primary_button.active]
+background = "#8fffff"
 text = "#000000"
+
+[primary_button.hover]
+background = "#8ccccc"
+text = "#303030"
+
+## Secondary button
+[secondary_button.active]
+background = "#cecece"
+text = "#000000"
+
+[secondary_button.hover]
+background = "#808080"
+text = "#303030"
+
+## Text button
+[text_button.active]
+background = "#ffffff00"
+text = "#000000"
+
+[text_button.hover]
+background = "#ffffff00"
+text = "#808000"
 
 
 # Tab

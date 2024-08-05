@@ -99,8 +99,8 @@ impl<'a> Theme<'a> {
 
     pub fn from_theme(theme: theme::Theme<'a>) -> Self {
         Self {
-            background: theme.button.active.background.into(),
-            text: theme.button.active.text.into(),
+            background: theme.generic.background.into(),
+            text: theme.generic.text.into(),
             theme,
             ..Default::default()
         }
@@ -134,19 +134,17 @@ impl<'a> Theme<'a> {
         }
     }
 
-    pub fn transparent_button(
-        &self,
-    ) -> impl Fn(&iced::Theme, button::Status) -> button::Style + '_ {
+    pub fn text_button(&self) -> impl Fn(&iced::Theme, button::Status) -> button::Style + '_ {
         move |_, status| match status {
             button::Status::Hovered | button::Status::Pressed => button::Style {
-                background: None,
-                text_color: self.primary,
+                background: Some(self.theme.text_button.hover.background.into()),
+                text_color: self.theme.text_button.hover.text.into(),
                 ..Default::default()
             },
 
             button::Status::Disabled | button::Status::Active => button::Style {
-                background: None,
-                text_color: self.text,
+                background: Some(self.theme.text_button.active.background.into()),
+                text_color: self.theme.text_button.active.text.into(),
                 ..Default::default()
             },
         }

@@ -34,7 +34,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
         Container::new(center(
             button("Open file Ctrl+O")
                 .on_press_maybe(pick_file)
-                .style(theme.transparent_button()),
+                .style(theme.text_button()),
         ))
         .style(|_| container::Style {
             background: Some(theme.theme.generic.background.into()),
