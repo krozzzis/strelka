@@ -12,6 +12,8 @@ lto = true
 cosmic-text = "0.12"
 rfd = "0.14.1"
 toml = "0.8.19"
+async-stream = "0.3"
+futures-core = "0.3"
 
 [dependencies.tokio]
 version = "1.39.1"

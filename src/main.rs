@@ -32,8 +32,7 @@ use crate::{
     plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
     theming::Theme,
     util::{
-        delay, get_directory_content, get_file_name, load_theme_from_file, open_file, pick_file,
-        save_file,
+        delay, get_directory_content, get_file_name, get_themes, open_file, pick_file, save_file,
     },
     widget::pane::{file_explorer_pane, text_editor_pane},
 };
@@ -55,6 +54,7 @@ pub struct DocumentHandler {
 pub struct App<'a> {
     theme: Theme<'a>,
     themes: HashMap<String, Theme<'a>>,
+    default_theme: Cow<'a, str>,
     documents: HashMap<DocumentId, DocumentHandler>,
     next_doc_id: DocumentId,
     opened_doc: DocumentId,
@@ -130,16 +130,13 @@ impl<'a> Default for App<'a> {
                 key: Key::Character(SmolStr::new_inline("p")),
                 modifiers: Modifiers::CTRL,
             },
-            AppMessage::ChangeTheme("custom".to_owned()),
+            AppMessage::ChangeTheme("light".to_owned()),
         );
-
-        let mut themes = HashMap::new();
-        themes.insert("light".to_owned(), Theme::default());
-        themes.insert("dark".to_owned(), Theme::dark());
 
         Self {
             theme: Theme::default(),
-            themes,
+            themes: HashMap::new(),
+            default_theme: Cow::Borrowed("light"),
             documents: HashMap::new(),
             next_doc_id: 1,
             opened_doc: 0,
@@ -171,10 +168,11 @@ impl<'a> App<'a> {
         }
 
         // Load theme from file
-        tasks.push(Task::perform(
-            load_theme_from_file("./themes/light.toml"),
-            |theme| AppMessage::LoadTheme("custom".to_string(), theme.unwrap_or_default()),
-        ));
+        tasks.push(Task::future(get_themes("./themes")).then(|stream| {
+            Task::run(stream, |theme: theming::theme::Theme| {
+                AppMessage::LoadTheme((*theme.info.name).to_owned(), Theme::from_theme(theme))
+            })
+        }));
 
         (app, Task::batch(tasks))
     }
@@ -187,7 +185,12 @@ impl<'a> App<'a> {
         match message {
             AppMessage::LoadTheme(name, theme) => {
                 println!("Loaded theme {name}");
-                self.themes.insert(name, theme);
+                self.themes.insert(name.clone(), theme);
+
+                // Automatically change theme to just loaded if this theme set as default
+                if self.default_theme.eq(&name) {
+                    return Task::done(AppMessage::ChangeTheme(name));
+                }
             }
 
             AppMessage::SavedFile(id) => {

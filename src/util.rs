@@ -1,4 +1,5 @@
 use std::{
+    ffi::OsStr,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
@@ -6,7 +7,27 @@ use std::{
 
 use tokio::{fs, io::AsyncWriteExt};
 
-use crate::theming::{self, Theme};
+use crate::theming;
+use futures_core::stream::Stream;
+
+pub async fn get_themes<'a>(
+    path: impl Into<PathBuf>,
+) -> impl Stream<Item = theming::theme::Theme<'a>> {
+    let mut dir_entries = fs::read_dir(path.into()).await.unwrap();
+
+    async_stream::stream! {
+        while let Some(entry) = dir_entries.next_entry().await.unwrap() {
+            let path = entry.path();
+            println!("{path:?}");
+            if path.is_file() && path.extension() == Some(OsStr::new("toml")) {
+                let theme = load_theme_from_file(path).await;
+                if let Some(theme) = theme {
+                    yield theme;
+                }
+            }
+        }
+    }
+}
 
 pub async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()> {
     let mut file = fs::File::create(path).await?;
@@ -65,11 +86,12 @@ pub fn get_file_name(path: &Path) -> String {
         .to_owned()
 }
 
-pub async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme<'static>> {
+pub async fn load_theme_from_file(
+    path: impl Into<PathBuf>,
+) -> Option<theming::theme::Theme<'static>> {
     let theme = theming::theme::from_file(path.into()).await;
     if let Ok(theme) = theme {
-        let iced_theme = Theme::from_theme(theme);
-        Some(iced_theme)
+        Some(theme)
     } else {
         None
     }
