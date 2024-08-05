@@ -1,10 +1,8 @@
 #![windows_subsystem = "windows"]
 
-mod camera;
 mod icons;
 mod notification;
 mod plugin;
-mod scene;
 mod styles;
 mod theme;
 mod widget;

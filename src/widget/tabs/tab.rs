@@ -1,7 +1,9 @@
 use std::borrow::Cow;
 
 use iced::{
-    border::Radius, widget::{button, component, container, horizontal_space, row, Component, Text}, Border, Element, Length, Size
+    border::Radius,
+    widget::{button, component, container, horizontal_space, row, Component, Text},
+    Border, Element, Length, Size,
 };
 
 use crate::theme::Theme;
