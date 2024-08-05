@@ -1,13 +1,7 @@
-use std::{borrow::Cow, sync::Arc};
+use std::borrow::Cow;
 
 use iced::{
-    border::Radius,
-    widget::{
-        button, component,
-        text::{self, Fragment, IntoFragment, Span},
-        Component, Text,
-    },
-    Border, Element,
+    border::Radius, widget::{button, component, container, horizontal_space, row, Component, Text}, Border, Element, Length, Size
 };
 
 use crate::theme::Theme;
@@ -15,8 +9,9 @@ use crate::theme::Theme;
 pub struct Tab<'a, Message> {
     pub label: Cow<'a, str>,
     pub theme: Option<&'a Theme>,
-    pub on_click: Option<Message>,
     pub selected: bool,
+    pub on_click: Option<Message>,
+    pub on_close: Option<Message>,
 }
 
 impl<'a, Message> Tab<'a, Message> {
@@ -24,8 +19,9 @@ impl<'a, Message> Tab<'a, Message> {
         Self {
             label,
             theme: None,
-            on_click: None,
             selected: false,
+            on_click: None,
+            on_close: None,
         }
     }
 
@@ -34,13 +30,18 @@ impl<'a, Message> Tab<'a, Message> {
         self
     }
 
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
+
     pub fn on_click(mut self, message: Message) -> Self {
         self.on_click = Some(message);
         self
     }
 
-    pub fn selected(mut self, selected: bool) -> Self {
-        self.selected = selected;
+    pub fn on_close(mut self, message: Message) -> Self {
+        self.on_close = Some(message);
         self
     }
 }
@@ -55,7 +56,13 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        button(Text::new(self.label.clone()))
+        let mut content = vec![Text::new(self.label.clone()).into()];
+        if self.on_close.is_some() {
+            content.push(horizontal_space().into());
+            content.push(button("x").on_press_maybe(self.on_close.clone()).into());
+        }
+
+        button(container(row(content)).height(28.0))
             .on_press_maybe(self.on_click.clone())
             .style(move |_, status| {
                 let bg_normal = self
@@ -72,24 +79,18 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
                     .map_or(Theme::default().element_radius, move |theme| {
                         theme.element_radius
                     });
-                let border_color = self
-                    .theme
-                    .map_or(Theme::default().border_color, move |theme| {
-                        theme.border_color
-                    });
                 match status {
                     button::Status::Hovered | button::Status::Pressed => button::Style {
                         background: Some(bg_selected.into()),
                         text_color,
                         border: Border {
-                            color: border_color,
-                            width: 1.0,
                             radius: Radius {
                                 top_left: border_radius,
                                 top_right: border_radius,
                                 bottom_right: 0.0,
                                 bottom_left: 0.0,
                             },
+                            ..Default::default()
                         },
                         ..Default::default()
                     },
@@ -101,20 +102,23 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
                         }),
                         text_color,
                         border: Border {
-                            color: border_color,
-                            width: 1.0,
                             radius: Radius {
                                 top_left: border_radius,
                                 top_right: border_radius,
                                 bottom_right: 0.0,
                                 bottom_left: 0.0,
                             },
+                            ..Default::default()
                         },
                         ..Default::default()
                     },
                 }
             })
             .into()
+    }
+
+    fn size_hint(&self) -> iced::Size<iced::Length> {
+        Size::new(Length::Fixed(28.0), Length::Shrink)
     }
 }
 
