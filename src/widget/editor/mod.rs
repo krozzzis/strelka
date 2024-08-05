@@ -8,10 +8,7 @@ use iced::{
     Border, Color, Element, Length, Pixels,
 };
 
-use crate::{
-    styles,
-    theming::{self, Theme},
-};
+use crate::theming::{self, Theme};
 
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {
@@ -56,7 +53,6 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
                 TextEditor::new(self.content)
                     .on_action(&self.on_action)
                     .height(Length::Fill)
-                    .font(styles::INTER_REGULAR_FONT)
                     .size(16.0)
                     .style(move |_, _status| text_editor::Style {
                         border: Border {

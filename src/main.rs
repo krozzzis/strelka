@@ -2,7 +2,6 @@
 
 mod notification;
 mod plugin;
-mod styles;
 mod theming;
 mod util;
 mod widget;
@@ -407,7 +406,6 @@ fn main() -> iced::Result {
             antialiasing: true,
             ..Settings::default()
         })
-        .font(Cow::Borrowed(styles::INTER_REGULAR_FONT_BYTES))
         .centered()
         .run_with(App::new)
 }
