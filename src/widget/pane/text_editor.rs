@@ -17,6 +17,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
     current_document: DocumentId,
     on_action: impl Fn(Action, DocumentId) -> Message + 'static,
     open_document: impl Fn(DocumentId) -> Message + 'static,
+    close_document: impl Fn(DocumentId) -> Message + 'static,
     pick_file: Option<Message>,
     theme: &'a Theme,
 ) -> Element<'a, Message> {
@@ -49,6 +50,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
                         if handler.changed { "*" } else { "" }
                     )),
                     open_document(*id),
+                    Some(close_document(*id)),
                 )
             })
             .collect(),

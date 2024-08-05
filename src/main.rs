@@ -84,6 +84,7 @@ pub enum AppMessage {
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
     FocusDocument(DocumentId),
+    CloseDocument(DocumentId),
     OpenFile(PathBuf),
     SaveFile,
     SavedFile(DocumentId),
@@ -264,6 +265,12 @@ impl App {
                 }
             }
 
+            AppMessage::CloseDocument(id) => {
+                if self.documents.contains_key(&id) {
+                    self.documents.remove(&id);
+                }
+            }
+
             AppMessage::ChangeTheme(name) => {
                 if let Some(theme) = self.themes.get(&name) {
                     self.theme = theme.clone();
@@ -393,17 +400,16 @@ impl App {
             self.opened_doc,
             AppMessage::TextEditorAction,
             AppMessage::FocusDocument,
+            AppMessage::CloseDocument,
             Some(AppMessage::PickFile(None)),
             &self.theme,
         );
 
         let file_explorer = file_explorer_pane(
             self.directory_content.as_ref(),
-            if let Some(handler) = self.documents.get(&self.opened_doc) {
-                Some(handler.path.clone())
-            } else {
-                None
-            },
+            self.documents
+                .get(&self.opened_doc)
+                .map(|handler| handler.path.clone()),
             AppMessage::OpenFile,
             &self.theme,
         );

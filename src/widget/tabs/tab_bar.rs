@@ -9,17 +9,18 @@ use iced::{
 use crate::{theme::Theme, widget::tabs::Tab};
 
 pub fn tab_bar<'a, Message: 'a + Clone>(
-    labels: Vec<(Arc<String>, Message)>,
+    labels: Vec<(Arc<String>, Message, Option<Message>)>,
     selected: Option<usize>,
     theme: &'a Theme,
 ) -> Element<'a, Message> {
     let tabs: Vec<Element<'_, Message>> = labels
         .into_iter()
         .enumerate()
-        .map(|(id, (label, msg))| {
+        .map(|(id, (label, click, close))| {
             Tab::new(Cow::Owned(label.as_ref().clone()))
                 .theme(theme)
-                .on_click(msg)
+                .on_click(click)
+                .on_close_maybe(close)
                 .selected(Some(id) == selected)
                 .into()
         })

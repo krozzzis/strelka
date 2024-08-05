@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use iced::{
     border::Radius,
-    widget::{button, component, container, horizontal_space, row, Component, Text},
+    widget::{button, component, container, Component, MouseArea, Text},
     Border, Element, Length, Size,
 };
 
@@ -46,6 +46,11 @@ impl<'a, Message> Tab<'a, Message> {
         self.on_close = Some(message);
         self
     }
+
+    pub fn on_close_maybe(mut self, message: Option<Message>) -> Self {
+        self.on_close = message;
+        self
+    }
 }
 
 impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
@@ -58,13 +63,7 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let mut content = vec![Text::new(self.label.clone()).into()];
-        if self.on_close.is_some() {
-            content.push(horizontal_space().into());
-            content.push(button("x").on_press_maybe(self.on_close.clone()).into());
-        }
-
-        button(container(row(content)).height(28.0))
+        let tab = button(container(Text::new(self.label.clone())).height(28.0))
             .on_press_maybe(self.on_click.clone())
             .style(move |_, status| {
                 let bg_normal = self
@@ -115,8 +114,15 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
                         ..Default::default()
                     },
                 }
-            })
-            .into()
+            });
+
+        let mut area = MouseArea::new(tab);
+
+        if let Some(message) = self.on_close.clone() {
+            area = area.on_middle_release(message);
+        }
+
+        area.into()
     }
 
     fn size_hint(&self) -> iced::Size<iced::Length> {
