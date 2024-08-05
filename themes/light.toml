@@ -3,6 +3,12 @@ name = "light"
 description = "Default light theme"
 
 
+[generic]
+background = "#ffffff"
+background2 = "#eeeeee"
+text = "#000000"
+
+
 # Button
 [button.active]
 background = "#ffefff"

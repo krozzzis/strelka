@@ -1,5 +1,6 @@
 pub mod button;
 pub mod editor;
+pub mod generic;
 pub mod list;
 pub mod list_item;
 pub mod notification;

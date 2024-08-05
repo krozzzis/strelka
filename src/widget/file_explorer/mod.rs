@@ -8,7 +8,7 @@ use iced::{
 use iced_aw::widgets::ContextMenu;
 
 use crate::{
-    theming::Theme,
+    theming::{self, Theme},
     widget::list::{list, ListItem},
 };
 
@@ -121,13 +121,17 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
                 .collect::<Vec<Element<_>>>(),
         );
 
-        let container_style = self
-            .theme
-            .map_or(Theme::default().container2(), |theme| theme.container2());
+        let fallback = &theming::FALLBACK;
+        let generic = &self.theme.unwrap_or(fallback).theme.generic;
+
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
             .height(Length::Fill)
-            .style(move |_| container_style);
+            .style(move |_| container::Style {
+                text_color: Some(generic.text.into()),
+                background: Some(generic.background2.into()),
+                ..Default::default()
+            });
 
         let menu = ContextMenu::new(underlay, move || {
             container(list(vec![ListItem::new("New file")

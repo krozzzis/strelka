@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use iced::{
-    widget::{button, center},
+    widget::{button, center, container},
     Element,
 };
 use iced::{
@@ -36,7 +36,11 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
                 .on_press_maybe(pick_file)
                 .style(theme.transparent_button()),
         ))
-        .style(|_| theme.container())
+        .style(|_| container::Style {
+            background: Some(theme.theme.generic.background.into()),
+            text_color: Some(theme.theme.generic.text.into()),
+            ..Default::default()
+        })
     };
 
     let tabs = tab_bar(
