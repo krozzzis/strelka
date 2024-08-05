@@ -122,14 +122,14 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         );
 
         let fallback = &theming::FALLBACK;
-        let generic = &self.theme.unwrap_or(fallback).theme.generic;
+        let theme = &self.theme.unwrap_or(fallback).theme;
 
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
             .height(Length::Fill)
             .style(move |_| container::Style {
-                text_color: Some(generic.text.into()),
-                background: Some(generic.background2.into()),
+                text_color: Some(theme.generic.text.into()),
+                background: Some(theme.generic.background2.into()),
                 ..Default::default()
             });
 
@@ -138,24 +138,21 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
                 .theme(self.theme)
                 .click(Message::NewFile)
                 .into()]))
-            .padding(4.0)
+            .padding(theme.context_menu.padding)
             .width(Length::Fixed(200.0))
-            .style(move |_| {
-                let theme = self.theme.cloned().unwrap_or(Theme::default());
-                container::Style {
-                    background: Some(theme.surface.into()),
-                    border: Border {
-                        color: theme.border_color,
-                        width: 1.0,
-                        radius: Radius::new(theme.element_radius * 2.0),
-                    },
-                    shadow: Shadow {
-                        color: Color::BLACK,
-                        offset: Vector::new(2.0, 2.0),
-                        blur_radius: 12.0,
-                    },
-                    ..Default::default()
-                }
+            .style(move |_| container::Style {
+                background: Some(theme.context_menu.background.into()),
+                border: Border {
+                    color: theme.context_menu.border_color.into(),
+                    width: theme.context_menu.border_width,
+                    radius: Radius::new(theme.context_menu.radius),
+                },
+                shadow: Shadow {
+                    color: Color::BLACK,
+                    offset: Vector::new(theme.context_menu.shadow_x, theme.context_menu.shadow_y),
+                    blur_radius: theme.context_menu.shadow_blur,
+                },
+                ..Default::default()
             })
             .into()
         });

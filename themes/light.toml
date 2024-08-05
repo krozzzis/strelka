@@ -93,7 +93,7 @@ cursor = "#cc4444"
 selection = "#ee8888"
 
 
-# Editor
+# Notification
 [notification]
 background = "#ffffff"
 text = "#000000"
@@ -109,3 +109,15 @@ shadow_blur = 2
 [notification_list]
 padding = 8.0
 spacing = 4.0
+
+
+# Context menu
+[context_menu]
+background = "#ffffff"
+border_color = "#cecece"
+border_width = 1
+radius = 4
+padding = 2
+shadow_x = 2
+shadow_y = 2
+shadow_blur = 2
