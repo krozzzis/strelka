@@ -125,6 +125,7 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
 
         let menu = ContextMenu::new(underlay, move || {
             container(list(vec![ListItem::new("New file")
+                .theme(self.theme)
                 .click(Message::NewFile)
                 .into()]))
             .padding(4.0)

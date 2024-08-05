@@ -39,7 +39,7 @@ spacing = 4.0
 
 # ListItem
 [list_item.active]
-background = "#ffefff"
+background = "#ffffff00"
 text = "#800000"
 radius = 4.0
 
@@ -52,3 +52,9 @@ radius = 4.0
 background = "#ff0000"
 text = "#000000"
 radius = 4.0
+
+
+# List
+[list]
+padding = 8.0
+spacing = 4.0
