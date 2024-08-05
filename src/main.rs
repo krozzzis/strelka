@@ -369,15 +369,7 @@ impl<'a> App<'a> {
         );
 
         let grid = row![
-            Container::new(file_explorer)
-                .width(Length::Fixed(350.0))
-                .padding(Padding::new(0.0).right(1.0))
-                .style(|_| {
-                    container::Style {
-                        background: Some(self.theme.border_color.into()),
-                        ..self.theme.container()
-                    }
-                }),
+            Container::new(file_explorer).width(Length::Fixed(350.0)),
             Container::new(editor),
         ];
 
@@ -391,7 +383,6 @@ impl<'a> App<'a> {
                         &self.notifications.to_vec(),
                         Some(&self.theme)
                     ))
-                    .padding(16.0)
                     .width(Length::Shrink)
                 ],
             ],

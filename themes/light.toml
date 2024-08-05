@@ -66,3 +66,21 @@ background = "#ffffff"
 text = "#000000"
 cursor = "#cc4444"
 selection = "#ee8888"
+
+
+# Editor
+[notification]
+background = "#ffffff"
+text = "#000000"
+border_color = "#cecece"
+border_width = 1
+radius = 4
+shadow_x = 2
+shadow_y = 2
+shadow_blur = 2
+
+
+# Notification List
+[notification_list]
+padding = 8.0
+spacing = 4.0

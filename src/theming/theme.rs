@@ -1,7 +1,8 @@
 use std::{borrow::Cow, path::PathBuf};
 
 use crate::theming::styles::{
-    button::Button, editor::Editor, list::List, list_item::ListItem, tab::Tab, tab_bar::TabBar,
+    button::Button, editor::Editor, list::List, list_item::ListItem, notification::Notification,
+    notification_list::NotificationList, tab::Tab, tab_bar::TabBar,
 };
 
 use iced::futures::TryFutureExt;
@@ -18,6 +19,8 @@ pub const FALLBACK: Theme = Theme {
     list_item: ListItem::FALLBACK,
     list: List::FALLBACK,
     editor: Editor::FALLBACK,
+    notification: Notification::FALLBACK,
+    notification_list: NotificationList::FALLBACK,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +32,8 @@ pub struct Theme<'a> {
     pub list_item: ListItem,
     pub list: List,
     pub editor: Editor,
+    pub notification: Notification,
+    pub notification_list: NotificationList,
 }
 
 impl<'a> Default for Theme<'a> {
