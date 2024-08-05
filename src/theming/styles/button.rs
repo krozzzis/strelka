@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Button {
-    hover: ButtonStyle,
-    active: ButtonStyle,
+    pub hover: ButtonStyle,
+    pub active: ButtonStyle,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct ButtonStyle {
-    text: Color,
-    background: Color,
+    pub text: Color,
+    pub background: Color,
 }
 
 #[cfg(test)]

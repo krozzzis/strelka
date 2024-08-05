@@ -1,6 +1,6 @@
 mod color;
 mod styles;
-mod theme;
+pub mod theme;
 
 use iced::{
     border::Radius,
@@ -8,7 +8,7 @@ use iced::{
     Border, Color,
 };
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Theme {
     pub background: Color,
     pub background2: Color,
@@ -36,6 +36,14 @@ impl Theme {
             border_color: Color::from_rgb8(115, 121, 148),
             element_radius: 4.0,
             element_padding: 4.0,
+        }
+    }
+
+    pub fn from_theme(theme: &theme::Theme) -> Self {
+        Self {
+            background: theme.button.active.background.into(),
+            text: theme.button.active.text.into(),
+            ..Default::default()
         }
     }
 

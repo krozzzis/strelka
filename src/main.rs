@@ -31,6 +31,7 @@ use std::{
     collections::HashMap,
     ffi::OsStr,
     path::{Path, PathBuf},
+    str::FromStr,
     sync::Arc,
     time::Duration,
 };
@@ -80,6 +81,7 @@ pub enum AppMessage {
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
     ChangeTheme(String),
+    LoadTheme(String, Theme),
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
@@ -133,7 +135,7 @@ impl Default for App {
                 key: Key::Character(SmolStr::new_inline("p")),
                 modifiers: Modifiers::CTRL,
             },
-            AppMessage::ChangeTheme("dark".to_owned()),
+            AppMessage::ChangeTheme("custom".to_owned()),
         );
 
         let mut themes = HashMap::new();
@@ -212,6 +214,16 @@ fn get_file_name(path: &Path) -> String {
         .to_owned()
 }
 
+async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme> {
+    let theme = theming::theme::from_file(&path.into()).await;
+    if let Ok(theme) = theme {
+        let iced_theme = Theme::from_theme(&theme);
+        Some(iced_theme)
+    } else {
+        None
+    }
+}
+
 impl App {
     fn new() -> (Self, Task<AppMessage>) {
         let app = Self::default();
@@ -230,6 +242,12 @@ impl App {
             ));
         }
 
+        // Load theme from file
+        tasks.push(Task::perform(
+            load_theme_from_file("./themes/light.toml"),
+            |theme| AppMessage::LoadTheme("custom".to_string(), theme.unwrap_or_default()),
+        ));
+
         (app, Task::batch(tasks))
     }
 
@@ -239,6 +257,11 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
+            AppMessage::LoadTheme(name, theme) => {
+                println!("Loaded theme {name}");
+                self.themes.insert(name, theme);
+            }
+
             AppMessage::SavedFile(id) => {
                 if let Some(handler) = self.documents.get_mut(&id) {
                     handler.changed = false;

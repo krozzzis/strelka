@@ -1,6 +1,10 @@
+[info]
+name = "Light"
+description = "Default light theme"
+
 [button.active]
-background = "#ffffff"
-text = "#000000"
+background = "#ffefff"
+text = "#800000"
 
 [button.hover]
 background = "#808080"
