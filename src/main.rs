@@ -73,7 +73,7 @@ pub enum AppMessage {
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
     ChangeTheme(String),
-    LoadTheme(String, Theme<'static>),
+    LoadTheme(Theme<'static>),
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
@@ -164,11 +164,10 @@ impl<'a> App<'a> {
         }
 
         // Load theme from file
-        tasks.push(Task::future(get_themes("./themes")).then(|stream| {
-            Task::run(stream, |theme: theming::theme::Theme| {
-                AppMessage::LoadTheme((*theme.info.name).to_owned(), Theme::from_theme(theme))
-            })
-        }));
+        tasks.push(
+            Task::future(get_themes("./themes"))
+                .then(|stream| Task::run(stream, |theme: Theme| AppMessage::LoadTheme(theme))),
+        );
 
         (app, Task::batch(tasks))
     }
@@ -179,8 +178,9 @@ impl<'a> App<'a> {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
-            AppMessage::LoadTheme(name, theme) => {
-                println!("Loaded theme {name}");
+            AppMessage::LoadTheme(theme) => {
+                let name = theme.info.name.to_string();
+                println!("Loaded theme {}", name);
                 self.themes.insert(name.clone(), theme);
 
                 // Automatically change theme to just loaded if this theme set as default
@@ -363,8 +363,7 @@ impl<'a> App<'a> {
         );
 
         let grid = row![
-            Container::new(file_explorer)
-                .width(Length::Fixed(self.theme.theme.file_explorer.width)),
+            Container::new(file_explorer).width(Length::Fixed(self.theme.file_explorer.width)),
             Container::new(editor),
         ];
 

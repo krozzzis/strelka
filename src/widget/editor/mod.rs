@@ -46,7 +46,7 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
         let fallback = &theming::FALLBACK;
-        let theme = &self.theme.unwrap_or(fallback).theme.editor;
+        let theme = &self.theme.unwrap_or(fallback).editor;
 
         let editor = Container::new(center(
             Container::new(

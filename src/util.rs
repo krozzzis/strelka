@@ -7,12 +7,10 @@ use std::{
 
 use tokio::{fs, io::AsyncWriteExt};
 
-use crate::theming;
+use crate::theming::Theme;
 use futures_core::stream::Stream;
 
-pub async fn get_themes<'a>(
-    path: impl Into<PathBuf>,
-) -> impl Stream<Item = theming::theme::Theme<'a>> {
+pub async fn get_themes<'a>(path: impl Into<PathBuf>) -> impl Stream<Item = Theme<'a>> {
     let mut dir_entries = fs::read_dir(path.into()).await.unwrap();
 
     async_stream::stream! {
@@ -86,10 +84,8 @@ pub fn get_file_name(path: &Path) -> String {
         .to_owned()
 }
 
-pub async fn load_theme_from_file(
-    path: impl Into<PathBuf>,
-) -> Option<theming::theme::Theme<'static>> {
-    let theme = theming::theme::from_file(path.into()).await;
+pub async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme<'static>> {
+    let theme = Theme::from_file(path.into()).await;
     if let Ok(theme) = theme {
         Some(theme)
     } else {

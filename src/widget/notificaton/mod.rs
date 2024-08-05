@@ -16,7 +16,7 @@ pub fn notification<'a, Message: 'a>(
     theme: Option<&'a Theme>,
 ) -> Element<'a, Message> {
     let fallback = &theming::FALLBACK;
-    let theme = &theme.unwrap_or(fallback).theme.notification;
+    let theme = &theme.unwrap_or(fallback).notification;
 
     Container::new(widget::text(notification.text))
         .padding(8.0)
@@ -49,7 +49,7 @@ pub fn notification_list<'a, Message: 'a>(
     }
 
     let fallback = &theming::FALLBACK;
-    let theme = &theme.unwrap_or(fallback).theme.notification_list;
+    let theme = &theme.unwrap_or(fallback).notification_list;
     column(entries)
         .spacing(theme.spacing)
         .padding(theme.padding)

@@ -70,47 +70,45 @@ where
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
+        let fallback = &theming::FALLBACK;
+        let theme = &self.theme.unwrap_or(fallback).list_item;
+
         Button::new(
             text(self.title.clone())
                 .size(14.0)
                 .style(move |_| text::Style {
-                    color: Some(self.theme.map_or(Theme::default().text, |theme| theme.text)),
+                    color: Some(theme.active.text.into()),
                 }),
         )
         .on_press_maybe(self.on_click.clone())
         .width(Length::Fill)
         .padding(Padding::new(4.0).left(24.0))
-        .style(move |_, status| {
-            let fallback = &theming::FALLBACK;
-            let theme = &self.theme.unwrap_or(fallback).theme.list_item;
-
-            match status {
-                button::Status::Active | button::Status::Disabled => button::Style {
-                    background: if self.selected {
-                        Some(theme.selected.background.into())
-                    } else {
-                        Some(theme.active.background.into())
-                    },
-                    text_color: theme.active.text.into(),
-                    border: Border {
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: Radius::new(theme.active.radius),
-                    },
-                    ..Default::default()
+        .style(move |_, status| match status {
+            button::Status::Active | button::Status::Disabled => button::Style {
+                background: if self.selected {
+                    Some(theme.selected.background.into())
+                } else {
+                    Some(theme.active.background.into())
                 },
-
-                button::Status::Hovered | button::Status::Pressed => button::Style {
-                    background: Some(theme.hover.background.into()),
-                    text_color: theme.hover.text.into(),
-                    border: Border {
-                        color: Color::TRANSPARENT,
-                        width: 0.0,
-                        radius: Radius::new(theme.hover.radius),
-                    },
-                    ..Default::default()
+                text_color: theme.active.text.into(),
+                border: Border {
+                    color: Color::TRANSPARENT,
+                    width: 0.0,
+                    radius: Radius::new(theme.active.radius),
                 },
-            }
+                ..Default::default()
+            },
+
+            button::Status::Hovered | button::Status::Pressed => button::Style {
+                background: Some(theme.hover.background.into()),
+                text_color: theme.hover.text.into(),
+                border: Border {
+                    color: Color::TRANSPARENT,
+                    width: 0.0,
+                    radius: Radius::new(theme.hover.radius),
+                },
+                ..Default::default()
+            },
         })
         .into()
     }

@@ -6,7 +6,7 @@ use crate::theming::styles::{
     notification_list::NotificationList, tab::Tab, tab_bar::TabBar,
 };
 
-use iced::futures::TryFutureExt;
+use iced::{futures::TryFutureExt, widget::button};
 use serde::{Deserialize, Serialize};
 
 pub const FALLBACK: Theme = Theme {
@@ -56,6 +56,32 @@ pub struct Theme<'a> {
     pub generic: Generic,
 }
 
+impl<'a> Theme<'a> {
+    pub fn text_button(&self) -> impl Fn(&iced::Theme, button::Status) -> button::Style + '_ {
+        move |_, status| match status {
+            button::Status::Hovered | button::Status::Pressed => button::Style {
+                background: Some(self.text_button.hover.background.into()),
+                text_color: self.text_button.hover.text.into(),
+                ..Default::default()
+            },
+
+            button::Status::Disabled | button::Status::Active => button::Style {
+                background: Some(self.text_button.active.background.into()),
+                text_color: self.text_button.active.text.into(),
+                ..Default::default()
+            },
+        }
+    }
+
+    pub async fn from_file(path: PathBuf) -> Result<Theme<'a>, String> {
+        let text = tokio::fs::read_to_string(path)
+            .map_err(|e| e.to_string())
+            .await?;
+        let theme = toml::from_str(&text).map_err(|e| e.to_string())?;
+        Ok(theme)
+    }
+}
+
 impl<'a> Default for Theme<'a> {
     fn default() -> Self {
         FALLBACK
@@ -66,12 +92,4 @@ impl<'a> Default for Theme<'a> {
 pub struct Info<'a> {
     pub name: Cow<'a, str>,
     pub description: Cow<'a, str>,
-}
-
-pub async fn from_file<'a>(path: PathBuf) -> Result<Theme<'a>, String> {
-    let text = tokio::fs::read_to_string(path)
-        .map_err(|e| e.to_string())
-        .await?;
-    let theme = toml::from_str(&text).map_err(|e| e.to_string())?;
-    Ok(theme)
 }

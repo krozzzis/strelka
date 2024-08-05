@@ -102,8 +102,6 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let fallback = &theming::FALLBACK;
-
         let dirs = self.dirs.iter().map(|path| {
             ListItem::new(get_directory_name(path).unwrap_or(String::from("NaN")))
                 .click(Message::OpenDir((*path).clone()))
@@ -117,13 +115,13 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
                 .theme(self.theme)
         });
 
-        let theme = &self.theme.unwrap_or(fallback).theme;
+        let theme = self.theme.unwrap_or(&theming::FALLBACK);
 
         let items = container(list(
             dirs.chain(files)
                 .map(|x| x.into())
                 .collect::<Vec<Element<_>>>(),
-            self.theme.unwrap_or(fallback),
+            theme,
         ))
         .padding(theme.file_explorer.padding);
 
@@ -142,7 +140,7 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
                     .theme(self.theme)
                     .click(Message::NewFile)
                     .into()],
-                self.theme.unwrap_or(fallback),
+                theme,
             ))
             .padding(theme.context_menu.padding + theme.context_menu.border_width)
             .width(Length::Fixed(200.0))

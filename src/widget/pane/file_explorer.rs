@@ -20,8 +20,8 @@ pub fn file_explorer_pane<'a, Message: 'a + Clone>(
     .width(Length::Fill)
     .height(Length::Fill)
     .style(|_| container::Style {
-        background: Some(theme.theme.file_explorer.background.into()),
-        text_color: Some(theme.theme.file_explorer.text.into()),
+        background: Some(theme.file_explorer.background.into()),
+        text_color: Some(theme.file_explorer.text.into()),
         ..Default::default()
     });
 

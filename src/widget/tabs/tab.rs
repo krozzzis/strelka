@@ -67,7 +67,7 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
             .on_press_maybe(self.on_click.clone())
             .style(move |_, status| {
                 let fallback = &theming::FALLBACK;
-                let theme = &self.theme.unwrap_or(fallback).theme.tab;
+                let theme = &self.theme.unwrap_or(fallback).tab;
 
                 match status {
                     button::Status::Hovered | button::Status::Pressed => button::Style {

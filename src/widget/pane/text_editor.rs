@@ -37,8 +37,8 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
                 .style(theme.text_button()),
         ))
         .style(|_| container::Style {
-            background: Some(theme.theme.generic.background.into()),
-            text_color: Some(theme.theme.generic.text.into()),
+            background: Some(theme.generic.background.into()),
+            text_color: Some(theme.generic.text.into()),
             ..Default::default()
         })
     };

@@ -11,7 +11,7 @@ pub fn list<'a, Message: 'a>(
 ) -> Element<'a, Message> {
     container(
         column(items)
-            .spacing(theme.theme.list.spacing)
+            .spacing(theme.list.spacing)
             .width(Length::Fill)
             .height(Length::Shrink),
     )
