@@ -30,7 +30,7 @@ pub fn tab_bar<'a, Message: 'a + Clone>(
         .height(Length::Fixed(36.0))
         .padding(Padding::new(4.0).bottom(0.0))
         .style(move |_| container::Style {
-            background: Some(theme.background2.into()),
+            background: Some(theme.surface.into()),
             ..theme.container()
         })
         .into()

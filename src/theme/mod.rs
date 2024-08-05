@@ -8,6 +8,7 @@ use iced::{
 pub struct Theme {
     pub background: Color,
     pub background2: Color,
+    pub surface: Color,
     pub text: Color,
     pub subtext: Color,
     pub selected: Color,
@@ -22,7 +23,8 @@ impl Theme {
     pub fn dark() -> Self {
         Self {
             background: Color::from_rgb8(18, 18, 18),
-            background2: Color::from_rgb8(36, 36, 36),
+            background2: Color::from_rgb8(24, 24, 37),
+            surface: Color::from_rgb8(49, 50, 68),
             text: Color::from_rgb8(255, 255, 255),
             subtext: Color::from_rgb8(178, 178, 178),
             selected: Color::from_rgb8(40, 40, 40),
@@ -36,6 +38,14 @@ impl Theme {
     pub fn container(&self) -> container::Style {
         container::Style {
             background: Some(self.background.into()),
+            text_color: Some(self.text),
+            ..Default::default()
+        }
+    }
+
+    pub fn container2(&self) -> container::Style {
+        container::Style {
+            background: Some(self.background2.into()),
             text_color: Some(self.text),
             ..Default::default()
         }
@@ -77,7 +87,8 @@ impl Default for Theme {
     fn default() -> Self {
         Self {
             background: Color::from_rgb8(239, 241, 245),
-            background2: Color::from_rgb8(204, 208, 218),
+            background2: Color::from_rgb8(220, 224, 232),
+            surface: Color::from_rgb8(204, 208, 218),
             text: Color::from_rgb8(76, 79, 105),
             subtext: Color::from_rgb8(92, 95, 119),
             selected: Color::from_rgb8(156, 160, 176),

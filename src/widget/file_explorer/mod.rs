@@ -1,7 +1,10 @@
 use std::path::{Path, PathBuf};
 
-use iced::widget::{component, container, stack, Component, Container, Space};
 use iced::{border::Radius, Border, Color, Element, Length, Shadow, Vector};
+use iced::{
+    widget::{component, container, stack, Component, Container, Space},
+    Size,
+};
 use iced_aw::widgets::ContextMenu;
 
 use crate::{
@@ -110,24 +113,26 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
             dirs.chain(files)
                 .map(|x| x.into())
                 .collect::<Vec<Element<_>>>(),
-            self.theme,
         );
 
+        let container_style = self
+            .theme
+            .map_or(Theme::default().container2(), |theme| theme.container2());
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
-            .height(Length::Fill);
+            .height(Length::Fill)
+            .style(move |_| container_style);
 
         let menu = ContextMenu::new(underlay, move || {
-            container(list(
-                vec![ListItem::new("New file").click(Message::NewFile).into()],
-                self.theme,
-            ))
+            container(list(vec![ListItem::new("New file")
+                .click(Message::NewFile)
+                .into()]))
             .padding(4.0)
             .width(Length::Fixed(200.0))
             .style(move |_| {
                 let theme = self.theme.cloned().unwrap_or(Theme::default());
                 container::Style {
-                    background: Some(theme.background.into()),
+                    background: Some(theme.surface.into()),
                     border: Border {
                         color: theme.border_color,
                         width: 1.0,
@@ -145,6 +150,10 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         });
 
         stack![menu, items].into()
+    }
+
+    fn size_hint(&self) -> iced::Size<Length> {
+        Size::new(Length::Fill, Length::Fill)
     }
 }
 

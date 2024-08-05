@@ -19,7 +19,7 @@ pub fn file_explorer_pane<'a, Message: 'a + Clone>(
     )
     .width(Length::Fill)
     .height(Length::Fill)
-    .style(|_| theme.container());
+    .style(|_| theme.container2());
 
     explorer.into()
 }

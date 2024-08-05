@@ -5,10 +5,7 @@ use iced::{
 
 use crate::theme::Theme;
 
-pub fn list<'a, Message: 'a>(
-    items: Vec<Element<'a, Message>>,
-    theme: Option<&'a Theme>,
-) -> Element<'a, Message> {
+pub fn list<'a, Message: 'a>(items: Vec<Element<'a, Message>>) -> Element<'a, Message> {
     container(
         column(items)
             .spacing(4.0)
@@ -17,6 +14,5 @@ pub fn list<'a, Message: 'a>(
             .height(Length::Shrink),
     )
     .width(Length::Fill)
-    .style(move |_| theme.map_or(Theme::default().container(), |theme| theme.container()))
     .into()
 }

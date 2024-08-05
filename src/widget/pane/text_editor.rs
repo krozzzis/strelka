@@ -35,6 +35,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
                 .on_press_maybe(pick_file)
                 .style(theme.transparent_button()),
         ))
+        .style(|_| theme.container())
     };
 
     let tabs = tab_bar(
