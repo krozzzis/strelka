@@ -3,11 +3,15 @@ use iced::{
     Element, Length,
 };
 
-pub fn list<'a, Message: 'a>(items: Vec<Element<'a, Message>>) -> Element<'a, Message> {
+use crate::theming::Theme;
+
+pub fn list<'a, Message: 'a>(
+    items: Vec<Element<'a, Message>>,
+    theme: &'a Theme,
+) -> Element<'a, Message> {
     container(
         column(items)
-            .spacing(4.0)
-            .padding(8.0)
+            .spacing(theme.theme.list.spacing)
             .width(Length::Fill)
             .height(Length::Shrink),
     )

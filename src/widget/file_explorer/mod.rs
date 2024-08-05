@@ -102,6 +102,8 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
+        let fallback = &theming::FALLBACK;
+
         let dirs = self.dirs.iter().map(|path| {
             ListItem::new(get_directory_name(path).unwrap_or(String::from("NaN")))
                 .click(Message::OpenDir((*path).clone()))
@@ -119,9 +121,9 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
             dirs.chain(files)
                 .map(|x| x.into())
                 .collect::<Vec<Element<_>>>(),
+            self.theme.unwrap_or(fallback),
         );
 
-        let fallback = &theming::FALLBACK;
         let theme = &self.theme.unwrap_or(fallback).theme;
 
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
@@ -134,11 +136,14 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
             });
 
         let menu = ContextMenu::new(underlay, move || {
-            container(list(vec![ListItem::new("New file")
-                .theme(self.theme)
-                .click(Message::NewFile)
-                .into()]))
-            .padding(theme.context_menu.padding)
+            container(list(
+                vec![ListItem::new("New file")
+                    .theme(self.theme)
+                    .click(Message::NewFile)
+                    .into()],
+                self.theme.unwrap_or(fallback),
+            ))
+            .padding(theme.context_menu.padding + theme.context_menu.border_width)
             .width(Length::Fixed(200.0))
             .style(move |_| container::Style {
                 background: Some(theme.context_menu.background.into()),
