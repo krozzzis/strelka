@@ -35,3 +35,20 @@ radius = 4.0
 background = "#400000"
 padding = 8.0
 spacing = 4.0
+
+
+# ListItem
+[list_item.active]
+background = "#ffefff"
+text = "#800000"
+radius = 4.0
+
+[list_item.hover]
+background = "#808080"
+text = "#000000"
+radius = 4.0
+
+[list_item.selected]
+background = "#ff0000"
+text = "#000000"
+radius = 4.0

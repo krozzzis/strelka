@@ -4,7 +4,7 @@ use iced::{
     Border, Color, Element, Length, Padding,
 };
 
-use crate::theming::Theme;
+use crate::theming::{self, Theme};
 
 pub struct ListItem<'a, Message>
 where
@@ -81,31 +81,32 @@ where
         .width(Length::Fill)
         .padding(Padding::new(4.0).left(24.0))
         .style(move |_, status| {
-            let theme = self.theme.cloned().unwrap_or(Theme::default());
+            let fallback = &theming::FALLBACK;
+            let theme = &self.theme.unwrap_or(fallback).theme.list_item;
 
             match status {
                 button::Status::Active | button::Status::Disabled => button::Style {
                     background: if self.selected {
-                        Some(theme.selected.into())
+                        Some(theme.selected.background.into())
                     } else {
-                        None
+                        Some(theme.active.background.into())
                     },
-                    text_color: theme.text,
+                    text_color: theme.active.text.into(),
                     border: Border {
                         color: Color::TRANSPARENT,
                         width: 0.0,
-                        radius: Radius::new(4.0),
+                        radius: Radius::new(theme.active.radius),
                     },
                     ..Default::default()
                 },
 
                 button::Status::Hovered | button::Status::Pressed => button::Style {
-                    background: Some(theme.selected.into()),
-                    text_color: theme.text,
+                    background: Some(theme.hover.background.into()),
+                    text_color: theme.hover.text.into(),
                     border: Border {
                         color: Color::TRANSPARENT,
                         width: 0.0,
-                        radius: Radius::new(4.0),
+                        radius: Radius::new(theme.hover.radius),
                     },
                     ..Default::default()
                 },

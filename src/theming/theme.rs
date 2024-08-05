@@ -1,6 +1,6 @@
 use std::{borrow::Cow, path::PathBuf};
 
-use crate::theming::styles::{button::Button, tab::Tab, tab_bar::TabBar};
+use crate::theming::styles::{button::Button, list_item::ListItem, tab::Tab, tab_bar::TabBar};
 
 use iced::futures::TryFutureExt;
 use serde::{Deserialize, Serialize};
@@ -13,6 +13,7 @@ pub const FALLBACK: Theme = Theme {
     button: Button::FALLBACK,
     tab: Tab::FALLBACK,
     tab_bar: TabBar::FALLBACK,
+    list_item: ListItem::FALLBACK,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +22,7 @@ pub struct Theme<'a> {
     pub button: Button,
     pub tab: Tab,
     pub tab_bar: TabBar,
+    pub list_item: ListItem,
 }
 
 impl<'a> Default for Theme<'a> {
