@@ -1,0 +1,7 @@
+[button.active]
+background = "#ffffff"
+text = "#000000"
+
+[button.hover]
+background = "#808080"
+text = "#000000"

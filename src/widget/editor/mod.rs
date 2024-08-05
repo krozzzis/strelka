@@ -5,10 +5,10 @@ use iced::{
         text_editor::{self, Content},
         Component, Container, TextEditor,
     },
-    Background, Border, Color, Element, Length, Pixels,
+    Border, Color, Element, Length, Pixels,
 };
 
-use crate::{styles, theme::Theme};
+use crate::{styles, theming::Theme};
 
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {

@@ -6,7 +6,7 @@ use iced::{
     Element, Length, Padding,
 };
 
-use crate::{theme::Theme, widget::tabs::Tab};
+use crate::{theming::Theme, widget::tabs::Tab};
 
 pub fn tab_bar<'a, Message: 'a + Clone>(
     labels: Vec<(Arc<String>, Message, Option<Message>)>,

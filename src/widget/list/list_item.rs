@@ -4,7 +4,7 @@ use iced::{
     Border, Color, Element, Length, Padding,
 };
 
-use crate::theme::Theme;
+use crate::theming::Theme;
 
 pub struct ListItem<'a, Message>
 where

@@ -11,10 +11,15 @@ lto = true
 [dependencies]
 cosmic-text = "0.12"
 rfd = "0.14.1"
+toml = "0.8.19"
 
 [dependencies.tokio]
 version = "1.39.1"
 features = ["fs", "io-util"]
+
+[dependencies.serde]
+version = "1.0.204"
+features = ["derive"]
 
 [dependencies.iced]
 git = "https://github.com/iced-rs/iced"

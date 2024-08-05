@@ -1,3 +1,6 @@
+mod color;
+mod theme;
+
 use iced::{
     border::Radius,
     widget::{button, container},

@@ -8,7 +8,7 @@ use iced::{
 use iced_aw::widgets::ContextMenu;
 
 use crate::{
-    theme::Theme,
+    theming::Theme,
     widget::list::{list, ListItem},
 };
 

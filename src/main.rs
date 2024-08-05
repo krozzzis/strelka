@@ -4,7 +4,7 @@ mod icons;
 mod notification;
 mod plugin;
 mod styles;
-mod theme;
+mod theming;
 mod widget;
 
 use iced::{
@@ -38,7 +38,7 @@ use std::{
 use crate::{
     notification::{Notification, NotificationList},
     plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
-    theme::Theme,
+    theming::Theme,
     widget::pane::{file_explorer_pane, text_editor_pane},
 };
 

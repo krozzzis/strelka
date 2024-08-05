@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use iced::widget::Container;
 use iced::{Element, Length};
 
-use crate::{theme::Theme, widget::file_explorer::FileExplorer};
+use crate::{theming::Theme, widget::file_explorer::FileExplorer};
 
 pub fn file_explorer_pane<'a, Message: 'a + Clone>(
     content: Option<&'a Vec<PathBuf>>,

@@ -9,7 +9,7 @@ use iced::{
     Length,
 };
 
-use crate::{theme::Theme, widget::tabs::tab_bar};
+use crate::{theming::Theme, widget::tabs::tab_bar};
 use crate::{widget::editor::NoteEditor, DocumentHandler, DocumentId};
 
 pub fn text_editor_pane<'a, Message: 'a + Clone>(
