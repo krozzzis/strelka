@@ -22,14 +22,14 @@ impl Theme {
     /// Dark theme from material ui
     pub fn dark() -> Self {
         Self {
-            background: Color::from_rgb8(18, 18, 18),
-            background2: Color::from_rgb8(24, 24, 37),
-            surface: Color::from_rgb8(49, 50, 68),
-            text: Color::from_rgb8(255, 255, 255),
-            subtext: Color::from_rgb8(178, 178, 178),
-            selected: Color::from_rgb8(40, 40, 40),
-            primary: Color::from_rgb8(245, 224, 220),
-            border_color: Color::from_rgb8(40, 40, 40),
+            background: Color::from_rgb8(48, 52, 70),
+            background2: Color::from_rgb8(35, 38, 52),
+            surface: Color::from_rgb8(65, 69, 89),
+            text: Color::from_rgb8(198, 208, 245),
+            subtext: Color::from_rgb8(165, 173, 206),
+            selected: Color::from_rgb8(98, 104, 128),
+            primary: Color::from_rgb8(242, 213, 207),
+            border_color: Color::from_rgb8(115, 121, 148),
             element_radius: 4.0,
             element_padding: 4.0,
         }

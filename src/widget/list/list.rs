@@ -1,9 +1,7 @@
 use iced::{
     widget::{column, container},
-    Border, Element, Length,
+    Element, Length,
 };
-
-use crate::theme::Theme;
 
 pub fn list<'a, Message: 'a>(items: Vec<Element<'a, Message>>) -> Element<'a, Message> {
     container(
