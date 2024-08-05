@@ -1,6 +1,5 @@
 #![windows_subsystem = "windows"]
 
-mod icons;
 mod notification;
 mod plugin;
 mod styles;
@@ -11,14 +10,13 @@ mod widget;
 use iced::{
     advanced::graphics::core::SmolStr,
     keyboard::{Key, Modifiers},
-    Length, Padding, Subscription, Task,
+    widget::text_editor,
+    Length, Subscription, Task,
 };
 use iced::{
     keyboard::on_key_press,
     widget::{
-        column, container, horizontal_space, row, stack,
-        text_editor::{self, Content},
-        vertical_space, Container,
+        column, horizontal_space, row, stack, text_editor::Content, vertical_space, Container,
     },
 };
 use iced::{Element, Settings};
@@ -87,7 +85,6 @@ pub enum AppMessage {
     SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
-    CosmicAction(cosmic_text::Action),
     OnKeyPress(Key, Modifiers),
 }
 
@@ -291,8 +288,6 @@ impl<'a> App<'a> {
                     handler.text_content.perform(action);
                 }
             }
-
-            AppMessage::CosmicAction(_action) => {}
 
             AppMessage::SetDirectoryContent(content) => self.directory_content = Some(content),
 

@@ -9,7 +9,6 @@ strip = true
 lto = true
 
 [dependencies]
-cosmic-text = "0.12"
 rfd = "0.14.1"
 toml = "0.8.19"
 async-stream = "0.3"

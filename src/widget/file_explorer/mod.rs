@@ -75,6 +75,12 @@ impl<'a, Message> FileExplorer<'a, Message> {
     }
 }
 
+impl<'a, Message> Default for FileExplorer<'a, Message> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
     type State = ();
 

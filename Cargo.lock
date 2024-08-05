@@ -2500,7 +2500,6 @@ name = "p3"
 version = "0.1.0"
 dependencies = [
  "async-stream",
- "cosmic-text",
  "futures-core",
  "iced",
  "iced_aw",

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use iced::{advanced::graphics::core::SmolStr, keyboard::Modifiers};
 
-use crate::plugin::{self, Hotkey, Plugin, PluginAction, PluginMessage};
+use crate::plugin::{Hotkey, Plugin, PluginAction, PluginMessage};
 
 pub struct ExamplePlugin {}
 

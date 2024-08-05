@@ -17,6 +17,7 @@ pub struct PluginHost<Message> {
     pub on_plugin_action: Option<Box<dyn Fn(PluginId, PluginAction) -> Message>>,
 }
 
+#[allow(dead_code)]
 impl<Message> PluginHost<Message> {
     pub fn new() -> Self {
         Self {
@@ -35,7 +36,7 @@ impl<Message> PluginHost<Message> {
 
     /// Returns list of registered plugin ids
     pub fn get_plugin_ids(&self) -> Vec<&String> {
-        self.plugins.iter().map(|(id, _handler)| id).collect()
+        self.plugins.keys().collect()
     }
 
     /// Returns `Some(PluginStatus)` if plugin with given id is registered

@@ -40,7 +40,7 @@ impl NotificationList {
 
     pub fn to_vec(&self) -> Vec<Arc<Notification>> {
         let mut list: Vec<(&usize, &Arc<Notification>)> = self.notifications.iter().collect();
-        list.sort_by(|a, b| a.0.cmp(&b.0));
+        list.sort_by(|a, b| a.0.cmp(b.0));
         list.iter().cloned().map(|(_, x)| x.clone()).collect()
     }
 }

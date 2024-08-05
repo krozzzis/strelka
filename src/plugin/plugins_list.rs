@@ -20,6 +20,7 @@ pub struct PluginList<'a, Message> {
 }
 
 /// Create plugin list widget
+#[allow(dead_code)]
 pub fn plugin_list<'a, Message, F>(
     plugins: Vec<PluginEntry<'a>>,
     change_status: F,
