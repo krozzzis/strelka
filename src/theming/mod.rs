@@ -1,4 +1,5 @@
 mod color;
+mod styles;
 mod theme;
 
 use iced::{
