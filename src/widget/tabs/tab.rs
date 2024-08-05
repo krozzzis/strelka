@@ -66,28 +66,16 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
         let tab = button(container(Text::new(self.label.clone())).height(28.0))
             .on_press_maybe(self.on_click.clone())
             .style(move |_, status| {
-                let bg_normal = self
-                    .theme
-                    .map_or(Theme::default().background, move |theme| theme.background);
-                let bg_selected = self
-                    .theme
-                    .map_or(Theme::default().selected, move |theme| theme.selected);
-                let text_color = self
-                    .theme
-                    .map_or(Theme::default().text, move |theme| theme.text);
-                let border_radius = self
-                    .theme
-                    .map_or(Theme::default().element_radius, move |theme| {
-                        theme.element_radius
-                    });
+                let theme = self.theme.cloned().unwrap_or_default().theme.tab;
+
                 match status {
                     button::Status::Hovered | button::Status::Pressed => button::Style {
-                        background: Some(bg_selected.into()),
-                        text_color,
+                        background: Some(theme.hover.background.into()),
+                        text_color: theme.hover.text.into(),
                         border: Border {
                             radius: Radius {
-                                top_left: border_radius,
-                                top_right: border_radius,
+                                top_left: theme.hover.radius,
+                                top_right: theme.hover.radius,
                                 bottom_right: 0.0,
                                 bottom_left: 0.0,
                             },
@@ -97,15 +85,15 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
                     },
                     button::Status::Active | button::Status::Disabled => button::Style {
                         background: Some(if self.selected {
-                            bg_selected.into()
+                            theme.selected.background.into()
                         } else {
-                            bg_normal.into()
+                            theme.active.background.into()
                         }),
-                        text_color,
+                        text_color: theme.active.text.into(),
                         border: Border {
                             radius: Radius {
-                                top_left: border_radius,
-                                top_right: border_radius,
+                                top_left: theme.active.radius,
+                                top_right: theme.active.radius,
                                 bottom_right: 0.0,
                                 bottom_left: 0.0,
                             },

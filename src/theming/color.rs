@@ -77,6 +77,18 @@ impl From<Color> for iced::Color {
     }
 }
 
+impl From<Color> for iced::Background {
+    fn from(val: Color) -> Self {
+        iced::Color {
+            r: val.r,
+            g: val.g,
+            b: val.b,
+            a: val.a,
+        }
+        .into()
+    }
+}
+
 impl FromStr for Color {
     type Err = String;
 

@@ -8,6 +8,8 @@ use iced::{
     Border, Color,
 };
 
+use crate::theming;
+
 #[derive(Debug, Clone)]
 pub struct Theme {
     pub background: Color,
@@ -20,6 +22,7 @@ pub struct Theme {
     pub border_color: Color,
     pub element_radius: f32,
     pub element_padding: f32,
+    pub theme: theming::theme::Theme,
 }
 
 impl Theme {
@@ -36,13 +39,15 @@ impl Theme {
             border_color: Color::from_rgb8(115, 121, 148),
             element_radius: 4.0,
             element_padding: 4.0,
+            theme: theming::theme::Theme::default(),
         }
     }
 
-    pub fn from_theme(theme: &theme::Theme) -> Self {
+    pub fn from_theme(theme: theme::Theme) -> Self {
         Self {
             background: theme.button.active.background.into(),
             text: theme.button.active.text.into(),
+            theme: theme,
             ..Default::default()
         }
     }
@@ -108,6 +113,7 @@ impl Default for Theme {
             border_color: Color::from_rgb8(124, 127, 147),
             element_radius: 4.0,
             element_padding: 4.0,
+            theme: theming::theme::Theme::default(),
         }
     }
 }

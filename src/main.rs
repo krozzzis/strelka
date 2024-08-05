@@ -217,7 +217,7 @@ fn get_file_name(path: &Path) -> String {
 async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme> {
     let theme = theming::theme::from_file(&path.into()).await;
     if let Ok(theme) = theme {
-        let iced_theme = Theme::from_theme(&theme);
+        let iced_theme = Theme::from_theme(theme);
         Some(iced_theme)
     } else {
         None
