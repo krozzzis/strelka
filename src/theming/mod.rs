@@ -10,8 +10,62 @@ use iced::{
 
 use crate::theming;
 
+pub const FALLBACK: Theme = Theme {
+    background: Color {
+        r: 1.0,
+        g: 1.0,
+        b: 1.0,
+        a: 1.0,
+    },
+    background2: Color {
+        r: 0.9,
+        g: 0.9,
+        b: 0.9,
+        a: 1.0,
+    },
+    surface: Color {
+        r: 0.8,
+        g: 0.8,
+        b: 0.8,
+        a: 1.0,
+    },
+    text: Color {
+        r: 0.0,
+        g: 0.0,
+        b: 0.0,
+        a: 1.0,
+    },
+    subtext: Color {
+        r: 0.2,
+        g: 0.2,
+        b: 0.2,
+        a: 1.0,
+    },
+    selected: Color {
+        r: 0.7,
+        g: 0.7,
+        b: 0.7,
+        a: 1.0,
+    },
+    primary: Color {
+        r: 0.7,
+        g: 0.2,
+        b: 0.2,
+        a: 1.0,
+    },
+    border_color: Color {
+        r: 0.7,
+        g: 0.7,
+        b: 0.7,
+        a: 1.0,
+    },
+    element_radius: 4.0,
+    element_padding: 4.0,
+    theme: theming::theme::FALLBACK,
+};
+
 #[derive(Debug, Clone)]
-pub struct Theme {
+pub struct Theme<'a> {
     pub background: Color,
     pub background2: Color,
     pub surface: Color,
@@ -22,10 +76,10 @@ pub struct Theme {
     pub border_color: Color,
     pub element_radius: f32,
     pub element_padding: f32,
-    pub theme: theming::theme::Theme,
+    pub theme: theming::theme::Theme<'a>,
 }
 
-impl Theme {
+impl<'a> Theme<'a> {
     /// Dark theme from material ui
     pub fn dark() -> Self {
         Self {
@@ -43,11 +97,11 @@ impl Theme {
         }
     }
 
-    pub fn from_theme(theme: theme::Theme) -> Self {
+    pub fn from_theme(theme: theme::Theme<'a>) -> Self {
         Self {
             background: theme.button.active.background.into(),
             text: theme.button.active.text.into(),
-            theme: theme,
+            theme,
             ..Default::default()
         }
     }
@@ -99,7 +153,7 @@ impl Theme {
     }
 }
 
-impl Default for Theme {
+impl<'a> Default for Theme<'a> {
     /// Light theme from Catppuccin Latte
     fn default() -> Self {
         Self {

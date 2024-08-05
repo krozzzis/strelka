@@ -17,7 +17,7 @@ pub struct FileExplorer<'a, Message> {
     pub dirs: Vec<&'a PathBuf>,
     pub selected_file: Option<PathBuf>,
     pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
-    pub theme: Option<&'a Theme>,
+    pub theme: Option<&'a Theme<'a>>,
 }
 
 impl<'a, Message> FileExplorer<'a, Message> {

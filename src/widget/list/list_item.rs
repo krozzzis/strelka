@@ -14,7 +14,7 @@ where
     tooltip: Option<String>,
     selected: bool,
     on_click: Option<Message>,
-    theme: Option<&'a Theme>,
+    theme: Option<&'a Theme<'a>>,
 }
 
 impl<'a, Message> ListItem<'a, Message>

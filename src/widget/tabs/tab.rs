@@ -6,11 +6,11 @@ use iced::{
     Border, Element, Length, Size,
 };
 
-use crate::theming::Theme;
+use crate::theming::{self, Theme};
 
 pub struct Tab<'a, Message> {
     pub label: Cow<'a, str>,
-    pub theme: Option<&'a Theme>,
+    pub theme: Option<&'a Theme<'a>>,
     pub selected: bool,
     pub on_click: Option<Message>,
     pub on_close: Option<Message>,
@@ -66,7 +66,8 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
         let tab = button(container(Text::new(self.label.clone())).height(28.0))
             .on_press_maybe(self.on_click.clone())
             .style(move |_, status| {
-                let theme = self.theme.cloned().unwrap_or_default().theme.tab;
+                let fallback = &theming::FALLBACK;
+                let theme = &self.theme.unwrap_or(fallback).theme.tab;
 
                 match status {
                     button::Status::Hovered | button::Status::Pressed => button::Style {

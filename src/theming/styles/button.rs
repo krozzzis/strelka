@@ -1,16 +1,29 @@
 use crate::theming::color::Color;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Button {
     pub hover: ButtonStyle,
     pub active: ButtonStyle,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct ButtonStyle {
     pub text: Color,
     pub background: Color,
+}
+
+impl Button {
+    pub const FALLBACK: Button = Button {
+        hover: ButtonStyle {
+            text: Color::BLACK,
+            background: Color::new(0.8, 0.8, 0.8, 1.0),
+        },
+        active: ButtonStyle {
+            text: Color::BLACK,
+            background: Color::new(0.9, 0.9, 0.9, 1.0),
+        },
+    };
 }
 
 #[cfg(test)]

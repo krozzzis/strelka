@@ -57,9 +57,9 @@ pub struct DocumentHandler {
     pub changed: bool,
 }
 
-pub struct App {
-    theme: Theme,
-    themes: HashMap<String, Theme>,
+pub struct App<'a> {
+    theme: Theme<'a>,
+    themes: HashMap<String, Theme<'a>>,
     documents: HashMap<DocumentId, DocumentHandler>,
     next_doc_id: DocumentId,
     opened_doc: DocumentId,
@@ -81,7 +81,7 @@ pub enum AppMessage {
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
     ChangeTheme(String),
-    LoadTheme(String, Theme),
+    LoadTheme(String, Theme<'static>),
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
@@ -96,7 +96,7 @@ pub enum AppMessage {
     OnKeyPress(Key, Modifiers),
 }
 
-impl Default for App {
+impl<'a> Default for App<'a> {
     fn default() -> Self {
         let mut plugin_host = PluginHost::new().on_plugin_action(AppMessage::PluginAction);
         plugin_host.register_plugin(
@@ -214,8 +214,8 @@ fn get_file_name(path: &Path) -> String {
         .to_owned()
 }
 
-async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme> {
-    let theme = theming::theme::from_file(&path.into()).await;
+async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme<'static>> {
+    let theme = theming::theme::from_file(path.into()).await;
     if let Ok(theme) = theme {
         let iced_theme = Theme::from_theme(theme);
         Some(iced_theme)
@@ -224,7 +224,7 @@ async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme> {
     }
 }
 
-impl App {
+impl<'a> App<'a> {
     fn new() -> (Self, Task<AppMessage>) {
         let app = Self::default();
         let mut tasks = Vec::new();
