@@ -8,7 +8,10 @@ use iced::{
     Border, Color, Element, Length, Pixels,
 };
 
-use crate::{styles, theming::Theme};
+use crate::{
+    styles,
+    theming::{self, Theme},
+};
 
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {
@@ -45,7 +48,9 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let theme = self.theme.cloned().unwrap_or(Theme::default());
+        let fallback = &theming::FALLBACK;
+        let theme = &self.theme.unwrap_or(fallback).theme.editor;
+
         let editor = Container::new(center(
             Container::new(
                 TextEditor::new(self.content)
@@ -60,30 +65,24 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
                             radius: Radius::new(0.0),
                         },
                         background: theme.background.into(),
-                        icon: theme.selected,
-                        placeholder: theme.subtext,
-                        value: theme.selected,
-                        selection: theme.primary,
+                        icon: theme.cursor.into(),
+                        placeholder: theme.text.into(),
+                        value: theme.cursor.into(),
+                        selection: theme.selection.into(),
                     }),
             )
             .padding(32.0)
             .max_width(Pixels::from(700.0))
-            .style(move |_| {
-                let theme = self.theme.cloned().unwrap_or(Theme::default());
-                container::Style {
-                    background: Some(theme.background.into()),
-                    text_color: Some(theme.text),
-                    ..Default::default()
-                }
+            .style(move |_| container::Style {
+                background: Some(theme.background.into()),
+                text_color: Some(theme.text.into()),
+                ..Default::default()
             }),
         ))
-        .style(move |_| {
-            let theme = self.theme.cloned().unwrap_or(Theme::default());
-            container::Style {
-                background: Some(theme.background.into()),
-                text_color: Some(theme.text),
-                ..Default::default()
-            }
+        .style(move |_| container::Style {
+            background: Some(theme.background.into()),
+            text_color: Some(theme.text.into()),
+            ..Default::default()
         });
         editor.into()
     }

@@ -32,7 +32,7 @@ radius = 4.0
 
 # TabBar
 [tab_bar]
-background = "#400000"
+background = "#804040"
 padding = 8.0
 spacing = 4.0
 
@@ -58,3 +58,11 @@ radius = 4.0
 [list]
 padding = 8.0
 spacing = 4.0
+
+
+# Editor
+[editor]
+background = "#ffffff"
+text = "#000000"
+cursor = "#cc4444"
+selection = "#ee8888"
