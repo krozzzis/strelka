@@ -363,7 +363,8 @@ impl<'a> App<'a> {
         );
 
         let grid = row![
-            Container::new(file_explorer).width(Length::Fixed(350.0)),
+            Container::new(file_explorer)
+                .width(Length::Fixed(self.theme.theme.file_explorer.width)),
             Container::new(editor),
         ];
 

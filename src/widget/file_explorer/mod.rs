@@ -117,21 +117,22 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
                 .theme(self.theme)
         });
 
-        let items = list(
+        let theme = &self.theme.unwrap_or(fallback).theme;
+
+        let items = container(list(
             dirs.chain(files)
                 .map(|x| x.into())
                 .collect::<Vec<Element<_>>>(),
             self.theme.unwrap_or(fallback),
-        );
-
-        let theme = &self.theme.unwrap_or(fallback).theme;
+        ))
+        .padding(theme.file_explorer.padding);
 
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
             .height(Length::Fill)
             .style(move |_| container::Style {
-                text_color: Some(theme.generic.text.into()),
-                background: Some(theme.generic.background2.into()),
+                text_color: Some(theme.file_explorer.text.into()),
+                background: Some(theme.file_explorer.background.into()),
                 ..Default::default()
             });
 

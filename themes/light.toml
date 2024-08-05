@@ -120,3 +120,11 @@ padding = 2
 shadow_x = 2
 shadow_y = 2
 shadow_blur = 2
+
+
+# File explorer
+[file_explorer]
+background = "#eeeeee"
+text = "#000000"
+padding = 4
+width = 300
