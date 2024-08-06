@@ -73,7 +73,7 @@ pub enum AppMessage {
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
     ChangeTheme(String),
-    LoadTheme(Theme<'static>),
+    LoadTheme(Box<Theme<'static>>),
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
@@ -164,10 +164,11 @@ impl<'a> App<'a> {
         }
 
         // Load theme from file
-        tasks.push(
-            Task::future(get_themes("./themes"))
-                .then(|stream| Task::run(stream, |theme: Theme| AppMessage::LoadTheme(theme))),
-        );
+        tasks.push(Task::future(get_themes("./themes")).then(|stream| {
+            Task::run(stream, |theme: Theme| {
+                AppMessage::LoadTheme(Box::new(theme))
+            })
+        }));
 
         (app, Task::batch(tasks))
     }
@@ -181,7 +182,7 @@ impl<'a> App<'a> {
             AppMessage::LoadTheme(theme) => {
                 let name = theme.info.name.to_string();
                 println!("Loaded theme {}", name);
-                self.themes.insert(name.clone(), theme);
+                self.themes.insert(name.clone(), *theme);
 
                 // Automatically change theme to just loaded if this theme set as default
                 if self.default_theme.eq(&name) {
