@@ -1,9 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use iced::{
-    widget::{button, center, container},
-    Element,
-};
+use iced::{widget::center, Element};
 use iced::{
     widget::{column, text_editor::Action, Container},
     Length,
@@ -11,7 +8,7 @@ use iced::{
 
 use crate::{
     theming::Theme,
-    widget::{button::text_button, tabs::tab_bar},
+    widget::{button::text_button, containers::background, tabs::tab_bar},
 };
 use crate::{widget::editor::NoteEditor, DocumentHandler, DocumentId};
 
@@ -34,14 +31,10 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
         )
         .height(Length::Fill)
     } else {
-        Container::new(center(
-            text_button("Open file Ctrl+O", theme).on_press_maybe(pick_file),
-        ))
-        .style(|_| container::Style {
-            background: Some(theme.generic.background.into()),
-            text_color: Some(theme.generic.text.into()),
-            ..Default::default()
-        })
+        background(
+            center(text_button("Open file Ctrl+O", theme).on_press_maybe(pick_file)),
+            theme,
+        )
     };
 
     let tabs = tab_bar(
