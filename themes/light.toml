@@ -123,6 +123,7 @@ border_color = "#cecece"
 border_width = 1
 radius = 4
 padding = 2
+width = 200
 shadow_x = 2
 shadow_y = 2
 shadow_blur = 2

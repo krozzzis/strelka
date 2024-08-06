@@ -143,7 +143,7 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
                 theme,
             ))
             .padding(theme.context_menu.padding + theme.context_menu.border_width)
-            .width(Length::Fixed(200.0))
+            .width(Length::Fixed(theme.context_menu.width))
             .style(move |_| container::Style {
                 background: Some(theme.context_menu.background.into()),
                 border: Border {
