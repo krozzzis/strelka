@@ -11,6 +11,7 @@ pub struct Button {
 pub struct ButtonStyle {
     pub text: Color,
     pub background: Color,
+    pub radius: f32,
 }
 
 impl Button {
@@ -18,10 +19,12 @@ impl Button {
         hover: ButtonStyle {
             text: Color::BLACK,
             background: Color::new(0.8, 0.8, 0.8, 1.0),
+            radius: 4.0,
         },
         active: ButtonStyle {
             text: Color::BLACK,
             background: Color::new(0.9, 0.9, 0.9, 1.0),
+            radius: 4.0,
         },
     };
 }
@@ -42,17 +45,19 @@ mod tests {
                 active: ButtonStyle {
                     text: Color::new(0.0, 0.0, 0.0, 1.0),
                     background: Color::new(1.0, 1.0, 1.0, 1.0),
+                    radius: 4.0,
                 },
                 hover: ButtonStyle {
                     text: Color::new(0.0, 0.0, 0.0, 1.0),
                     background: Color::new(0.5, 0.5, 0.5, 1.0),
+                    radius: 4.0,
                 },
             },
         };
 
         assert_eq!(
             toml::to_string(&theme),
-            Ok("[button.hover]\ntext = \"#000000FF\"\nbackground = \"#7F7F7FFF\"\n\n[button.active]\ntext = \"#000000FF\"\nbackground = \"#FFFFFFFF\"\n".to_string())
+            Ok("[button.hover]\ntext = \"#000000FF\"\nbackground = \"#7F7F7FFF\"\nradius = 4.0\n\n[button.active]\ntext = \"#000000FF\"\nbackground = \"#FFFFFFFF\"\nradius = 4.0\n".to_string())
         );
     }
 }

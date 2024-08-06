@@ -14,28 +14,34 @@ text = "#000000"
 [primary_button.active]
 background = "#8fffff"
 text = "#000000"
+radius = 4.0
 
 [primary_button.hover]
 background = "#8ccccc"
 text = "#303030"
+radius = 4.0
 
 ## Secondary button
 [secondary_button.active]
 background = "#cecece"
 text = "#000000"
+radius = 4.0
 
 [secondary_button.hover]
 background = "#808080"
 text = "#303030"
+radius = 4.0
 
 ## Text button
 [text_button.active]
 background = "#ffffff00"
 text = "#000000"
+radius = 4.0
 
 [text_button.hover]
 background = "#ffffff00"
 text = "#808000"
+radius = 4.0
 
 
 # Tab

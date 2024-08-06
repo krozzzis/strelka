@@ -17,7 +17,7 @@ pub fn primary_button<'a, Message>(
             border: Border {
                 color: Color::TRANSPARENT,
                 width: 0.0,
-                radius: Radius::new(0.0),
+                radius: Radius::new(theme.primary_button.hover.radius),
             },
             ..Default::default()
         },
@@ -28,7 +28,7 @@ pub fn primary_button<'a, Message>(
             border: Border {
                 color: Color::TRANSPARENT,
                 width: 0.0,
-                radius: Radius::new(0.0),
+                radius: Radius::new(theme.primary_button.active.radius),
             },
             ..Default::default()
         },
@@ -46,7 +46,7 @@ pub fn secondary_button<'a, Message>(
             border: Border {
                 color: Color::TRANSPARENT,
                 width: 0.0,
-                radius: Radius::new(0.0),
+                radius: Radius::new(theme.secondary_button.hover.radius),
             },
             ..Default::default()
         },
@@ -57,7 +57,7 @@ pub fn secondary_button<'a, Message>(
             border: Border {
                 color: Color::TRANSPARENT,
                 width: 0.0,
-                radius: Radius::new(0.0),
+                radius: Radius::new(theme.secondary_button.active.radius),
             },
             ..Default::default()
         },
@@ -75,7 +75,7 @@ pub fn text_button<'a, Message>(
             border: Border {
                 color: Color::TRANSPARENT,
                 width: 0.0,
-                radius: Radius::new(0.0),
+                radius: Radius::new(theme.text_button.hover.radius),
             },
             ..Default::default()
         },
@@ -86,7 +86,7 @@ pub fn text_button<'a, Message>(
             border: Border {
                 color: Color::TRANSPARENT,
                 width: 0.0,
-                radius: Radius::new(0.0),
+                radius: Radius::new(theme.text_button.active.radius),
             },
             ..Default::default()
         },
