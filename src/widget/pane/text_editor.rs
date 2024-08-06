@@ -9,7 +9,10 @@ use iced::{
     Length,
 };
 
-use crate::{theming::Theme, widget::tabs::tab_bar};
+use crate::{
+    theming::Theme,
+    widget::{button::text_button, tabs::tab_bar},
+};
 use crate::{widget::editor::NoteEditor, DocumentHandler, DocumentId};
 
 pub fn text_editor_pane<'a, Message: 'a + Clone>(
@@ -32,9 +35,7 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
         .height(Length::Fill)
     } else {
         Container::new(center(
-            button("Open file Ctrl+O")
-                .on_press_maybe(pick_file)
-                .style(theme.text_button()),
+            text_button("Open file Ctrl+O", theme).on_press_maybe(pick_file),
         ))
         .style(|_| container::Style {
             background: Some(theme.generic.background.into()),
