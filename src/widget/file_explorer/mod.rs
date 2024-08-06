@@ -1,6 +1,11 @@
-use std::path::{Path, PathBuf};
+use std::{
+    cmp::Reverse,
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
-use iced::{border::Radius, Border, Color, Element, Length, Shadow, Vector};
+use iced::{border::Radius, Border, Color, Element, Length, Shadow, Task, Vector};
 use iced::{
     widget::{component, container, stack, Component, Container, Space},
     Size,
@@ -9,43 +14,59 @@ use iced_aw::widgets::ContextMenu;
 
 use crate::{
     theming::{self, Theme},
+    util::get_directory_content,
     widget::list::{list, ListItem},
 };
 
+#[derive(Default, Debug)]
+pub struct State {
+    pub content: HashMap<PathBuf, Vec<PathBuf>>,
+}
+
+impl State {
+    pub fn perform<Msg: Send + 'static>(
+        &mut self,
+        message: Message,
+        to_msg: impl Fn(Message) -> Msg + Send + Sync + 'static,
+    ) -> Task<Msg> {
+        match message {
+            Message::GetFolderContent(dir) => {
+                Task::perform(get_directory_content(dir.clone()), move |vector| {
+                    to_msg(Message::AddFolderContent(dir.clone(), vector))
+                })
+            }
+
+            Message::AddFolderContent(dir, mut vector) => {
+                vector.sort_by_key(|a| Reverse(a.is_dir()));
+                self.content.insert(dir, vector);
+                Task::none()
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Message {
+    GetFolderContent(PathBuf),
+    AddFolderContent(PathBuf, Vec<PathBuf>),
+}
+
 pub struct FileExplorer<'a, Message> {
-    pub files: Vec<&'a PathBuf>,
-    pub dirs: Vec<&'a PathBuf>,
+    pub state: &'a State,
+    pub path: Arc<PathBuf>,
     pub selected_file: Option<PathBuf>,
     pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
     pub theme: Option<&'a Theme<'a>>,
 }
 
 impl<'a, Message> FileExplorer<'a, Message> {
-    pub fn new() -> Self {
+    pub fn new(dir: Arc<PathBuf>, state: &'a State) -> Self {
         Self {
-            files: Vec::new(),
-            dirs: Vec::new(),
+            state,
+            path: dir,
             selected_file: None,
             on_click: None,
             theme: None,
-        }
-    }
-
-    pub fn with_content(content: &'a [PathBuf]) -> Self {
-        let files = content.iter().filter(|x| x.is_file()).collect();
-        let dirs = content.iter().filter(|x| x.is_dir()).collect();
-        Self {
-            files,
-            dirs,
-            ..Self::new()
-        }
-    }
-
-    pub fn with_content_maybe(content: Option<&'a [PathBuf]>) -> Self {
-        if let Some(content) = content {
-            Self::with_content(content)
-        } else {
-            Self::new()
         }
     }
 
@@ -75,55 +96,45 @@ impl<'a, Message> FileExplorer<'a, Message> {
     }
 }
 
-impl<'a, Message> Default for FileExplorer<'a, Message> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
     type State = ();
 
-    type Event = Message;
+    type Event = InternalMessage;
 
     fn update(&mut self, _state: &mut Self::State, event: Self::Event) -> Option<Msg> {
         match event {
-            Message::OpenDir(_path) => {}
+            InternalMessage::OpenDir(_path) => {}
 
-            Message::OpenFile(path) => {
+            InternalMessage::OpenFile(path) => {
                 if let Some(func) = &self.on_click {
                     return Some(func(path));
                 }
             }
 
-            Message::NewFile => {}
+            InternalMessage::NewFile => {}
         }
         None
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let dirs = self.dirs.iter().map(|path| {
-            ListItem::new(get_directory_name(path).unwrap_or(String::from("NaN")))
-                .click(Message::OpenDir((*path).clone()))
-                .theme(self.theme)
-        });
-
-        let files = self.files.iter().map(|path| {
-            ListItem::new(get_file_name(path).unwrap_or(String::from("NaN")))
-                .click(Message::OpenFile((*path).clone()))
-                .selected(self.selected_file == Some((*path).clone()))
-                .theme(self.theme)
-        });
+        let elements: Vec<Element<_>> = if let Some(content) = self.state.content.get(&*self.path) {
+            content
+                .iter()
+                .map(|path| {
+                    ListItem::new(get_file_name(path).unwrap_or(String::from("NaN")))
+                        .click(InternalMessage::OpenFile((*path).clone()))
+                        .selected(self.selected_file == Some((*path).clone()))
+                        .theme(self.theme)
+                })
+                .map(|x| x.into())
+                .collect()
+        } else {
+            vec![]
+        };
 
         let theme = self.theme.unwrap_or(&theming::FALLBACK);
 
-        let items = container(list(
-            dirs.chain(files)
-                .map(|x| x.into())
-                .collect::<Vec<Element<_>>>(),
-            theme,
-        ))
-        .padding(theme.file_explorer.padding);
+        let items = container(list(elements, theme)).padding(theme.file_explorer.padding);
 
         let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
@@ -138,7 +149,7 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
             container(list(
                 vec![ListItem::new("New file")
                     .theme(self.theme)
-                    .click(Message::NewFile)
+                    .click(InternalMessage::NewFile)
                     .into()],
                 theme,
             ))
@@ -179,7 +190,7 @@ where
 }
 
 #[derive(Clone)]
-pub enum Message {
+pub enum InternalMessage {
     OpenFile(PathBuf),
     OpenDir(PathBuf),
     NewFile,

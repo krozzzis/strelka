@@ -36,7 +36,10 @@ use crate::{
         delay, get_directory_content, get_file_name, get_theme_metadatas, open_file, pick_file,
         save_file,
     },
-    widget::pane::{file_explorer_pane, text_editor_pane},
+    widget::{
+        file_explorer,
+        pane::{file_explorer_pane, text_editor_pane},
+    },
 };
 
 pub type DocumentId = usize;
@@ -60,10 +63,10 @@ pub struct App {
     next_doc_id: DocumentId,
     opened_doc: DocumentId,
     opened_directory: Option<PathBuf>,
-    directory_content: Option<Vec<PathBuf>>,
     plugin_host: PluginHost<AppMessage>,
     hotkeys: HashMap<Hotkey, AppMessage>,
     notifications: NotificationList,
+    file_explorer: file_explorer::State,
 }
 
 #[derive(Debug, Clone)]
@@ -79,7 +82,6 @@ pub enum AppMessage {
     SetTheme(Box<Theme<'static>>),
     LoadTheme(ThemeID),
     AddTheme(ThemeID, ThemeMetadata<'static>),
-    SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
     FocusDocument(DocumentId),
@@ -89,6 +91,7 @@ pub enum AppMessage {
     SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
+    FileExplorerAction(file_explorer::Message),
     OnKeyPress(Key, Modifiers),
 }
 
@@ -141,10 +144,10 @@ impl Default for App {
             next_doc_id: 1,
             opened_doc: 0,
             plugin_host,
-            directory_content: None,
             opened_directory: Some(PathBuf::from("./content/")),
             notifications: NotificationList::new(),
             hotkeys,
+            file_explorer: file_explorer::State::default(),
         }
     }
 }
@@ -159,14 +162,6 @@ impl App {
             tasks.push(task);
         }
 
-        let dir = app.opened_directory.clone();
-        if let Some(dir) = dir {
-            tasks.push(Task::perform(
-                get_directory_content(dir),
-                AppMessage::SetDirectoryContent,
-            ));
-        }
-
         // Add theme from file
         tasks.push(
             Task::future(get_theme_metadatas("./themes")).then(|stream| {
@@ -175,6 +170,12 @@ impl App {
                 })
             }),
         );
+
+        tasks.push(Task::done(AppMessage::FileExplorerAction(
+            file_explorer::Message::GetFolderContent(
+                app.opened_directory.clone().unwrap_or_default(),
+            ),
+        )));
 
         (app, Task::batch(tasks))
     }
@@ -185,6 +186,12 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
+            AppMessage::FileExplorerAction(message) => {
+                return self
+                    .file_explorer
+                    .perform(message, AppMessage::FileExplorerAction);
+            }
+
             AppMessage::AddTheme(id, meta) => {
                 self.theme_catalog.insert(id, meta);
             }
@@ -309,8 +316,6 @@ impl App {
                 }
             }
 
-            AppMessage::SetDirectoryContent(content) => self.directory_content = Some(content),
-
             // TODO: Should accept an document id and fill it's handler with content
             AppMessage::OpenedFile(result) => {
                 if let Ok((path, content)) = result {
@@ -353,10 +358,6 @@ impl App {
             AppMessage::OpenDirectory(path) => {
                 if path.is_dir() {
                     self.opened_directory = Some(path.clone());
-                    return Task::perform(
-                        get_directory_content(path),
-                        AppMessage::SetDirectoryContent,
-                    );
                 }
             }
         }
@@ -375,7 +376,8 @@ impl App {
         );
 
         let file_explorer = file_explorer_pane(
-            self.directory_content.as_ref(),
+            Arc::new(self.opened_directory.clone().unwrap_or_default()),
+            &self.file_explorer,
             self.documents
                 .get(&self.opened_doc)
                 .map(|handler| handler.path.clone()),

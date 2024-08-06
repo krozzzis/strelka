@@ -18,7 +18,6 @@ pub async fn get_theme_metadatas<'a>(
     async_stream::stream! {
         while let Some(entry) = dir_entries.next_entry().await.unwrap() {
             let path = entry.path();
-            println!("{path:?}");
             if path.is_file() && path.extension() == Some(OsStr::new("toml")) {
                 let theme = ThemeMetadata::from_file(&path.clone()).await;
                 if let Ok(theme) = theme {
