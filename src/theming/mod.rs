@@ -1,7 +1,7 @@
-mod catalog;
+pub mod catalog;
 mod color;
+pub mod metadata;
 mod styles;
 mod theme;
-mod metadata;
 
 pub use theme::{Theme, FALLBACK};

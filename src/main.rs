@@ -22,14 +22,19 @@ use iced::{Element, Settings};
 
 use widget::notificaton::notification_list;
 
-use std::{borrow::Cow, collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
 
 use crate::{
     notification::{Notification, NotificationList},
     plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
-    theming::Theme,
+    theming::{
+        catalog::{Catalog, ThemeID},
+        metadata::ThemeMetadata,
+        Theme,
+    },
     util::{
-        delay, get_directory_content, get_file_name, get_themes, open_file, pick_file, save_file,
+        delay, get_directory_content, get_file_name, get_theme_metadatas, open_file, pick_file,
+        save_file,
     },
     widget::pane::{file_explorer_pane, text_editor_pane},
 };
@@ -48,10 +53,9 @@ pub struct DocumentHandler {
     pub changed: bool,
 }
 
-pub struct App<'a> {
-    theme: Theme<'a>,
-    themes: HashMap<String, Theme<'a>>,
-    default_theme: Cow<'a, str>,
+pub struct App {
+    theme: Theme<'static>,
+    theme_catalog: Catalog<'static>,
     documents: HashMap<DocumentId, DocumentHandler>,
     next_doc_id: DocumentId,
     opened_doc: DocumentId,
@@ -72,8 +76,9 @@ pub enum AppMessage {
     LoadPlugin(PluginId, bool),
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
-    ChangeTheme(String),
-    LoadTheme(Box<Theme<'static>>),
+    SetTheme(Box<Theme<'static>>),
+    LoadTheme(ThemeID),
+    AddTheme(ThemeID, ThemeMetadata<'static>),
     SetDirectoryContent(Vec<PathBuf>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
@@ -87,7 +92,7 @@ pub enum AppMessage {
     OnKeyPress(Key, Modifiers),
 }
 
-impl<'a> Default for App<'a> {
+impl Default for App {
     fn default() -> Self {
         let mut plugin_host = PluginHost::new().on_plugin_action(AppMessage::PluginAction);
         plugin_host.register_plugin(
@@ -126,13 +131,12 @@ impl<'a> Default for App<'a> {
                 key: Key::Character(SmolStr::new_inline("p")),
                 modifiers: Modifiers::CTRL,
             },
-            AppMessage::ChangeTheme("light".to_owned()),
+            AppMessage::LoadTheme("light".into()),
         );
 
         Self {
             theme: Theme::default(),
-            themes: HashMap::new(),
-            default_theme: Cow::Borrowed("light"),
+            theme_catalog: Catalog::new(),
             documents: HashMap::new(),
             next_doc_id: 1,
             opened_doc: 0,
@@ -145,7 +149,7 @@ impl<'a> Default for App<'a> {
     }
 }
 
-impl<'a> App<'a> {
+impl App {
     fn new() -> (Self, Task<AppMessage>) {
         let app = Self::default();
         let mut tasks = Vec::new();
@@ -163,12 +167,14 @@ impl<'a> App<'a> {
             ));
         }
 
-        // Load theme from file
-        tasks.push(Task::future(get_themes("./themes")).then(|stream| {
-            Task::run(stream, |theme: Theme| {
-                AppMessage::LoadTheme(Box::new(theme))
-            })
-        }));
+        // Add theme from file
+        tasks.push(
+            Task::future(get_theme_metadatas("./themes")).then(|stream| {
+                Task::run(stream, |meta: ThemeMetadata| {
+                    AppMessage::AddTheme(meta.info.name.clone().into(), meta)
+                })
+            }),
+        );
 
         (app, Task::batch(tasks))
     }
@@ -179,15 +185,39 @@ impl<'a> App<'a> {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
-            AppMessage::LoadTheme(theme) => {
-                let name = theme.info.name.to_string();
-                println!("Loaded theme {}", name);
-                self.themes.insert(name.clone(), *theme);
+            AppMessage::AddTheme(id, meta) => {
+                self.theme_catalog.insert(id, meta);
+            }
 
-                // Automatically change theme to just loaded if this theme set as default
-                if self.default_theme.eq(&name) {
-                    return Task::done(AppMessage::ChangeTheme(name));
+            AppMessage::LoadTheme(id) => {
+                let path = self.theme_catalog.get_path(&id);
+                if let Some(path) = path {
+                    return Task::perform(Theme::from_file(path), move |theme| {
+                        if let Ok(theme) = theme {
+                            AppMessage::SetTheme(Box::new(theme))
+                        } else {
+                            AppMessage::SendNotification(Arc::new(Notification {
+                                text: format!("Can't load theme {}", id),
+                                kind: notification::NotificationKind::Error,
+                            }))
+                        }
+                    });
+                } else {
+                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                        text: format!("Can't load theme {}", id),
+                        kind: notification::NotificationKind::Error,
+                    })));
                 }
+            }
+
+            AppMessage::SetTheme(theme) => {
+                let name = theme.info.name.clone();
+                self.theme = *theme;
+
+                return Task::done(AppMessage::SendNotification(Arc::new(Notification {
+                    text: format!("Set theme {}", name),
+                    kind: notification::NotificationKind::Error,
+                })));
             }
 
             AppMessage::SavedFile(id) => {
@@ -219,16 +249,6 @@ impl<'a> App<'a> {
             AppMessage::CloseDocument(id) => {
                 if self.documents.contains_key(&id) {
                     self.documents.remove(&id);
-                }
-            }
-
-            AppMessage::ChangeTheme(name) => {
-                if let Some(theme) = self.themes.get(&name) {
-                    self.theme = theme.clone();
-                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                        text: format!("Set theme: {}", name),
-                        kind: notification::NotificationKind::None,
-                    })));
                 }
             }
 

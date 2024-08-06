@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, path::PathBuf};
 
 use iced::{advanced::graphics::core::SmolStr, futures::TryFutureExt};
 
@@ -43,12 +43,18 @@ impl<'a> Catalog<'a> {
         self.themes.iter()
     }
 
-    /// Removes an `ThemeMetadata` by given `ThemeId` if one was added
-    pub async fn load(&self, id: impl Into<ThemeID>) -> Result<Theme<'a>, CatalogError> {
-        if let Some(meta) = self.themes.get(&id.into()) {
-            let path = meta.path;
-            let text = tokio::fs::read_to_string(path).map_err(|_| CatalogError::CannotReadFile).await?;
-            let theme: Theme = toml::from_str(&text).map_err(|_| CatalogError::CannotParseThemeFile)?;
+    pub fn get_path(&self, id: &ThemeID) -> Option<PathBuf> {
+        self.themes.get(id).map(|x| x.path.to_path_buf())
+    }
+
+    pub async fn load(&self, id: &ThemeID) -> Result<Theme<'_>, CatalogError> {
+        if let Some(meta) = self.themes.get(id) {
+            let path = meta.path.as_ref();
+            let text = tokio::fs::read_to_string(path)
+                .map_err(|_| CatalogError::CannotReadFile)
+                .await?;
+            let theme: Theme =
+                toml::from_str(&text).map_err(|_| CatalogError::CannotParseThemeFile)?;
             Ok(theme)
         } else {
             Err(CatalogError::IDNotFound)

@@ -7,19 +7,21 @@ use std::{
 
 use tokio::{fs, io::AsyncWriteExt};
 
-use crate::theming::Theme;
+use crate::theming::{metadata::ThemeMetadata, Theme};
 use futures_core::stream::Stream;
 
-pub async fn get_themes<'a>(path: impl Into<PathBuf>) -> impl Stream<Item = Theme<'a>> {
-    let mut dir_entries = fs::read_dir(path.into()).await.unwrap();
+pub async fn get_theme_metadatas<'a>(
+    dir: impl AsRef<Path>,
+) -> impl Stream<Item = ThemeMetadata<'a>> {
+    let mut dir_entries = fs::read_dir(dir).await.unwrap();
 
     async_stream::stream! {
         while let Some(entry) = dir_entries.next_entry().await.unwrap() {
             let path = entry.path();
             println!("{path:?}");
             if path.is_file() && path.extension() == Some(OsStr::new("toml")) {
-                let theme = load_theme_from_file(path).await;
-                if let Some(theme) = theme {
+                let theme = ThemeMetadata::from_file(&path.clone()).await;
+                if let Ok(theme) = theme {
                     yield theme;
                 }
             }
