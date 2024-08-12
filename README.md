@@ -1,8 +1,8 @@
 # Building
 
 ```bash
-git clone https://github.com/krozzzis/p3
-cd p3
+git clone https://github.com/krozzzis/strelka
+cd strelka
 cargo build --release
 ```
 

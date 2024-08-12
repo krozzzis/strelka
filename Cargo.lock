@@ -2496,20 +2496,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "p3"
-version = "0.1.0"
-dependencies = [
- "async-stream",
- "futures-core",
- "iced",
- "iced_aw",
- "rfd",
- "serde",
- "tokio",
- "toml",
-]
-
-[[package]]
 name = "palette"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3312,6 +3298,20 @@ name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
+
+[[package]]
+name = "strelka"
+version = "0.1.0"
+dependencies = [
+ "async-stream",
+ "futures-core",
+ "iced",
+ "iced_aw",
+ "rfd",
+ "serde",
+ "tokio",
+ "toml",
+]
 
 [[package]]
 name = "strict-num"

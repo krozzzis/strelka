@@ -181,7 +181,7 @@ impl App {
     }
 
     fn title(&self) -> String {
-        String::from("p3")
+        String::from("Strelka")
     }
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {

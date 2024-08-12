@@ -1,5 +1,5 @@
 [package]
-name = "p3"
+name = "strelka"
 version = "0.1.0"
 edition = "2021"
 authors = ["krozzzis"]
