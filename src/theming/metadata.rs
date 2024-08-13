@@ -1,29 +1,30 @@
 use std::{borrow::Cow, path::Path};
 
+use iced::futures::TryFutureExt;
 use serde::Deserialize;
 
-use crate::theming::theme::Info;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct ThemeMetadata<'a> {
-    pub info: Info<'a>,
-    pub path: Cow<'a, Path>,
-}
-
-#[derive(Deserialize)]
-struct PalettelessTheme<'a> {
-    info: Info<'a>,
+    pub id: Cow<'a, str>,
+    pub name: Cow<'a, str>,
+    #[serde(skip)]
+    pub path: Option<Cow<'a, Path>>,
 }
 
 impl<'a> ThemeMetadata<'a> {
-    pub async fn from_file(path: &'a Path) -> Result<ThemeMetadata<'static>, ()> {
-        let text = tokio::fs::read_to_string(path).await.map_err(|_| ())?;
-        let theme: PalettelessTheme = toml::from_str(&text).map_err(|_| ())?;
-        let info = theme.info;
+    pub async fn from_file(path: &Path) -> Result<Self, ()> {
+        let file_content = tokio::fs::read_to_string(path).map_err(|_| ()).await?;
+        let metadata = toml::from_str(&file_content).map_err(|_| ())?;
+        Ok(metadata)
+    }
+}
 
-        Ok(ThemeMetadata {
-            info: info.to_owned(),
-            path: Cow::Owned(path.to_owned()),
-        })
+impl<'a> Default for ThemeMetadata<'a> {
+    fn default() -> Self {
+        Self {
+            id: Cow::Borrowed("core.default"),
+            name: Cow::Borrowed("Default"),
+            path: None,
+        }
     }
 }

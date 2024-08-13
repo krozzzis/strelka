@@ -1,32 +1,10 @@
 use std::{
-    ffi::OsStr,
     path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
 };
 
 use tokio::{fs, io::AsyncWriteExt};
-
-use crate::theming::metadata::ThemeMetadata;
-use futures_core::stream::Stream;
-
-pub async fn get_theme_metadatas<'a>(
-    dir: impl AsRef<Path>,
-) -> impl Stream<Item = ThemeMetadata<'a>> {
-    let mut dir_entries = fs::read_dir(dir).await.unwrap();
-
-    async_stream::stream! {
-        while let Some(entry) = dir_entries.next_entry().await.unwrap() {
-            let path = entry.path();
-            if path.is_file() && path.extension() == Some(OsStr::new("toml")) {
-                let theme = ThemeMetadata::from_file(&path.clone()).await;
-                if let Ok(theme) = theme {
-                    yield theme;
-                }
-            }
-        }
-    }
-}
 
 pub async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()> {
     let mut file = fs::File::create(path).await?;

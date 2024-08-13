@@ -67,7 +67,7 @@ impl Theme {
         }
     }
 
-    pub async fn from_file(path: PathBuf) -> Result<Theme, String> {
+    pub async fn from_file(path: &PathBuf) -> Result<Theme, String> {
         let text = tokio::fs::read_to_string(path)
             .map_err(|e| e.to_string())
             .await?;

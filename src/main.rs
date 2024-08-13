@@ -28,11 +28,11 @@ use crate::{
     notification::{Notification, NotificationList},
     plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
     theming::{
-        catalog::{Catalog, ThemeID},
+        catalog::{get_themes, Catalog, ThemeID},
         metadata::ThemeMetadata,
         Theme,
     },
-    util::{delay, get_file_name, get_theme_metadatas, open_file, pick_file, save_file},
+    util::{delay, get_file_name, open_file, pick_file, save_file},
     widget::{
         file_explorer,
         pane::{file_explorer_pane, text_editor_pane},
@@ -55,7 +55,7 @@ pub struct DocumentHandler {
 
 pub struct App {
     theme: Theme,
-    theme_catalog: Catalog<'static>,
+    theme_catalog: Catalog,
     documents: HashMap<DocumentId, DocumentHandler>,
     next_doc_id: DocumentId,
     opened_doc: DocumentId,
@@ -76,9 +76,8 @@ pub enum AppMessage {
     LoadPlugin(PluginId, bool),
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
-    SetTheme(Box<Theme>),
     LoadTheme(ThemeID),
-    AddTheme(ThemeID, ThemeMetadata<'static>),
+    AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
     FocusDocument(DocumentId),
@@ -125,13 +124,13 @@ impl Default for App {
             AppMessage::SaveFile,
         );
 
-        // Ctrl-p set dark theme
+        // Ctrl-p set light theme
         hotkeys.insert(
             Hotkey {
                 key: Key::Character(SmolStr::new_inline("p")),
                 modifiers: Modifiers::CTRL,
             },
-            AppMessage::LoadTheme("light".into()),
+            AppMessage::LoadTheme("core.light".into()),
         );
 
         Self {
@@ -159,11 +158,12 @@ impl App {
             tasks.push(task);
         }
 
-        // Add theme from file
         tasks.push(
-            Task::future(get_theme_metadatas("./themes")).then(|stream| {
-                Task::run(stream, |meta: ThemeMetadata| {
-                    AppMessage::AddTheme(meta.info.name.clone().into(), meta)
+            // Read themes from directory to stream
+            Task::future(get_themes("./themes")).then(|stream| {
+                // Add each theme from stream
+                Task::run(stream, |(theme, metadata)| {
+                    AppMessage::AddTheme(metadata.id.to_string().into(), Box::new(theme), metadata)
                 })
             }),
         );
@@ -189,33 +189,14 @@ impl App {
                     .perform(message, AppMessage::FileExplorerAction);
             }
 
-            AppMessage::AddTheme(id, meta) => {
-                self.theme_catalog.insert(id, meta);
+            AppMessage::AddTheme(id, theme, metadata) => {
+                self.theme_catalog.insert(id, *theme, metadata);
             }
 
             AppMessage::LoadTheme(id) => {
-                let path = self.theme_catalog.get_path(&id);
-                if let Some(path) = path {
-                    return Task::perform(Theme::from_file(path), move |theme| {
-                        if let Ok(theme) = theme {
-                            AppMessage::SetTheme(Box::new(theme))
-                        } else {
-                            AppMessage::SendNotification(Arc::new(Notification {
-                                text: format!("Can't load theme {}", id),
-                                kind: notification::NotificationKind::Error,
-                            }))
-                        }
-                    });
-                } else {
-                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                        text: format!("Can't load theme {}", id),
-                        kind: notification::NotificationKind::Error,
-                    })));
+                if let Some(theme) = self.theme_catalog.get_theme(id) {
+                    self.theme = theme.clone();
                 }
-            }
-
-            AppMessage::SetTheme(theme) => {
-                self.theme = *theme;
             }
 
             AppMessage::SavedFile(id) => {
