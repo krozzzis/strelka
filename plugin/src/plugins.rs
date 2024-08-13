@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use iced::{advanced::graphics::core::SmolStr, keyboard::Modifiers};
-
-use crate::plugin::{Hotkey, Plugin, PluginAction, PluginMessage};
+use crate::{Plugin, PluginAction, PluginMessage};
 
 pub struct ExamplePlugin {}
 
@@ -21,16 +19,7 @@ impl Plugin for ExamplePlugin {
 
     fn load(&mut self) -> Option<PluginAction> {
         println!("Example plugin loaded");
-        Some(PluginAction::RegisterHotkey(
-            Hotkey {
-                key: iced::keyboard::Key::Character(SmolStr::new_inline("f")),
-                modifiers: Modifiers::CTRL,
-            },
-            Arc::new(PluginMessage {
-                kind: "say".to_owned(),
-                payload: "Hotkey!!!".to_owned(),
-            }),
-        ))
+        None
     }
 
     fn unload(&mut self) -> Option<PluginAction> {

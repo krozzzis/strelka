@@ -1,0 +1,20 @@
+[package]
+name = "gui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rfd = "0.14.1"
+core = { path = "../core" }
+plugin = { path = "../plugin" }
+theming = { path = "../theming" }
+widget = { path = "../widget" }
+
+[dependencies.tokio]
+version = "1.39.1"
+features = ["fs", "io-util"]
+
+[dependencies.iced]
+git = "https://github.com/iced-rs/iced.git"
+branch = "master"
+features = ["canvas", "debug", "lazy", "advanced", "svg", "tokio"]

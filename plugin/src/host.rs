@@ -1,8 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use crate::plugin::{
-    self, Plugin, PluginAction, PluginEntry, PluginHandler, PluginInfo, PluginStatus,
-};
+use crate::{Plugin, PluginAction, PluginHandler, PluginInfo, PluginMessage, PluginStatus};
 
 pub type PluginId = String;
 
@@ -94,11 +92,7 @@ impl<Message> PluginHost<Message> {
     /// Send a message to plugin with given `PluginId`.
     ///
     /// Optionally returns an Application's message, if plugin return an action.
-    pub fn send_message(
-        &mut self,
-        id: PluginId,
-        message: Arc<plugin::PluginMessage>,
-    ) -> Option<Message> {
+    pub fn send_message(&mut self, id: PluginId, message: Arc<PluginMessage>) -> Option<Message> {
         if let Some(plugin) = self.plugins.get_mut(&id) {
             if let PluginStatus::Loaded = plugin.status {
                 let result = plugin.state.update(message);
@@ -108,20 +102,5 @@ impl<Message> PluginHost<Message> {
             }
         }
         None
-    }
-
-    /// Returns list of registered plugins
-    pub fn get_plugin_entries(&self) -> Vec<PluginEntry> {
-        let mut result = Vec::new();
-        for (_id, handler) in self.plugins.iter() {
-            let entry = PluginEntry {
-                info: &handler.info,
-                status: handler.status,
-            };
-            result.push(entry);
-        }
-        result.sort_unstable_by(|a, b| a.info.name.cmp(&b.info.name));
-
-        result
     }
 }

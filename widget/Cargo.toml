@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 core = { path = "../core" }
 theming = { path = "../theming" }
+plugin = { path = "../plugin" }
 tokio = { version = "1.9", features = ["fs"]}
 iced = { git = "https://github.com/iced-rs/iced.git", branch = "master" }
 iced_aw = { git = "https://github.com/iced-rs/iced_aw.git", branch = "main" }

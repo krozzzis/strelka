@@ -1,11 +1,8 @@
 mod host;
 mod plugins;
-mod plugins_list;
 
 pub use host::*;
-use iced::keyboard::{Key, Modifiers};
 pub use plugins::*;
-pub use plugins_list::*;
 
 use std::sync::Arc;
 
@@ -102,14 +99,7 @@ pub struct PluginHandler {
     pub state: Box<dyn Plugin>,
 }
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub struct Hotkey {
-    pub key: Key,
-    pub modifiers: Modifiers,
-}
-
 #[derive(Debug, Clone)]
 pub enum PluginAction {
     SendNotification(Arc<String>),
-    RegisterHotkey(Hotkey, Arc<PluginMessage>),
 }

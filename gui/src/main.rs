@@ -1,13 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod plugin;
 mod util;
 
 use iced::{
-    advanced::graphics::core::SmolStr,
-    keyboard::{Key, Modifiers},
-    widget::text_editor,
-    Length, Subscription, Task,
+    advanced::graphics::core::SmolStr, keyboard::Key, widget::text_editor, Length, Subscription,
+    Task,
 };
 use iced::{
     keyboard::on_key_press,
@@ -21,10 +18,8 @@ use widget::notificaton::notification_list;
 
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
 
-use crate::{
-    plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
-    util::{delay, get_file_name, open_file, pick_file, save_file},
-};
+use crate::util::{delay, get_file_name, open_file, pick_file, save_file};
+use plugin::{ExamplePlugin, Plugin, PluginAction, PluginHost, PluginId, PluginInfo};
 use theming::{
     catalog::{get_themes, Catalog, ThemeID},
     metadata::ThemeMetadata,
@@ -35,8 +30,12 @@ use widget::{
     pane::{file_explorer_pane, text_editor_pane},
 };
 
-use core::document::{DocumentHandler, DocumentId};
 use core::notification::{Notification, NotificationKind, NotificationList};
+use core::HotKey;
+use core::{
+    document::{DocumentHandler, DocumentId},
+    Modifiers,
+};
 
 #[derive(Debug, Clone)]
 pub enum PaneType {
@@ -52,7 +51,7 @@ pub struct App {
     opened_doc: DocumentId,
     opened_directory: Option<PathBuf>,
     plugin_host: PluginHost<AppMessage>,
-    hotkeys: HashMap<Hotkey, AppMessage>,
+    hotkeys: HashMap<HotKey, AppMessage>,
     notifications: NotificationList,
     file_explorer: file_explorer::State,
 }
@@ -79,7 +78,7 @@ pub enum AppMessage {
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
     FileExplorerAction(file_explorer::Message),
-    OnKeyPress(Key, Modifiers),
+    OnKeyPress(Key, iced::keyboard::Modifiers),
 }
 
 impl Default for App {
@@ -99,36 +98,36 @@ impl Default for App {
 
         // Ctrl-o open file
         hotkeys.insert(
-            Hotkey {
-                key: Key::Character(SmolStr::new_inline("o")),
-                modifiers: Modifiers::CTRL,
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'o',
             },
             AppMessage::PickFile(None),
         );
 
         // Ctrl-s save file
         hotkeys.insert(
-            Hotkey {
-                key: Key::Character(SmolStr::new_inline("s")),
-                modifiers: Modifiers::CTRL,
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 's',
             },
             AppMessage::SaveFile,
         );
 
         // Ctrl-i enable dark mode
         hotkeys.insert(
-            Hotkey {
-                key: Key::Character(SmolStr::new_inline("d")),
-                modifiers: Modifiers::CTRL,
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'd',
             },
             AppMessage::LoadTheme("core.dark".into()),
         );
 
         // Ctrl-p toggle file explorer
         hotkeys.insert(
-            Hotkey {
-                key: Key::Character(SmolStr::new_inline("p")),
-                modifiers: Modifiers::CTRL,
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'p',
             },
             AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
         );
@@ -252,12 +251,7 @@ impl App {
                 self.notifications.remove(id);
             }
 
-            AppMessage::PluginAction(id, action) => match action {
-                PluginAction::RegisterHotkey(hotkey, message) => {
-                    self.hotkeys
-                        .insert(hotkey, AppMessage::SendPluginMessage { id, message });
-                }
-
+            AppMessage::PluginAction(_id, action) => match action {
                 PluginAction::SendNotification(text) => {
                     return Task::done(AppMessage::SendNotification(Arc::new(
                         Notification::with_text(text.to_string()),
@@ -393,9 +387,28 @@ impl App {
         on_key_press(|key, modifiers| Some(AppMessage::OnKeyPress(key, modifiers)))
     }
 
-    fn on_key_press(&mut self, key: Key, modifiers: Modifiers) -> Option<AppMessage> {
-        for (hotkey, message) in &self.hotkeys {
-            if hotkey.key == key && hotkey.modifiers == modifiers {
+    fn on_key_press(
+        &mut self,
+        key: Key,
+        modifiers: iced::keyboard::Modifiers,
+    ) -> Option<AppMessage> {
+        if let Key::Character(c) = key {
+            let modifier = if modifiers.control() && modifiers.alt() {
+                Modifiers::CtrlAlt
+            } else if modifiers.control() {
+                Modifiers::Ctrl
+            } else if modifiers.alt() {
+                Modifiers::Alt
+            } else {
+                Modifiers::None
+            };
+
+            let hotkey = HotKey {
+                key: c.chars().next().unwrap_or_default(),
+                modifiers: modifier,
+            };
+
+            if let Some(message) = self.hotkeys.get(&hotkey) {
                 return Some(message.clone());
             }
         }
