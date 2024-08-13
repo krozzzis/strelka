@@ -1,4 +1,4 @@
-#![windows_subsystem = "windows"]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod notification;
 mod plugin;
@@ -32,10 +32,7 @@ use crate::{
         metadata::ThemeMetadata,
         Theme,
     },
-    util::{
-        delay, get_directory_content, get_file_name, get_theme_metadatas, open_file, pick_file,
-        save_file,
-    },
+    util::{delay, get_file_name, get_theme_metadatas, open_file, pick_file, save_file},
     widget::{
         file_explorer,
         pane::{file_explorer_pane, text_editor_pane},

@@ -6,12 +6,7 @@ use crate::theming::styles::{
     notification_list::NotificationList, tab::Tab, tab_bar::TabBar,
 };
 
-use iced::{
-    border::Radius,
-    futures::TryFutureExt,
-    widget::{self, button},
-    Border, Shadow,
-};
+use iced::{futures::TryFutureExt, widget::button};
 use serde::{Deserialize, Serialize};
 
 pub const FALLBACK: Theme = Theme {

@@ -7,7 +7,7 @@ use std::{
 
 use tokio::{fs, io::AsyncWriteExt};
 
-use crate::theming::{metadata::ThemeMetadata, Theme};
+use crate::theming::metadata::ThemeMetadata;
 use futures_core::stream::Stream;
 
 pub async fn get_theme_metadatas<'a>(
@@ -83,13 +83,4 @@ pub fn get_file_name(path: &Path) -> String {
         .and_then(|os_str| os_str.to_str())
         .unwrap_or("")
         .to_owned()
-}
-
-pub async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme> {
-    let theme = Theme::from_file(path.into()).await;
-    if let Ok(theme) = theme {
-        Some(theme)
-    } else {
-        None
-    }
 }
