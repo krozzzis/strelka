@@ -115,10 +115,10 @@ impl Default for App {
             AppMessage::SaveFile,
         );
 
-        // Ctrl-i set dark theme
+        // Ctrl-i enable dark mode
         hotkeys.insert(
             Hotkey {
-                key: Key::Character(SmolStr::new_inline("i")),
+                key: Key::Character(SmolStr::new_inline("d")),
                 modifiers: Modifiers::CTRL,
             },
             AppMessage::LoadTheme("core.dark".into()),

@@ -1,0 +1,138 @@
+[generic]
+background = "#333333"
+background2 = "#444444"
+text = "#eeeeee"
+
+
+# Buttons
+## Primary button
+[primary_button.active]
+background = "#8fffff"
+text = "#444444"
+radius = 4.0
+
+[primary_button.hover]
+background = "#8ccccc"
+text = "#444444"
+radius = 4.0
+
+## Secondary button
+[secondary_button.active]
+background = "#444444"
+text = "#444444"
+radius = 4.0
+
+[secondary_button.hover]
+background = "#555555"
+text = "#eeeeee"
+radius = 4.0
+
+## Text button
+[text_button.active]
+background = "#ffffff00"
+text = "#eeeeee"
+radius = 4.0
+
+[text_button.hover]
+background = "#ffffff00"
+text = "#8ccccc"
+radius = 4.0
+
+
+# Tab
+[tab.active]
+background = "#333333"
+text = "#eeeeee"
+radius = 10.0
+height = 44.0
+
+[tab.hover]
+background = "#cecece"
+text = "#eeeeee"
+radius = 10.0
+height = 44.0
+
+[tab.selected]
+background = "#333333"
+text = "#eeeeee"
+radius = 10.0
+height = 44.0
+
+
+# TabBar
+[tab_bar]
+background = "#444444"
+padding = 8.0
+spacing = 8.0
+
+
+# ListItem
+[list_item.active]
+background = "#ffffff00"
+text = "#eeeeee"
+radius = 4.0
+
+[list_item.hover]
+background = "#333333"
+text = "#eeeeee"
+radius = 4.0
+
+[list_item.selected]
+background = "#333333"
+text = "#eeeeee"
+radius = 4.0
+
+
+# List
+[list]
+spacing = 4.0
+
+
+# Editor
+[editor]
+background = "#333333"
+background2 = "#444444"
+text = "#eeeeee"
+cursor = "#efefef"
+selection = "#cecece"
+radius = 50.0
+padding = 50.0
+
+
+# Notification
+[notification]
+background = "#444444"
+text = "#eeeeee"
+border_color = "#111111"
+border_width = 1
+radius = 4
+shadow_x = 2
+shadow_y = 2
+shadow_blur = 2
+
+
+# Notification List
+[notification_list]
+padding = 8.0
+spacing = 4.0
+
+
+# Context menu
+[context_menu]
+background = "#ffffff"
+border_color = "#cecece"
+border_width = 1
+radius = 4
+padding = 2
+width = 200
+shadow_x = 2
+shadow_y = 2
+shadow_blur = 2
+
+
+# File explorer
+[file_explorer]
+background = "#444444"
+text = "#eeeeee"
+padding = 4
+width = 300
