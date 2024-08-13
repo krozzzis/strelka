@@ -46,6 +46,7 @@ pub enum PaneType {
 pub struct App {
     theme: Theme,
     theme_catalog: Catalog,
+    default_theme: SmolStr,
     documents: HashMap<DocumentId, DocumentHandler<Content>>,
     next_doc_id: DocumentId,
     opened_doc: DocumentId,
@@ -114,18 +115,19 @@ impl Default for App {
             AppMessage::SaveFile,
         );
 
-        // Ctrl-p set light theme
+        // Ctrl-p set dark theme
         hotkeys.insert(
             Hotkey {
                 key: Key::Character(SmolStr::new_inline("p")),
                 modifiers: Modifiers::CTRL,
             },
-            AppMessage::LoadTheme("core.light".into()),
+            AppMessage::LoadTheme("core.dark".into()),
         );
 
         Self {
             theme: Theme::default(),
             theme_catalog: Catalog::new(),
+            default_theme: SmolStr::from("core.light"),
             documents: HashMap::new(),
             next_doc_id: 1,
             opened_doc: 0,
@@ -148,15 +150,20 @@ impl App {
             tasks.push(task);
         }
 
-        tasks.push(
-            // Read themes from directory to stream
-            Task::future(get_themes("./themes")).then(|stream| {
-                // Add each theme from stream
-                Task::run(stream, |(theme, metadata)| {
-                    AppMessage::AddTheme(metadata.id.to_string().into(), Box::new(theme), metadata)
-                })
-            }),
-        );
+        // Read themes from directory to stream
+        let read_themes = Task::future(get_themes("./themes")).then(|stream| {
+            // Add each theme from stream
+            Task::run(stream, |(theme, metadata)| {
+                AppMessage::AddTheme(metadata.id.to_string().into(), Box::new(theme), metadata)
+            })
+        });
+
+        // Apply default theme
+        let default_theme = app.default_theme.clone();
+        let apply_default_theme =
+            Task::perform(async move { default_theme }, AppMessage::LoadTheme);
+
+        tasks.push(read_themes.chain(apply_default_theme));
 
         tasks.push(Task::done(AppMessage::FileExplorerAction(
             file_explorer::Message::GetFolderContent(
