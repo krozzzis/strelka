@@ -17,6 +17,7 @@ use theming::{self, Theme};
 
 #[derive(Default, Debug)]
 pub struct State {
+    pub visible: bool,
     pub content: HashMap<PathBuf, Vec<PathBuf>>,
 }
 
@@ -27,6 +28,11 @@ impl State {
         to_msg: impl Fn(Message) -> Msg + Send + Sync + 'static,
     ) -> Task<Msg> {
         match message {
+            Message::Toggle => {
+                self.visible = !self.visible;
+                Task::none()
+            }
+
             Message::GetFolderContent(dir) => {
                 Task::perform(get_directory_content(dir.clone()), move |vector| {
                     to_msg(Message::AddFolderContent(dir.clone(), vector))
@@ -46,6 +52,7 @@ impl State {
 pub enum Message {
     GetFolderContent(PathBuf),
     AddFolderContent(PathBuf, Vec<PathBuf>),
+    Toggle,
 }
 
 pub struct FileExplorer<'a, Message> {
@@ -191,13 +198,6 @@ pub enum InternalMessage {
     OpenFile(PathBuf),
     OpenDir(PathBuf),
     NewFile,
-}
-
-fn get_directory_name(path: &Path) -> Option<String> {
-    path.parent()
-        .and_then(|parent| parent.file_name())
-        .and_then(|os_str| os_str.to_str())
-        .map(String::from)
 }
 
 fn get_file_name(path: &Path) -> Option<String> {

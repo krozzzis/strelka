@@ -115,13 +115,22 @@ impl Default for App {
             AppMessage::SaveFile,
         );
 
-        // Ctrl-p set dark theme
+        // Ctrl-i set dark theme
+        hotkeys.insert(
+            Hotkey {
+                key: Key::Character(SmolStr::new_inline("i")),
+                modifiers: Modifiers::CTRL,
+            },
+            AppMessage::LoadTheme("core.dark".into()),
+        );
+
+        // Ctrl-p toggle file explorer
         hotkeys.insert(
             Hotkey {
                 key: Key::Character(SmolStr::new_inline("p")),
                 modifiers: Modifiers::CTRL,
             },
-            AppMessage::LoadTheme("core.dark".into()),
+            AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
         );
 
         Self {
@@ -351,10 +360,16 @@ impl App {
             &self.theme,
         );
 
-        let grid = row![
-            Container::new(file_explorer).width(Length::Fixed(self.theme.file_explorer.width)),
-            Container::new(editor),
-        ];
+        let mut grid_elements = Vec::new();
+        if self.file_explorer.visible {
+            grid_elements.push(
+                Container::new(file_explorer)
+                    .width(Length::Fixed(self.theme.file_explorer.width))
+                    .into(),
+            );
+        }
+        grid_elements.push(Container::new(editor).into());
+        let grid = row(grid_elements);
 
         let primary_screen = stack![
             Container::new(grid),
