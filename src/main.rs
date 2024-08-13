@@ -57,7 +57,7 @@ pub struct DocumentHandler {
 }
 
 pub struct App {
-    theme: Theme<'static>,
+    theme: Theme,
     theme_catalog: Catalog<'static>,
     documents: HashMap<DocumentId, DocumentHandler>,
     next_doc_id: DocumentId,
@@ -79,7 +79,7 @@ pub enum AppMessage {
     LoadPlugin(PluginId, bool),
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
-    SetTheme(Box<Theme<'static>>),
+    SetTheme(Box<Theme>),
     LoadTheme(ThemeID),
     AddTheme(ThemeID, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
@@ -218,13 +218,7 @@ impl App {
             }
 
             AppMessage::SetTheme(theme) => {
-                let name = theme.info.name.clone();
                 self.theme = *theme;
-
-                return Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                    text: format!("Set theme {}", name),
-                    kind: notification::NotificationKind::Error,
-                })));
             }
 
             AppMessage::SavedFile(id) => {

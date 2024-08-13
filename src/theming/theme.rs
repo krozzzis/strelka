@@ -6,14 +6,15 @@ use crate::theming::styles::{
     notification_list::NotificationList, tab::Tab, tab_bar::TabBar,
 };
 
-use iced::{futures::TryFutureExt, widget::button};
+use iced::{
+    border::Radius,
+    futures::TryFutureExt,
+    widget::{self, button},
+    Border, Shadow,
+};
 use serde::{Deserialize, Serialize};
 
 pub const FALLBACK: Theme = Theme {
-    info: Info {
-        name: Cow::Borrowed("fallback"),
-        description: Cow::Borrowed("Fallback theme"),
-    },
     primary_button: Button::FALLBACK,
     secondary_button: Button::FALLBACK,
     text_button: Button::FALLBACK,
@@ -30,9 +31,7 @@ pub const FALLBACK: Theme = Theme {
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Theme<'a> {
-    pub info: Info<'a>,
-
+pub struct Theme {
     // Buttons
     pub primary_button: Button,
     pub secondary_button: Button,
@@ -56,7 +55,7 @@ pub struct Theme<'a> {
     pub generic: Generic,
 }
 
-impl<'a> Theme<'a> {
+impl Theme {
     pub fn text_button(&self) -> impl Fn(&iced::Theme, button::Status) -> button::Style + '_ {
         move |_, status| match status {
             button::Status::Hovered | button::Status::Pressed => button::Style {
@@ -73,7 +72,7 @@ impl<'a> Theme<'a> {
         }
     }
 
-    pub async fn from_file(path: PathBuf) -> Result<Theme<'a>, String> {
+    pub async fn from_file(path: PathBuf) -> Result<Theme, String> {
         let text = tokio::fs::read_to_string(path)
             .map_err(|e| e.to_string())
             .await?;
@@ -82,7 +81,7 @@ impl<'a> Theme<'a> {
     }
 }
 
-impl<'a> Default for Theme<'a> {
+impl Default for Theme {
     fn default() -> Self {
         FALLBACK
     }

@@ -13,7 +13,7 @@ use crate::theming::{self, Theme};
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {
     content: &'a Content,
-    theme: Option<&'a Theme<'a>>,
+    theme: Option<&'a Theme>,
     on_action: Box<dyn Fn(text_editor::Action) -> Message>,
 }
 

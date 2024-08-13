@@ -10,7 +10,7 @@ use crate::theming::{self, Theme};
 
 pub struct Tab<'a, Message> {
     pub label: Cow<'a, str>,
-    pub theme: Option<&'a Theme<'a>>,
+    pub theme: Option<&'a Theme>,
     pub selected: bool,
     pub on_click: Option<Message>,
     pub on_close: Option<Message>,

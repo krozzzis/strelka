@@ -56,7 +56,7 @@ pub struct FileExplorer<'a, Message> {
     pub path: Arc<PathBuf>,
     pub selected_file: Option<PathBuf>,
     pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
-    pub theme: Option<&'a Theme<'a>>,
+    pub theme: Option<&'a Theme>,
 }
 
 impl<'a, Message> FileExplorer<'a, Message> {

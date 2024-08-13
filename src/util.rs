@@ -85,7 +85,7 @@ pub fn get_file_name(path: &Path) -> String {
         .to_owned()
 }
 
-pub async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme<'static>> {
+pub async fn load_theme_from_file(path: impl Into<PathBuf>) -> Option<Theme> {
     let theme = Theme::from_file(path.into()).await;
     if let Ok(theme) = theme {
         Some(theme)

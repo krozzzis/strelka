@@ -47,7 +47,7 @@ impl<'a> Catalog<'a> {
         self.themes.get(id).map(|x| x.path.to_path_buf())
     }
 
-    pub async fn load(&self, id: &ThemeID) -> Result<Theme<'_>, CatalogError> {
+    pub async fn load(&self, id: &ThemeID) -> Result<Theme, CatalogError> {
         if let Some(meta) = self.themes.get(id) {
             let path = meta.path.as_ref();
             let text = tokio::fs::read_to_string(path)
