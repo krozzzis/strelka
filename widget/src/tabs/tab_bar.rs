@@ -30,7 +30,7 @@ pub fn tab_bar<'a, Message: 'a + Clone>(
     Container::new(row(tabs).spacing(theme.tab_bar.spacing))
         .width(Length::Fill)
         .height(Length::Fixed(theme.tab.active.height))
-        .padding(Padding::new(4.0).bottom(0.0))
+        .padding(Padding::new(theme.tab_bar.padding).bottom(0.0))
         .style(move |_| container::Style {
             background: Some(theme.tab_bar.background.into()),
             ..Default::default()
