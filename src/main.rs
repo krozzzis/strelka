@@ -243,10 +243,9 @@ impl App {
                 }
 
                 PluginAction::SendNotification(text) => {
-                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                        text: text.to_string(),
-                        kind: NotificationKind::None,
-                    })))
+                    return Task::done(AppMessage::SendNotification(Arc::new(
+                        Notification::with_text(text.to_string()),
+                    )))
                 }
             },
 
@@ -290,18 +289,16 @@ impl App {
 
                     self.documents.insert(self.next_doc_id, handler);
                     let focus_doc = Task::done(AppMessage::FocusDocument(self.next_doc_id));
-                    let notificaton =
-                        Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                            text: format!(
-                                "Opened file {} | ID: {}",
-                                path.file_name()
-                                    .unwrap_or(OsStr::new(""))
-                                    .to_str()
-                                    .unwrap_or(""),
-                                self.next_doc_id,
-                            ),
-                            kind: NotificationKind::None,
-                        })));
+                    let notificaton = Task::done(AppMessage::SendNotification(Arc::new(
+                        Notification::info(format!(
+                            "Opened file {} | ID: {}",
+                            path.file_name()
+                                .unwrap_or(OsStr::new(""))
+                                .to_str()
+                                .unwrap_or(""),
+                            self.next_doc_id,
+                        )),
+                    )));
 
                     self.next_doc_id += 1;
 

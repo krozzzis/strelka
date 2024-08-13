@@ -6,6 +6,36 @@ pub struct Notification {
     pub kind: NotificationKind,
 }
 
+impl Notification {
+    pub fn with_text(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            kind: NotificationKind::None,
+        }
+    }
+
+    pub fn error(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            kind: NotificationKind::Error,
+        }
+    }
+
+    pub fn info(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            kind: NotificationKind::Info,
+        }
+    }
+
+    pub fn warn(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            kind: NotificationKind::Warning,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum NotificationKind {
     Info,
@@ -14,6 +44,7 @@ pub enum NotificationKind {
     None,
 }
 
+#[derive(Default)]
 pub struct NotificationList {
     pub last_id: usize,
     pub notifications: HashMap<usize, Arc<Notification>>,
@@ -21,10 +52,7 @@ pub struct NotificationList {
 
 impl NotificationList {
     pub fn new() -> Self {
-        Self {
-            last_id: 0,
-            notifications: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn add(&mut self, notification: Arc<Notification>) -> usize {
