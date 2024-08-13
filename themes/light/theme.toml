@@ -1,82 +1,85 @@
 [generic]
 background = "#ffffff"
 background2 = "#eeeeee"
-text = "#000000"
+text = "#444444"
 
 
 # Buttons
 ## Primary button
 [primary_button.active]
 background = "#8fffff"
-text = "#000000"
+text = "#444444"
 radius = 4.0
 
 [primary_button.hover]
 background = "#8ccccc"
-text = "#303030"
+text = "#444444"
 radius = 4.0
 
 ## Secondary button
 [secondary_button.active]
-background = "#cecece"
-text = "#000000"
+background = "#eeeeee"
+text = "#444444"
 radius = 4.0
 
 [secondary_button.hover]
-background = "#808080"
-text = "#303030"
+background = "#cecece"
+text = "#444444"
 radius = 4.0
 
 ## Text button
 [text_button.active]
 background = "#ffffff00"
-text = "#000000"
+text = "#444444"
 radius = 4.0
 
 [text_button.hover]
 background = "#ffffff00"
-text = "#808000"
+text = "#8ccccc"
 radius = 4.0
 
 
 # Tab
 [tab.active]
-background = "#ffefff"
-text = "#800000"
-radius = 4.0
+background = "#ffffff"
+text = "#444444"
+radius = 10.0
+height = 44.0
 
 [tab.hover]
-background = "#808080"
-text = "#000000"
-radius = 4.0
+background = "#cecece"
+text = "#444444"
+radius = 10.0
+height = 44.0
 
 [tab.selected]
-background = "#ff0000"
-text = "#000000"
-radius = 4.0
+background = "#ffffff"
+text = "#444444"
+radius = 10.0
+height = 44.0
 
 
 # TabBar
 [tab_bar]
-background = "#804040"
+background = "#eeeeee"
 padding = 8.0
-spacing = 4.0
+spacing = 8.0
 
 
 # ListItem
 [list_item.active]
 background = "#ffffff00"
-text = "#800000"
+text = "#444444"
 radius = 4.0
 
 [list_item.hover]
-background = "#808080"
-text = "#000000"
+background = "#cecece"
+text = "#444444"
 radius = 4.0
 
 [list_item.selected]
-background = "#ff0000"
-text = "#000000"
+background = "#cecece"
+text = "#444444"
 radius = 4.0
 
 
@@ -88,9 +91,12 @@ spacing = 4.0
 # Editor
 [editor]
 background = "#ffffff"
+background2 = "#f9f9f9"
 text = "#000000"
-cursor = "#cc4444"
-selection = "#ee8888"
+cursor = "#444444"
+selection = "#cecece"
+radius = 50.0
+padding = 50.0
 
 
 # Notification
@@ -127,6 +133,6 @@ shadow_blur = 2
 # File explorer
 [file_explorer]
 background = "#eeeeee"
-text = "#000000"
+text = "#444444"
 padding = 4
 width = 300

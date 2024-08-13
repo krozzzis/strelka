@@ -1,9 +1,9 @@
 use iced::{
     border::Radius,
     widget::{
-        center, component, container,
+        center, column, component, container,
         text_editor::{self, Content},
-        Component, Container, TextEditor,
+        Component, Container, Space, TextEditor,
     },
     Border, Color, Element, Length, Pixels,
 };
@@ -48,38 +48,44 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
         let fallback = &theming::FALLBACK;
         let theme = &self.theme.unwrap_or(fallback).editor;
 
-        let editor = Container::new(center(
-            Container::new(
-                TextEditor::new(self.content)
-                    .on_action(&self.on_action)
-                    .height(Length::Fill)
-                    .size(16.0)
-                    .style(move |_, _status| text_editor::Style {
-                        border: Border {
-                            color: Color::TRANSPARENT,
-                            width: 0.0,
-                            radius: Radius::new(0.0),
-                        },
-                        background: theme.background.into(),
-                        icon: theme.cursor.into(),
-                        placeholder: theme.text.into(),
-                        value: theme.cursor.into(),
-                        selection: theme.selection.into(),
-                    }),
-            )
-            .padding(32.0)
-            .max_width(Pixels::from(700.0))
+        let editor = column![
+            Space::with_height(theme.padding),
+            Container::new(center(
+                Container::new(
+                    TextEditor::new(self.content)
+                        .on_action(&self.on_action)
+                        .height(Length::Fill)
+                        .size(16.0)
+                        .style(move |_, _status| text_editor::Style {
+                            border: Border {
+                                color: Color::TRANSPARENT,
+                                ..Default::default()
+                            },
+                            background: Color::TRANSPARENT.into(),
+                            icon: theme.text.into(),
+                            placeholder: theme.text.into(),
+                            value: theme.cursor.into(),
+                            selection: theme.selection.into(),
+                        }),
+                )
+                .padding(theme.padding)
+                .max_width(Pixels::from(700.0))
+                .style(move |_| container::Style {
+                    background: Some(theme.background2.into()),
+                    text_color: Some(theme.text.into()),
+                    border: Border {
+                        radius: Radius::from(theme.radius),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                }),
+            ))
             .style(move |_| container::Style {
                 background: Some(theme.background.into()),
                 text_color: Some(theme.text.into()),
                 ..Default::default()
-            }),
-        ))
-        .style(move |_| container::Style {
-            background: Some(theme.background.into()),
-            text_color: Some(theme.text.into()),
-            ..Default::default()
-        });
+            })
+        ];
         editor.into()
     }
 }

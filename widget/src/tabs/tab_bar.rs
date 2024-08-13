@@ -27,9 +27,9 @@ pub fn tab_bar<'a, Message: 'a + Clone>(
         })
         .collect();
 
-    Container::new(row(tabs).spacing(4.0))
+    Container::new(row(tabs).spacing(theme.tab_bar.spacing))
         .width(Length::Fill)
-        .height(Length::Fixed(36.0))
+        .height(Length::Fixed(theme.tab.active.height))
         .padding(Padding::new(4.0).bottom(0.0))
         .style(move |_| container::Style {
             background: Some(theme.tab_bar.background.into()),

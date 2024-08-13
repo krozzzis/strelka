@@ -63,47 +63,50 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let tab = button(container(Text::new(self.label.clone())).height(28.0))
-            .on_press_maybe(self.on_click.clone())
-            .style(move |_, status| {
-                let fallback = &theming::FALLBACK;
-                let theme = &self.theme.unwrap_or(fallback).tab;
+        let tab = button(
+            container(Text::new(self.label.clone()))
+                .height(self.theme.unwrap_or(&Theme::default()).tab.active.height),
+        )
+        .on_press_maybe(self.on_click.clone())
+        .style(move |_, status| {
+            let fallback = &theming::FALLBACK;
+            let theme = &self.theme.unwrap_or(fallback).tab;
 
-                match status {
-                    button::Status::Hovered | button::Status::Pressed => button::Style {
-                        background: Some(theme.hover.background.into()),
-                        text_color: theme.hover.text.into(),
-                        border: Border {
-                            radius: Radius {
-                                top_left: theme.hover.radius,
-                                top_right: theme.hover.radius,
-                                bottom_right: 0.0,
-                                bottom_left: 0.0,
-                            },
-                            ..Default::default()
+            match status {
+                button::Status::Hovered | button::Status::Pressed => button::Style {
+                    background: Some(theme.hover.background.into()),
+                    text_color: theme.hover.text.into(),
+                    border: Border {
+                        radius: Radius {
+                            top_left: theme.hover.radius,
+                            top_right: theme.hover.radius,
+                            bottom_right: 0.0,
+                            bottom_left: 0.0,
                         },
                         ..Default::default()
                     },
-                    button::Status::Active | button::Status::Disabled => button::Style {
-                        background: Some(if self.selected {
-                            theme.selected.background.into()
-                        } else {
-                            theme.active.background.into()
-                        }),
-                        text_color: theme.active.text.into(),
-                        border: Border {
-                            radius: Radius {
-                                top_left: theme.active.radius,
-                                top_right: theme.active.radius,
-                                bottom_right: 0.0,
-                                bottom_left: 0.0,
-                            },
-                            ..Default::default()
+                    ..Default::default()
+                },
+                button::Status::Active | button::Status::Disabled => button::Style {
+                    background: Some(if self.selected {
+                        theme.selected.background.into()
+                    } else {
+                        theme.active.background.into()
+                    }),
+                    text_color: theme.active.text.into(),
+                    border: Border {
+                        radius: Radius {
+                            top_left: theme.active.radius,
+                            top_right: theme.active.radius,
+                            bottom_right: 0.0,
+                            bottom_left: 0.0,
                         },
                         ..Default::default()
                     },
-                }
-            });
+                    ..Default::default()
+                },
+            }
+        });
 
         let mut area = MouseArea::new(tab);
 
@@ -115,7 +118,10 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
     }
 
     fn size_hint(&self) -> iced::Size<iced::Length> {
-        Size::new(Length::Fixed(28.0), Length::Shrink)
+        Size::new(
+            Length::Fixed(self.theme.unwrap_or(&Theme::default()).tab.active.height),
+            Length::Shrink,
+        )
     }
 }
 
