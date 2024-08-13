@@ -6,7 +6,7 @@ use iced::{
     Border, Element, Length, Size,
 };
 
-use crate::theming::{self, Theme};
+use theming::{self, Theme};
 
 pub struct Tab<'a, Message> {
     pub label: Cow<'a, str>,

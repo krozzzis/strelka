@@ -3,7 +3,7 @@ use iced::{
     Element,
 };
 
-use crate::theming::Theme;
+use theming::Theme;
 
 pub fn background<'a, Message>(
     content: impl Into<Element<'a, Message>>,

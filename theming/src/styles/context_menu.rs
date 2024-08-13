@@ -1,4 +1,5 @@
-use crate::theming::color::Color;
+use crate::Color;
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

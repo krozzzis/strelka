@@ -2,7 +2,6 @@
 
 mod notification;
 mod plugin;
-mod theming;
 mod util;
 mod widget;
 
@@ -27,16 +26,16 @@ use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
 use crate::{
     notification::{Notification, NotificationList},
     plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
-    theming::{
-        catalog::{get_themes, Catalog, ThemeID},
-        metadata::ThemeMetadata,
-        Theme,
-    },
     util::{delay, get_file_name, open_file, pick_file, save_file},
     widget::{
         file_explorer,
         pane::{file_explorer_pane, text_editor_pane},
     },
+};
+use theming::{
+    catalog::{get_themes, Catalog, ThemeID},
+    metadata::ThemeMetadata,
+    Theme,
 };
 
 pub type DocumentId = usize;

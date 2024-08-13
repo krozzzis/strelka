@@ -6,11 +6,9 @@ use iced::{
     Length,
 };
 
-use crate::{
-    theming::Theme,
-    widget::{button::text_button, containers::background, tabs::tab_bar},
-};
+use crate::widget::{button::text_button, containers::background, tabs::tab_bar};
 use crate::{widget::editor::NoteEditor, DocumentHandler, DocumentId};
+use theming::Theme;
 
 pub fn text_editor_pane<'a, Message: 'a + Clone>(
     documents: &'a HashMap<DocumentId, DocumentHandler>,

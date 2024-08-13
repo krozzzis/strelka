@@ -3,10 +3,8 @@ use std::{path::PathBuf, sync::Arc};
 use iced::widget::{container, Container};
 use iced::{Element, Length};
 
-use crate::{
-    theming::Theme,
-    widget::file_explorer::{FileExplorer, State},
-};
+use crate::widget::file_explorer::{FileExplorer, State};
+use theming::Theme;
 
 pub fn file_explorer_pane<'a, Message: 'a + Clone>(
     dir: Arc<PathBuf>,

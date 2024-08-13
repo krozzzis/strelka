@@ -1,10 +1,10 @@
 use iced::{
     border::Radius,
     widget::{button, Button},
-    Border, Color, Element,
+    Border, Element,
 };
 
-use crate::theming::Theme;
+use theming::Theme;
 
 pub fn primary_button<'a, Message>(
     content: impl Into<Element<'a, Message>>,
@@ -15,7 +15,7 @@ pub fn primary_button<'a, Message>(
             background: Some(theme.primary_button.hover.background.into()),
             text_color: theme.primary_button.hover.text.into(),
             border: Border {
-                color: Color::TRANSPARENT,
+                color: iced::Color::TRANSPARENT,
                 width: 0.0,
                 radius: Radius::new(theme.primary_button.hover.radius),
             },
@@ -26,7 +26,7 @@ pub fn primary_button<'a, Message>(
             background: Some(theme.primary_button.active.background.into()),
             text_color: theme.primary_button.active.text.into(),
             border: Border {
-                color: Color::TRANSPARENT,
+                color: iced::Color::TRANSPARENT,
                 width: 0.0,
                 radius: Radius::new(theme.primary_button.active.radius),
             },
@@ -44,7 +44,7 @@ pub fn secondary_button<'a, Message>(
             background: Some(theme.secondary_button.hover.background.into()),
             text_color: theme.secondary_button.hover.text.into(),
             border: Border {
-                color: Color::TRANSPARENT,
+                color: iced::Color::TRANSPARENT,
                 width: 0.0,
                 radius: Radius::new(theme.secondary_button.hover.radius),
             },
@@ -55,7 +55,7 @@ pub fn secondary_button<'a, Message>(
             background: Some(theme.secondary_button.active.background.into()),
             text_color: theme.secondary_button.active.text.into(),
             border: Border {
-                color: Color::TRANSPARENT,
+                color: iced::Color::TRANSPARENT,
                 width: 0.0,
                 radius: Radius::new(theme.secondary_button.active.radius),
             },
@@ -73,7 +73,7 @@ pub fn text_button<'a, Message>(
             background: Some(theme.text_button.hover.background.into()),
             text_color: theme.text_button.hover.text.into(),
             border: Border {
-                color: Color::TRANSPARENT,
+                color: iced::Color::TRANSPARENT,
                 width: 0.0,
                 radius: Radius::new(theme.text_button.hover.radius),
             },
@@ -84,7 +84,7 @@ pub fn text_button<'a, Message>(
             background: Some(theme.text_button.active.background.into()),
             text_color: theme.text_button.active.text.into(),
             border: Border {
-                color: Color::TRANSPARENT,
+                color: iced::Color::TRANSPARENT,
                 width: 0.0,
                 radius: Radius::new(theme.text_button.active.radius),
             },

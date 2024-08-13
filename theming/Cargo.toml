@@ -1,0 +1,24 @@
+[package]
+name = "theming"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+iced_core = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
+iced_futures = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
+iced_widget = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
+async-stream = { version = "0.3", optional = true }
+futures-core = { version = "0.3", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+tokio = { version = "1.39", features = ["fs", "io-util"], optional = true }
+toml = { version = "0.8", optional = true }
+smol_str = "0.2"
+
+[features]
+default = ["iced", "load"]
+iced = ["dep:iced_core", "dep:iced_widget"]
+serde = ["dep:serde"]
+tokio = ["dep:tokio"]
+toml = ["dep:toml"]
+async = ["dep:futures-core", "dep:async-stream", "tokio"]
+load = ["serde", "async", "toml"]

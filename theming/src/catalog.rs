@@ -3,12 +3,14 @@ use std::{
     path::{Path, PathBuf},
 };
 
+#[cfg(feature = "async")]
 use futures_core::Stream;
-use iced::{advanced::graphics::core::SmolStr, futures::TryFutureExt};
+// #[cfg(feature = "iced")]
+// use iced_futures::TryFutureExt;
 
-use crate::theming::{metadata::ThemeMetadata, Theme};
+use crate::{metadata::ThemeMetadata, Theme};
 
-pub type ThemeID = SmolStr;
+pub type ThemeID = smol_str::SmolStr;
 
 pub enum CatalogError {
     IDNotFound,
@@ -24,6 +26,7 @@ struct ThemeEntry<'a> {
 /// Theme catalog.
 ///
 /// Contains `ThemeId`'s and corresponding `Theme` and `ThemeMetadata`
+#[derive(Default)]
 pub struct Catalog {
     themes: HashMap<ThemeID, ThemeEntry<'static>>,
 }
@@ -31,9 +34,7 @@ pub struct Catalog {
 impl Catalog {
     /// Create an empty theme catalog.
     pub fn new() -> Self {
-        Self {
-            themes: HashMap::new(),
-        }
+        Self::default()
     }
 
     /// Adds new `Theme` and `ThemeMetadata` if that `ThemeId` did't added yet,

@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+#[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -80,9 +81,10 @@ impl Default for Color {
     }
 }
 
-impl From<Color> for iced::Color {
+#[cfg(feature = "iced")]
+impl From<Color> for iced_core::Color {
     fn from(val: Color) -> Self {
-        iced::Color {
+        iced_core::Color {
             r: val.r,
             g: val.g,
             b: val.b,
@@ -91,15 +93,15 @@ impl From<Color> for iced::Color {
     }
 }
 
-impl From<Color> for iced::Background {
+#[cfg(feature = "iced")]
+impl From<Color> for iced_core::Background {
     fn from(val: Color) -> Self {
-        iced::Color {
+        Self::Color(iced_core::Color {
             r: val.r,
             g: val.g,
             b: val.b,
             a: val.a,
-        }
-        .into()
+        })
     }
 }
 
@@ -123,6 +125,7 @@ impl From<Color> for String {
     }
 }
 
+#[cfg(feature = "serde")]
 impl Serialize for Color {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -133,6 +136,7 @@ impl Serialize for Color {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Color {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

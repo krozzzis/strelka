@@ -3,7 +3,7 @@ use iced::{
     Element, Length,
 };
 
-use crate::theming::Theme;
+use theming::Theme;
 
 pub fn list<'a, Message: 'a>(
     items: Vec<Element<'a, Message>>,

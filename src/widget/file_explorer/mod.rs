@@ -13,10 +13,10 @@ use iced::{
 use iced_aw::widgets::ContextMenu;
 
 use crate::{
-    theming::{self, Theme},
     util::get_directory_content,
     widget::list::{list, ListItem},
 };
+use theming::{self, Theme};
 
 #[derive(Default, Debug)]
 pub struct State {
@@ -136,43 +136,43 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
 
         let items = container(list(elements, theme)).padding(theme.file_explorer.padding);
 
-        let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(move |_| container::Style {
-                text_color: Some(theme.file_explorer.text.into()),
-                background: Some(theme.file_explorer.background.into()),
-                ..Default::default()
-            });
+        // let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
+        //     .width(Length::Fill)
+        //     .height(Length::Fill)
+        //     .style(move |_: &iced::Theme| container::Style {
+        //         text_color: Some(theme.file_explorer.text.into()),
+        //         background: Some(theme.file_explorer.background.into()),
+        //         ..Default::default()
+        //     });
+        //
+        // let menu = ContextMenu::new(underlay, move || {
+        //     container(list(
+        //         vec![ListItem::new("New file")
+        //             .theme(self.theme)
+        //             .click(InternalMessage::NewFile)
+        //             .into()],
+        //         theme,
+        //     ))
+        //     .padding(theme.context_menu.padding + theme.context_menu.border_width)
+        //     .width(Length::Fixed(theme.context_menu.width))
+        //     .style(move |_: &iced::Theme| container::Style {
+        //         background: Some(theme.context_menu.background.into()),
+        //         border: Border {
+        //             color: theme.context_menu.border_color.into(),
+        //             width: theme.context_menu.border_width,
+        //             radius: Radius::new(theme.context_menu.radius),
+        //         },
+        //         shadow: Shadow {
+        //             color: Color::BLACK,
+        //             offset: Vector::new(theme.context_menu.shadow_x, theme.context_menu.shadow_y),
+        //             blur_radius: theme.context_menu.shadow_blur,
+        //         },
+        //         ..Default::default()
+        //     })
+        //     .into()
+        // });
 
-        let menu = ContextMenu::new(underlay, move || {
-            container(list(
-                vec![ListItem::new("New file")
-                    .theme(self.theme)
-                    .click(InternalMessage::NewFile)
-                    .into()],
-                theme,
-            ))
-            .padding(theme.context_menu.padding + theme.context_menu.border_width)
-            .width(Length::Fixed(theme.context_menu.width))
-            .style(move |_| container::Style {
-                background: Some(theme.context_menu.background.into()),
-                border: Border {
-                    color: theme.context_menu.border_color.into(),
-                    width: theme.context_menu.border_width,
-                    radius: Radius::new(theme.context_menu.radius),
-                },
-                shadow: Shadow {
-                    color: Color::BLACK,
-                    offset: Vector::new(theme.context_menu.shadow_x, theme.context_menu.shadow_y),
-                    blur_radius: theme.context_menu.shadow_blur,
-                },
-                ..Default::default()
-            })
-            .into()
-        });
-
-        stack![menu, items].into()
+        stack![items].into()
     }
 
     fn size_hint(&self) -> iced::Size<Length> {

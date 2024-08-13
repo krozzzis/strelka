@@ -8,7 +8,7 @@ use iced::{
     Border, Color, Element, Length, Pixels,
 };
 
-use crate::theming::{self, Theme};
+use theming::{self, Theme};
 
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {

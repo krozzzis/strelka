@@ -6,10 +6,8 @@ use iced::{
     Border, Color, Element, Shadow, Vector,
 };
 
-use crate::{
-    notification::Notification,
-    theming::{self, Theme},
-};
+use crate::notification::Notification;
+use theming::{self, Theme};
 
 pub fn notification<'a, Message: 'a>(
     notification: Notification,
