@@ -1,9 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod notification;
 mod plugin;
 mod util;
-mod widget;
 
 use iced::{
     advanced::graphics::core::SmolStr,
@@ -24,38 +22,31 @@ use widget::notificaton::notification_list;
 use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
 
 use crate::{
-    notification::{Notification, NotificationList},
     plugin::{ExamplePlugin, Hotkey, Plugin, PluginAction, PluginHost, PluginId, PluginInfo},
     util::{delay, get_file_name, open_file, pick_file, save_file},
-    widget::{
-        file_explorer,
-        pane::{file_explorer_pane, text_editor_pane},
-    },
 };
 use theming::{
     catalog::{get_themes, Catalog, ThemeID},
     metadata::ThemeMetadata,
     Theme,
 };
+use widget::{
+    file_explorer,
+    pane::{file_explorer_pane, text_editor_pane},
+};
 
-pub type DocumentId = usize;
+use core::document::{DocumentHandler, DocumentId};
+use core::notification::{Notification, NotificationKind, NotificationList};
 
 #[derive(Debug, Clone)]
 pub enum PaneType {
     TextEditor(DocumentId),
 }
 
-pub struct DocumentHandler {
-    pub text_content: Content,
-    pub path: PathBuf,
-    pub filename: Arc<String>,
-    pub changed: bool,
-}
-
 pub struct App {
     theme: Theme,
     theme_catalog: Catalog,
-    documents: HashMap<DocumentId, DocumentHandler>,
+    documents: HashMap<DocumentId, DocumentHandler<Content>>,
     next_doc_id: DocumentId,
     opened_doc: DocumentId,
     opened_directory: Option<PathBuf>,
@@ -219,7 +210,7 @@ impl App {
 
                     return Task::done(AppMessage::SendNotification(Arc::new(Notification {
                         text: format!("Focused document {id}",),
-                        kind: notification::NotificationKind::None,
+                        kind: NotificationKind::None,
                     })));
                 }
             }
@@ -254,7 +245,7 @@ impl App {
                 PluginAction::SendNotification(text) => {
                     return Task::done(AppMessage::SendNotification(Arc::new(Notification {
                         text: text.to_string(),
-                        kind: notification::NotificationKind::None,
+                        kind: NotificationKind::None,
                     })))
                 }
             },
@@ -309,7 +300,7 @@ impl App {
                                     .unwrap_or(""),
                                 self.next_doc_id,
                             ),
-                            kind: notification::NotificationKind::None,
+                            kind: NotificationKind::None,
                         })));
 
                     self.next_doc_id += 1;

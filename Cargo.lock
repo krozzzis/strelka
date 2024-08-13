@@ -689,6 +689,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "core"
+version = "0.1.0"
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1576,7 +1580,7 @@ dependencies = [
 [[package]]
 name = "iced_aw"
 version = "0.9.3"
-source = "git+https://github.com/iced-rs/iced_aw?branch=main#102781f16582c9899690446904b7cff4ba6f1435"
+source = "git+https://github.com/iced-rs/iced_aw.git?branch=main#102781f16582c9899690446904b7cff4ba6f1435"
 dependencies = [
  "cfg-if",
  "chrono",
@@ -3459,13 +3463,12 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "strelka"
 version = "0.1.0"
 dependencies = [
+ "core",
  "iced 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
- "iced_aw",
  "rfd",
- "serde",
  "theming",
  "tokio",
- "toml",
+ "widget",
 ]
 
 [[package]]
@@ -4264,6 +4267,17 @@ name = "widestring"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7219d36b6eac893fa81e84ebe06485e7dcbb616177469b142df14f1f4deb1311"
+
+[[package]]
+name = "widget"
+version = "0.1.0"
+dependencies = [
+ "core",
+ "iced 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
+ "iced_aw",
+ "theming",
+ "tokio",
+]
 
 [[package]]
 name = "winapi"

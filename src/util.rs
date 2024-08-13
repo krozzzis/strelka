@@ -15,20 +15,6 @@ pub async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()
     Ok(())
 }
 
-pub async fn get_directory_content(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    let dir_path = dir.into();
-
-    let mut dir_entries = fs::read_dir(dir_path).await.unwrap();
-
-    while let Some(entry) = dir_entries.next_entry().await.unwrap() {
-        let path = entry.path();
-        files.push(path);
-    }
-
-    files
-}
-
 pub async fn delay(secs: u64) {
     tokio::time::sleep(Duration::new(secs, 0)).await
 }

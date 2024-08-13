@@ -6,7 +6,7 @@ use iced::{
     Element, Length, Padding,
 };
 
-use crate::widget::tabs::Tab;
+use crate::tabs::Tab;
 use theming::Theme;
 
 pub fn tab_bar<'a, Message: 'a + Clone>(

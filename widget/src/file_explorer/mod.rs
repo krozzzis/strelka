@@ -12,10 +12,7 @@ use iced::{
 };
 use iced_aw::widgets::ContextMenu;
 
-use crate::{
-    util::get_directory_content,
-    widget::list::{list, ListItem},
-};
+use crate::list::{list, ListItem};
 use theming::{self, Theme};
 
 #[derive(Default, Debug)]
@@ -207,4 +204,18 @@ fn get_file_name(path: &Path) -> Option<String> {
     path.file_name()
         .and_then(|os_str| os_str.to_str())
         .map(String::from)
+}
+
+async fn get_directory_content(dir: impl Into<PathBuf>) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    let dir_path = dir.into();
+
+    let mut dir_entries = tokio::fs::read_dir(dir_path).await.unwrap();
+
+    while let Some(entry) = dir_entries.next_entry().await.unwrap() {
+        let path = entry.path();
+        files.push(path);
+    }
+
+    files
 }

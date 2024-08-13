@@ -1,17 +1,21 @@
 use std::{collections::HashMap, sync::Arc};
 
-use iced::{widget::center, Element};
+use iced::{
+    widget::{center, text_editor::Content},
+    Element,
+};
 use iced::{
     widget::{column, text_editor::Action, Container},
     Length,
 };
 
-use crate::widget::{button::text_button, containers::background, tabs::tab_bar};
-use crate::{widget::editor::NoteEditor, DocumentHandler, DocumentId};
+use crate::editor::NoteEditor;
+use crate::{button::text_button, containers::background, tabs::tab_bar};
+use core::document::{DocumentHandler, DocumentId};
 use theming::Theme;
 
 pub fn text_editor_pane<'a, Message: 'a + Clone>(
-    documents: &'a HashMap<DocumentId, DocumentHandler>,
+    documents: &'a HashMap<DocumentId, DocumentHandler<Content>>,
     current_document: DocumentId,
     on_action: impl Fn(Action, DocumentId) -> Message + 'static,
     open_document: impl Fn(DocumentId) -> Message + 'static,

@@ -1,7 +1,5 @@
 [workspace]
-members = [
-  "theming",
-]
+members = ["core", "theming", "widget"]
 
 [package]
 name = "strelka"
@@ -15,23 +13,15 @@ lto = true
 
 [dependencies]
 rfd = "0.14.1"
-toml = "0.8.19"
+core = { path = "./core" }
 theming = { path = "./theming" }
+widget = { path = "./widget" }
 
 [dependencies.tokio]
 version = "1.39.1"
 features = ["fs", "io-util"]
 
-[dependencies.serde]
-version = "1.0.204"
-features = ["derive"]
-
 [dependencies.iced]
 git = "https://github.com/iced-rs/iced.git"
 branch = "master"
 features = ["canvas", "debug", "lazy", "advanced", "svg", "tokio"]
-
-[dependencies.iced_aw]
-git = "https://github.com/iced-rs/iced_aw"
-branch = "main"
-features = ["context_menu"]
