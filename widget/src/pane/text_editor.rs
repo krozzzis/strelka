@@ -1,8 +1,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use iced::{
-    widget::{center, text_editor::Content},
-    Element,
+    widget::{center, text, text_editor::Content},
+    Alignment, Element,
 };
 use iced::{
     widget::{column, text_editor::Action, Container},
@@ -34,7 +34,15 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
         .height(Length::Fill)
     } else {
         background(
-            center(text_button("Open file Ctrl+O", theme).on_press_maybe(pick_file)),
+            center(
+                column![
+                    text("No file is open")
+                        .size(24.0)
+                        .align_x(Alignment::Center),
+                    text_button("Open file Ctrl+O", theme).on_press_maybe(pick_file),
+                ]
+                .spacing(12.0),
+            ),
             theme,
         )
     };
