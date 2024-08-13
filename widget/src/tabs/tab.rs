@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use iced::{
     border::Radius,
-    widget::{button, component, container, Component, MouseArea, Text},
+    widget::{button, center, component, Component, MouseArea, Text},
     Border, Element, Length, Size,
 };
 
@@ -64,7 +64,8 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
         let tab = button(
-            container(Text::new(self.label.clone()))
+            center(Text::new(self.label.clone()))
+                .width(Length::Shrink)
                 .height(self.theme.unwrap_or(&Theme::default()).tab.active.height),
         )
         .on_press_maybe(self.on_click.clone())
