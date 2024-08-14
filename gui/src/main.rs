@@ -179,6 +179,8 @@ impl App {
             ),
         )));
 
+        tasks.push(Task::done(AppMessage::OpenDirectory("./content".into())));
+
         (app, Task::batch(tasks))
     }
 
@@ -188,11 +190,17 @@ impl App {
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         match message {
-            AppMessage::FileExplorerAction(message) => {
-                return self
-                    .file_explorer
-                    .perform(message, AppMessage::FileExplorerAction);
-            }
+            AppMessage::FileExplorerAction(message) => match message {
+                file_explorer::Message::OpenFile(path) => {
+                    return Task::done(AppMessage::OpenFile(path))
+                }
+
+                _ => {
+                    return self
+                        .file_explorer
+                        .perform(message, AppMessage::FileExplorerAction)
+                }
+            },
 
             AppMessage::AddTheme(id, theme, metadata) => {
                 self.theme_catalog.insert(id, *theme, metadata);
@@ -332,6 +340,12 @@ impl App {
             AppMessage::OpenDirectory(path) => {
                 if path.is_dir() {
                     self.opened_directory = Some(path.clone());
+
+                    // Open directory in file explorer
+                    return self.file_explorer.perform(
+                        file_explorer::Message::SetDirectory(path),
+                        AppMessage::FileExplorerAction,
+                    );
                 }
             }
         }
@@ -348,14 +362,8 @@ impl App {
             Some(AppMessage::PickFile(None)),
         );
 
-        let file_explorer = file_explorer_pane(
-            Arc::new(self.opened_directory.clone().unwrap_or_default()),
-            &self.file_explorer,
-            self.documents
-                .get(&self.opened_doc)
-                .map(|handler| handler.path.clone()),
-            AppMessage::OpenFile,
-        );
+        let file_explorer =
+            file_explorer_pane(&self.file_explorer).map(AppMessage::FileExplorerAction);
 
         let mut grid_elements = Vec::new();
         if self.file_explorer.visible {

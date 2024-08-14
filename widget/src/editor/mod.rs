@@ -5,7 +5,7 @@ use iced::{
         text_editor::{self, Content},
         Component, Container, TextEditor,
     },
-    Border, Color, Element, Length, Pixels,
+    Border, Element, Length, Pixels,
 };
 
 use theming::{self, theme, Theme};

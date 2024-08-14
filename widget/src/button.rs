@@ -1,8 +1,4 @@
-use iced::{
-    border::Radius,
-    widget::{button, Button},
-    Border, Element,
-};
+use iced::{widget::Button, Element};
 
 use theming::Theme;
 

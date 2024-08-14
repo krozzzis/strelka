@@ -2,23 +2,21 @@ use std::{
     cmp::Reverse,
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::Arc,
 };
 
-use iced::{border::Radius, Border, Color, Element, Length, Shadow, Task, Vector};
-use iced::{
-    widget::{component, container, stack, Component, Container, Space},
-    Size,
-};
-use iced_aw::widgets::ContextMenu;
+use iced::widget::container;
+use iced::{widget::container::Style, Element, Length, Task};
 
-use crate::list::{list, ListItem};
+use crate::list::{List, ListItem, TextButton};
 use theming::{self, theme, Theme};
 
-#[derive(Default, Debug)]
+#[derive(Debug, Default)]
 pub struct State {
     pub visible: bool,
+    pub directory: PathBuf,
+    pub selected: PathBuf,
     pub content: HashMap<PathBuf, Vec<PathBuf>>,
+    pub list: List<Message>,
 }
 
 impl State {
@@ -28,8 +26,20 @@ impl State {
         to_msg: impl Fn(Message) -> Msg + Send + Sync + 'static,
     ) -> Task<Msg> {
         match message {
+            Message::OpenFile(_) => Task::none(),
+
             Message::Toggle => {
                 self.visible = !self.visible;
+                Task::none()
+            }
+
+            Message::SetDirectory(path) => {
+                self.directory = path;
+                Task::none()
+            }
+
+            Message::SetSelected(path) => {
+                self.selected = path;
                 Task::none()
             }
 
@@ -42,9 +52,29 @@ impl State {
             Message::AddFolderContent(dir, mut vector) => {
                 vector.sort_by_key(|a| Reverse(a.is_dir()));
                 self.content.insert(dir, vector);
+
+                for path in self.content.get(&self.directory).unwrap_or(&vec![]).iter() {
+                    let button = TextButton::new(get_file_name(path).unwrap_or_default())
+                        .on_click(Message::OpenFile((*path).clone()));
+                    self.list.elements.push(ListItem::TextButton(button));
+                }
+
                 Task::none()
             }
         }
+    }
+
+    pub fn view(&self) -> Element<'_, Message, Theme> {
+        container(self.list.view())
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .padding(theme!(file_explorer.padding))
+            .style(|theme: &Theme| Style {
+                text_color: Some(theme.file_explorer.text.into()),
+                background: Some(theme.file_explorer.background.into()),
+                ..Default::default()
+            })
+            .into()
     }
 }
 
@@ -52,142 +82,10 @@ impl State {
 pub enum Message {
     GetFolderContent(PathBuf),
     AddFolderContent(PathBuf, Vec<PathBuf>),
-    Toggle,
-}
-
-pub struct FileExplorer<'a, Message> {
-    pub state: &'a State,
-    pub path: Arc<PathBuf>,
-    pub selected_file: Option<PathBuf>,
-    pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
-}
-
-impl<'a, Message> FileExplorer<'a, Message> {
-    pub fn new(dir: Arc<PathBuf>, state: &'a State) -> Self {
-        Self {
-            state,
-            path: dir,
-            selected_file: None,
-            on_click: None,
-        }
-    }
-
-    pub fn file_click<F>(mut self, func: F) -> Self
-    where
-        F: 'static + Fn(PathBuf) -> Message,
-    {
-        self.on_click = Some(Box::new(func));
-        self
-    }
-
-    pub fn select_file(mut self, path: impl Into<PathBuf>) -> Self {
-        self.selected_file = Some(path.into());
-        self
-    }
-
-    pub fn select_file_maybe(mut self, path: Option<impl Into<PathBuf>>) -> Self {
-        if let Some(path) = path {
-            self.selected_file = Some(path.into());
-        }
-        self
-    }
-}
-
-impl<'a, Msg> Component<Msg, Theme> for FileExplorer<'a, Msg> {
-    type State = ();
-
-    type Event = InternalMessage;
-
-    fn update(&mut self, _state: &mut Self::State, event: Self::Event) -> Option<Msg> {
-        match event {
-            InternalMessage::OpenDir(_path) => {}
-
-            InternalMessage::OpenFile(path) => {
-                if let Some(func) = &self.on_click {
-                    return Some(func(path));
-                }
-            }
-
-            InternalMessage::NewFile => {}
-        }
-        None
-    }
-
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme> {
-        let elements: Vec<_> = if let Some(content) = self.state.content.get(&*self.path) {
-            content
-                .iter()
-                .map(|path| {
-                    ListItem::new(get_file_name(path).unwrap_or(String::from("NaN")))
-                        .click(InternalMessage::OpenFile((*path).clone()))
-                        .selected(self.selected_file == Some((*path).clone()))
-                })
-                .map(|x| x.into())
-                .collect()
-        } else {
-            vec![]
-        };
-
-        let items = container(list(elements)).padding(theme!(file_explorer.padding));
-
-        let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
-            .width(Length::Fill)
-            .height(Length::Fill)
-            .style(|theme: &Theme| container::Style {
-                text_color: Some(theme.file_explorer.text.into()),
-                background: Some(theme.file_explorer.background.into()),
-                ..Default::default()
-            });
-        //
-        // let menu = ContextMenu::new(underlay, move || {
-        //     container(list(
-        //         vec![ListItem::new("New file")
-        //             .theme(self.theme)
-        //             .click(InternalMessage::NewFile)
-        //             .into()],
-        //         theme,
-        //     ))
-        //     .padding(theme.context_menu.padding + theme.context_menu.border_width)
-        //     .width(Length::Fixed(theme.context_menu.width))
-        //     .style(move |_: &iced::Theme| container::Style {
-        //         background: Some(theme.context_menu.background.into()),
-        //         border: Border {
-        //             color: theme.context_menu.border_color.into(),
-        //             width: theme.context_menu.border_width,
-        //             radius: Radius::new(theme.context_menu.radius),
-        //         },
-        //         shadow: Shadow {
-        //             color: Color::BLACK,
-        //             offset: Vector::new(theme.context_menu.shadow_x, theme.context_menu.shadow_y),
-        //             blur_radius: theme.context_menu.shadow_blur,
-        //         },
-        //         ..Default::default()
-        //     })
-        //     .into()
-        // });
-
-        stack![underlay, items].into()
-    }
-
-    fn size_hint(&self) -> iced::Size<Length> {
-        Size::new(Length::Fill, Length::Fill)
-    }
-}
-
-impl<'a, Message> From<FileExplorer<'a, Message>> for Element<'a, Message, Theme>
-where
-    Message: 'a,
-{
-    fn from(widget: FileExplorer<'a, Message>) -> Self {
-        component(widget)
-    }
-}
-
-#[derive(Clone)]
-pub enum InternalMessage {
     OpenFile(PathBuf),
-    OpenDir(PathBuf),
-    NewFile,
+    SetDirectory(PathBuf),
+    SetSelected(PathBuf),
+    Toggle,
 }
 
 fn get_file_name(path: &Path) -> Option<String> {

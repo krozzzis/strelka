@@ -1,7 +1,4 @@
-use iced::{
-    widget::{container::Style, Container},
-    Element,
-};
+use iced::{widget::Container, Element};
 
 use theming::Theme;
 
