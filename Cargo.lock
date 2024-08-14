@@ -537,12 +537,13 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.10"
+version = "1.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9e8aabfac534be767c909e0690571677d49f41bd8465ae876fe043d52ba5292"
+checksum = "5fb8dd288a69fc53a1996d7ecfbf4a20d59065bff137ce7e56bbd620de191189"
 dependencies = [
  "jobserver",
  "libc",
+ "shlex",
 ]
 
 [[package]]
@@ -1593,7 +1594,7 @@ dependencies = [
 [[package]]
 name = "iced_aw"
 version = "0.9.3"
-source = "git+https://github.com/iced-rs/iced_aw.git?branch=main#102781f16582c9899690446904b7cff4ba6f1435"
+source = "git+https://github.com/iced-rs/iced_aw.git?branch=main#18cf81403b19924164218581dfb8042f3de8096c"
 dependencies = [
  "cfg-if",
  "chrono",
@@ -1913,9 +1914,9 @@ checksum = "029d73f573d8e8d63e6d5020011d3255b28c3ba85d6cf870a07184ed23de9284"
 
 [[package]]
 name = "indexmap"
-version = "2.3.0"
+version = "2.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de3fc2e30ba82dd1b3911c8de1ffc143c74a914a14e99514d7637e3099df5ea0"
+checksum = "93ead53efc7ea8ed3cfb0c79fc8023fbb782a5432b52830b6518941cebe6505c"
 dependencies = [
  "equivalent",
  "hashbrown 0.14.5",
@@ -2027,6 +2028,12 @@ dependencies = [
  "arrayvec",
  "smallvec",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
@@ -3289,6 +3296,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "shlex"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
+
+[[package]]
 name = "signal-hook-registry"
 version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3574,6 +3587,8 @@ dependencies = [
  "iced_core 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
  "iced_futures 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
  "iced_widget 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
+ "iced_winit 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
+ "lazy_static",
  "serde",
  "smol_str",
  "tokio",

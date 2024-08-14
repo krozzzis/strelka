@@ -6,7 +6,7 @@ use iced::{
 
 use theming::{self, Theme};
 
-pub struct ListItem<'a, Message>
+pub struct ListItem<Message>
 where
     Message: Clone,
 {
@@ -14,10 +14,9 @@ where
     tooltip: Option<String>,
     selected: bool,
     on_click: Option<Message>,
-    theme: Option<&'a Theme>,
 }
 
-impl<'a, Message> ListItem<'a, Message>
+impl<Message> ListItem<Message>
 where
     Message: Clone,
 {
@@ -27,7 +26,6 @@ where
             tooltip: None,
             selected: false,
             on_click: None,
-            theme: None,
         }
     }
 
@@ -50,14 +48,9 @@ where
         self.selected = selected;
         self
     }
-
-    pub fn theme(mut self, theme: Option<&'a Theme>) -> Self {
-        self.theme = theme;
-        self
-    }
 }
 
-impl<'a, Message> Component<Message> for ListItem<'a, Message>
+impl<Message> Component<Message, Theme> for ListItem<Message>
 where
     Message: Clone,
 {
@@ -69,43 +62,40 @@ where
         Some(event)
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let fallback = &theming::FALLBACK;
-        let theme = &self.theme.unwrap_or(fallback).list_item;
-
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme> {
         Button::new(
             text(self.title.clone())
                 .size(14.0)
-                .style(move |_| text::Style {
-                    color: Some(theme.active.text.into()),
+                .style(|theme: &Theme| text::Style {
+                    color: Some(theme.list_item.active.text.into()),
                 }),
         )
         .on_press_maybe(self.on_click.clone())
         .width(Length::Fill)
         .padding(Padding::new(4.0).left(24.0))
-        .style(move |_, status| match status {
+        .style(|theme: &Theme, status| match status {
             button::Status::Active | button::Status::Disabled => button::Style {
                 background: if self.selected {
-                    Some(theme.selected.background.into())
+                    Some(theme.list_item.selected.background.into())
                 } else {
-                    Some(theme.active.background.into())
+                    Some(theme.list_item.active.background.into())
                 },
-                text_color: theme.active.text.into(),
+                text_color: theme.list_item.active.text.into(),
                 border: Border {
                     color: Color::TRANSPARENT,
                     width: 0.0,
-                    radius: Radius::new(theme.active.radius),
+                    radius: Radius::new(theme.list_item.active.radius),
                 },
                 ..Default::default()
             },
 
             button::Status::Hovered | button::Status::Pressed => button::Style {
-                background: Some(theme.hover.background.into()),
-                text_color: theme.hover.text.into(),
+                background: Some(theme.list_item.hover.background.into()),
+                text_color: theme.list_item.hover.text.into(),
                 border: Border {
                     color: Color::TRANSPARENT,
                     width: 0.0,
-                    radius: Radius::new(theme.hover.radius),
+                    radius: Radius::new(theme.list_item.hover.radius),
                 },
                 ..Default::default()
             },
@@ -114,11 +104,11 @@ where
     }
 }
 
-impl<'a, Message> From<ListItem<'a, Message>> for Element<'a, Message>
+impl<'a, Message> From<ListItem<Message>> for Element<'a, Message, Theme>
 where
     Message: Clone + 'a,
 {
-    fn from(value: ListItem<'a, Message>) -> Self {
+    fn from(value: ListItem<Message>) -> Self {
         component(value)
     }
 }

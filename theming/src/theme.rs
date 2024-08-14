@@ -6,10 +6,8 @@ use crate::styles::{
     notification_list::NotificationList, tab::Tab, tab_bar::TabBar,
 };
 
-// #[cfg(feature = "iced")]
-// use iced_futures::TryFutureExt;
 #[cfg(feature = "iced")]
-use iced_widget::button;
+use iced_winit::program::{Appearance, DefaultStyle};
 #[cfg(feature = "load")]
 use serde::{Deserialize, Serialize};
 
@@ -56,23 +54,6 @@ pub struct Theme {
 }
 
 impl Theme {
-    #[cfg(feature = "iced")]
-    pub fn text_button(&self) -> impl Fn(&iced_core::Theme, button::Status) -> button::Style + '_ {
-        move |_, status| match status {
-            button::Status::Hovered | button::Status::Pressed => button::Style {
-                background: Some(self.text_button.hover.background.into()),
-                text_color: self.text_button.hover.text.into(),
-                ..Default::default()
-            },
-
-            button::Status::Disabled | button::Status::Active => button::Style {
-                background: Some(self.text_button.active.background.into()),
-                text_color: self.text_button.active.text.into(),
-                ..Default::default()
-            },
-        }
-    }
-
     #[cfg(feature = "load")]
     pub async fn from_file(path: &PathBuf) -> Result<Theme, String> {
         let text = tokio::fs::read_to_string(path)
@@ -80,6 +61,16 @@ impl Theme {
             .map_err(|e| e.to_string())?;
         let theme = toml::from_str(&text).map_err(|e| e.to_string())?;
         Ok(theme)
+    }
+}
+
+#[cfg(feature = "iced")]
+impl DefaultStyle for Theme {
+    fn default_style(&self) -> Appearance {
+        Appearance {
+            background_color: self.generic.background.into(),
+            text_color: self.generic.text.into(),
+        }
     }
 }
 

@@ -6,11 +6,10 @@ use iced::{
     Border, Element, Length, Size,
 };
 
-use theming::{self, Theme};
+use theming::{self, theme, Theme};
 
 pub struct Tab<'a, Message> {
     pub label: Cow<'a, str>,
-    pub theme: Option<&'a Theme>,
     pub selected: bool,
     pub on_click: Option<Message>,
     pub on_close: Option<Message>,
@@ -20,16 +19,10 @@ impl<'a, Message> Tab<'a, Message> {
     pub fn new(label: Cow<'a, str>) -> Self {
         Self {
             label,
-            theme: None,
             selected: false,
             on_click: None,
             on_close: None,
         }
-    }
-
-    pub fn theme(mut self, theme: &'a Theme) -> Self {
-        self.theme = Some(theme);
-        self
     }
 
     pub fn selected(mut self, selected: bool) -> Self {
@@ -53,7 +46,7 @@ impl<'a, Message> Tab<'a, Message> {
     }
 }
 
-impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
+impl<'a, Message: 'a + Clone> Component<Message, Theme> for Tab<'a, Message> {
     type State = ();
 
     type Event = Message;
@@ -62,51 +55,46 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
         Some(event)
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme> {
         let tab = button(
             center(Text::new(self.label.clone()))
                 .width(Length::Shrink)
-                .height(self.theme.unwrap_or(&Theme::default()).tab.active.height),
+                .height(theme!(tab.active.height)),
         )
         .on_press_maybe(self.on_click.clone())
-        .style(move |_, status| {
-            let fallback = &theming::FALLBACK;
-            let theme = &self.theme.unwrap_or(fallback).tab;
-
-            match status {
-                button::Status::Hovered | button::Status::Pressed => button::Style {
-                    background: Some(theme.hover.background.into()),
-                    text_color: theme.hover.text.into(),
-                    border: Border {
-                        radius: Radius {
-                            top_left: theme.hover.radius,
-                            top_right: theme.hover.radius,
-                            bottom_right: 0.0,
-                            bottom_left: 0.0,
-                        },
-                        ..Default::default()
+        .style(|theme: &Theme, status| match status {
+            button::Status::Hovered | button::Status::Pressed => button::Style {
+                background: Some(theme.tab.hover.background.into()),
+                text_color: theme.tab.hover.text.into(),
+                border: Border {
+                    radius: Radius {
+                        top_left: theme.tab.hover.radius,
+                        top_right: theme.tab.hover.radius,
+                        bottom_right: 0.0,
+                        bottom_left: 0.0,
                     },
                     ..Default::default()
                 },
-                button::Status::Active | button::Status::Disabled => button::Style {
-                    background: Some(if self.selected {
-                        theme.selected.background.into()
-                    } else {
-                        theme.active.background.into()
-                    }),
-                    text_color: theme.active.text.into(),
-                    border: Border {
-                        radius: Radius {
-                            top_left: theme.active.radius,
-                            top_right: theme.active.radius,
-                            bottom_right: 0.0,
-                            bottom_left: 0.0,
-                        },
-                        ..Default::default()
+                ..Default::default()
+            },
+            button::Status::Active | button::Status::Disabled => button::Style {
+                background: Some(if self.selected {
+                    theme.tab.selected.background.into()
+                } else {
+                    theme.tab.active.background.into()
+                }),
+                text_color: theme.tab.active.text.into(),
+                border: Border {
+                    radius: Radius {
+                        top_left: theme.tab.active.radius,
+                        top_right: theme.tab.active.radius,
+                        bottom_right: 0.0,
+                        bottom_left: 0.0,
                     },
                     ..Default::default()
                 },
-            }
+                ..Default::default()
+            },
         });
 
         let mut area = MouseArea::new(tab);
@@ -119,14 +107,11 @@ impl<'a, Message: 'a + Clone> Component<Message> for Tab<'a, Message> {
     }
 
     fn size_hint(&self) -> iced::Size<iced::Length> {
-        Size::new(
-            Length::Fixed(self.theme.unwrap_or(&Theme::default()).tab.active.height),
-            Length::Shrink,
-        )
+        Size::new(Length::Fixed(theme!(tab.active.height)), Length::Shrink)
     }
 }
 
-impl<'a, Message> From<Tab<'a, Message>> for Element<'a, Message>
+impl<'a, Message> From<Tab<'a, Message>> for Element<'a, Message, Theme>
 where
     Message: Clone + 'a,
 {

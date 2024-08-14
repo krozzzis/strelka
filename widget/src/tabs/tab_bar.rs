@@ -7,19 +7,17 @@ use iced::{
 };
 
 use crate::tabs::Tab;
-use theming::Theme;
+use theming::{theme, Theme};
 
 pub fn tab_bar<'a, Message: 'a + Clone>(
     labels: Vec<(Arc<String>, Message, Option<Message>)>,
     selected: Option<usize>,
-    theme: &'a Theme,
-) -> Element<'a, Message> {
-    let tabs: Vec<Element<'_, Message>> = labels
+) -> Element<'a, Message, Theme> {
+    let tabs: Vec<Element<'_, Message, Theme>> = labels
         .into_iter()
         .enumerate()
         .map(|(id, (label, click, close))| {
             Tab::new(Cow::Owned(label.as_ref().clone()))
-                .theme(theme)
                 .on_click(click)
                 .on_close_maybe(close)
                 .selected(Some(id) == selected)
@@ -27,13 +25,13 @@ pub fn tab_bar<'a, Message: 'a + Clone>(
         })
         .collect();
 
-    Container::new(row(tabs).spacing(theme.tab_bar.spacing))
+    Container::new(row(tabs).spacing(theme!(tab_bar.spacing)))
         .width(Length::Fill)
-        .height(Length::Fixed(theme.tab.active.height))
-        .padding(Padding::new(theme.tab_bar.padding).bottom(0.0))
-        .style(move |_| container::Style {
+        .height(Length::Fixed(theme!(tab.active.height)))
+        .padding(Padding::new(theme!(tab_bar.padding)).bottom(0.0))
+        .style(|theme: &Theme| container::Style {
             background: Some(theme.tab_bar.background.into()),
-            ..Default::default()
+            ..theming::iced::container::background(theme)
         })
         .into()
 }

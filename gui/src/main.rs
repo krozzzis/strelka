@@ -201,6 +201,11 @@ impl App {
             AppMessage::LoadTheme(id) => {
                 if let Some(theme) = self.theme_catalog.get_theme(id) {
                     self.theme = theme.clone();
+                    {
+                        if let Ok(mut global) = theming::THEME.try_write() {
+                            *global = theme.clone();
+                        }
+                    }
                 }
             }
 
@@ -333,7 +338,7 @@ impl App {
         Task::none()
     }
 
-    fn view(&self) -> Element<AppMessage> {
+    fn view(&self) -> Element<AppMessage, Theme> {
         let editor = text_editor_pane(
             &self.documents,
             self.opened_doc,
@@ -341,7 +346,6 @@ impl App {
             AppMessage::FocusDocument,
             AppMessage::CloseDocument,
             Some(AppMessage::PickFile(None)),
-            &self.theme,
         );
 
         let file_explorer = file_explorer_pane(
@@ -351,7 +355,6 @@ impl App {
                 .get(&self.opened_doc)
                 .map(|handler| handler.path.clone()),
             AppMessage::OpenFile,
-            &self.theme,
         );
 
         let mut grid_elements = Vec::new();
@@ -371,16 +374,17 @@ impl App {
                 horizontal_space(),
                 column![
                     vertical_space(),
-                    Container::new(notification_list(
-                        &self.notifications.to_vec(),
-                        Some(&self.theme)
-                    ))
-                    .width(Length::Shrink)
+                    Container::new(notification_list(&self.notifications.to_vec()))
+                        .width(Length::Shrink)
                 ],
             ],
         ];
 
         primary_screen.into()
+    }
+
+    fn theme(&self) -> Theme {
+        self.theme.clone()
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {
@@ -419,6 +423,7 @@ impl App {
 fn main() -> iced::Result {
     iced::application(App::title, App::update, App::view)
         .subscription(App::subscription)
+        .theme(App::theme)
         .settings(Settings {
             antialiasing: true,
             ..Settings::default()

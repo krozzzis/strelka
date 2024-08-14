@@ -1,7 +1,5 @@
 # Sua frustra litora et Sinis
 
-sd
-
 ## Dum non claudit hac est mutua quiescet
 
 Lorem markdownum fuit, est fortunam virtus, erat parvo? Est tuam mater volenti

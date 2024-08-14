@@ -8,11 +8,11 @@ use iced::{
     widget::{column, text_editor::Action, Container},
     Length,
 };
+use theming::Theme;
 
 use crate::editor::NoteEditor;
 use crate::{button::text_button, containers::background, tabs::tab_bar};
 use core::document::{DocumentHandler, DocumentId};
-use theming::Theme;
 
 pub fn text_editor_pane<'a, Message: 'a + Clone>(
     documents: &'a HashMap<DocumentId, DocumentHandler<Content>>,
@@ -21,30 +21,23 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
     open_document: impl Fn(DocumentId) -> Message + 'static,
     close_document: impl Fn(DocumentId) -> Message + 'static,
     pick_file: Option<Message>,
-    theme: &'a Theme,
-) -> Element<'a, Message> {
+) -> Element<'a, Message, Theme> {
     let editor = if let Some(handler) = documents.get(&current_document) {
-        Container::new(
-            NoteEditor::new(
-                &handler.text_content,
-                Box::new(move |action| on_action(action, current_document)),
-            )
-            .theme(theme),
-        )
+        Container::new(NoteEditor::new(
+            &handler.text_content,
+            Box::new(move |action| on_action(action, current_document)),
+        ))
         .height(Length::Fill)
     } else {
-        background(
-            center(
-                column![
-                    text("No file is open")
-                        .size(24.0)
-                        .align_x(Alignment::Center),
-                    text_button("Open file Ctrl+O", theme).on_press_maybe(pick_file),
-                ]
-                .spacing(12.0),
-            ),
-            theme,
-        )
+        background(center(
+            column![
+                text("No file is open")
+                    .size(24.0)
+                    .align_x(Alignment::Center),
+                text_button("Open file Ctrl+O").on_press_maybe(pick_file),
+            ]
+            .spacing(12.0),
+        ))
     };
 
     let tabs = tab_bar(
@@ -63,7 +56,6 @@ pub fn text_editor_pane<'a, Message: 'a + Clone>(
             })
             .collect(),
         None,
-        theme,
     );
 
     Container::new(column![tabs, editor]).into()

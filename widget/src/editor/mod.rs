@@ -8,12 +8,11 @@ use iced::{
     Border, Color, Element, Length, Pixels,
 };
 
-use theming::{self, Theme};
+use theming::{self, theme, Theme};
 
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {
     content: &'a Content,
-    theme: Option<&'a Theme>,
     on_action: Box<dyn Fn(text_editor::Action) -> Message>,
 }
 
@@ -24,18 +23,12 @@ impl<'a, Message> NoteEditor<'a, Message> {
     {
         Self {
             content,
-            theme: None,
             on_action: Box::new(on_action),
         }
     }
-
-    pub fn theme(mut self, theme: &'a Theme) -> Self {
-        self.theme = Some(theme);
-        self
-    }
 }
 
-impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
+impl<'a, Message> Component<Message, Theme> for NoteEditor<'a, Message> {
     type State = ();
 
     type Event = Message;
@@ -44,51 +37,35 @@ impl<'a, Message> Component<Message> for NoteEditor<'a, Message> {
         Some(event)
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let fallback = &theming::FALLBACK;
-        let theme = &self.theme.unwrap_or(fallback).editor;
-
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme> {
         let editor = Container::new(center(
             Container::new(
                 TextEditor::new(self.content)
                     .on_action(&self.on_action)
                     .height(Length::Fill)
-                    .size(16.0)
-                    .style(move |_, _status| text_editor::Style {
-                        border: Border {
-                            color: Color::TRANSPARENT,
-                            ..Default::default()
-                        },
-                        background: Color::TRANSPARENT.into(),
-                        icon: theme.text.into(),
-                        placeholder: theme.text.into(),
-                        value: theme.cursor.into(),
-                        selection: theme.selection.into(),
-                    }),
+                    .size(16.0),
             )
-            .padding(theme.padding)
+            .padding(theme!(editor.padding))
             .max_width(Pixels::from(700.0))
-            .style(move |_| container::Style {
-                background: Some(theme.background2.into()),
-                text_color: Some(theme.text.into()),
+            .style(|theme: &Theme| container::Style {
                 border: Border {
-                    radius: Radius::from(theme.radius),
+                    radius: Radius::from(theme.editor.radius),
                     ..Default::default()
                 },
-                ..Default::default()
+                ..theming::iced::container::background2(theme)
             }),
         ))
-        .padding(theme.padding)
-        .style(move |_| container::Style {
-            background: Some(theme.background.into()),
-            text_color: Some(theme.text.into()),
+        .padding(theme!(editor.padding))
+        .style(|theme: &Theme| container::Style {
+            background: Some(theme.editor.background.into()),
+            text_color: Some(theme.editor.text.into()),
             ..Default::default()
         });
         editor.into()
     }
 }
 
-impl<'a, Message> From<NoteEditor<'a, Message>> for Element<'a, Message>
+impl<'a, Message> From<NoteEditor<'a, Message>> for Element<'a, Message, Theme>
 where
     Message: 'a,
 {

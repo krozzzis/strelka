@@ -13,7 +13,7 @@ use iced::{
 use iced_aw::widgets::ContextMenu;
 
 use crate::list::{list, ListItem};
-use theming::{self, Theme};
+use theming::{self, theme, Theme};
 
 #[derive(Default, Debug)]
 pub struct State {
@@ -60,7 +60,6 @@ pub struct FileExplorer<'a, Message> {
     pub path: Arc<PathBuf>,
     pub selected_file: Option<PathBuf>,
     pub on_click: Option<Box<dyn Fn(PathBuf) -> Message>>,
-    pub theme: Option<&'a Theme>,
 }
 
 impl<'a, Message> FileExplorer<'a, Message> {
@@ -70,7 +69,6 @@ impl<'a, Message> FileExplorer<'a, Message> {
             path: dir,
             selected_file: None,
             on_click: None,
-            theme: None,
         }
     }
 
@@ -93,14 +91,9 @@ impl<'a, Message> FileExplorer<'a, Message> {
         }
         self
     }
-
-    pub fn theme(mut self, theme: &'a Theme) -> Self {
-        self.theme = Some(theme);
-        self
-    }
 }
 
-impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
+impl<'a, Msg> Component<Msg, Theme> for FileExplorer<'a, Msg> {
     type State = ();
 
     type Event = InternalMessage;
@@ -120,15 +113,14 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         None
     }
 
-    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event> {
-        let elements: Vec<Element<_>> = if let Some(content) = self.state.content.get(&*self.path) {
+    fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme> {
+        let elements: Vec<_> = if let Some(content) = self.state.content.get(&*self.path) {
             content
                 .iter()
                 .map(|path| {
                     ListItem::new(get_file_name(path).unwrap_or(String::from("NaN")))
                         .click(InternalMessage::OpenFile((*path).clone()))
                         .selected(self.selected_file == Some((*path).clone()))
-                        .theme(self.theme)
                 })
                 .map(|x| x.into())
                 .collect()
@@ -136,18 +128,16 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
             vec![]
         };
 
-        let theme = self.theme.unwrap_or(&theming::FALLBACK);
+        let items = container(list(elements)).padding(theme!(file_explorer.padding));
 
-        let items = container(list(elements, theme)).padding(theme.file_explorer.padding);
-
-        // let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
-        //     .width(Length::Fill)
-        //     .height(Length::Fill)
-        //     .style(move |_: &iced::Theme| container::Style {
-        //         text_color: Some(theme.file_explorer.text.into()),
-        //         background: Some(theme.file_explorer.background.into()),
-        //         ..Default::default()
-        //     });
+        let underlay = Container::new(Space::new(Length::Fill, Length::Fill))
+            .width(Length::Fill)
+            .height(Length::Fill)
+            .style(|theme: &Theme| container::Style {
+                text_color: Some(theme.file_explorer.text.into()),
+                background: Some(theme.file_explorer.background.into()),
+                ..Default::default()
+            });
         //
         // let menu = ContextMenu::new(underlay, move || {
         //     container(list(
@@ -176,7 +166,7 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
         //     .into()
         // });
 
-        stack![items].into()
+        stack![underlay, items].into()
     }
 
     fn size_hint(&self) -> iced::Size<Length> {
@@ -184,7 +174,7 @@ impl<'a, Msg> Component<Msg> for FileExplorer<'a, Msg> {
     }
 }
 
-impl<'a, Message> From<FileExplorer<'a, Message>> for Element<'a, Message>
+impl<'a, Message> From<FileExplorer<'a, Message>> for Element<'a, Message, Theme>
 where
     Message: 'a,
 {
