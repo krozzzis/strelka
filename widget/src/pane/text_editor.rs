@@ -11,7 +11,7 @@ use iced::{
 use theming::Theme;
 
 use crate::editor::NoteEditor;
-use crate::{button::text_button, containers::background, tabs::tab_bar};
+use crate::{button::text_button, container::background, tabs::tab_bar};
 use core::document::{DocumentHandler, DocumentId};
 
 pub fn text_editor_pane<'a, Message: 'a + Clone>(
