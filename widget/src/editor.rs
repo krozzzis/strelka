@@ -1,14 +1,13 @@
 use iced::{
-    border::Radius,
     widget::{
-        center, component, container,
+        component,
         text_editor::{self, Content},
-        Component, Container, TextEditor,
+        Component, TextEditor,
     },
-    Border, Element, Length, Pixels,
+    Element, Length,
 };
 
-use theming::{self, theme, Theme};
+use theming::{self, Theme};
 
 /// Text editor widget
 pub struct NoteEditor<'a, Message> {
@@ -38,30 +37,11 @@ impl<'a, Message> Component<Message, Theme> for NoteEditor<'a, Message> {
     }
 
     fn view(&self, _state: &Self::State) -> Element<'_, Self::Event, Theme> {
-        let editor = Container::new(center(
-            Container::new(
-                TextEditor::new(self.content)
-                    .on_action(&self.on_action)
-                    .height(Length::Fill)
-                    .size(16.0),
-            )
-            .padding(theme!(editor.padding))
-            .max_width(Pixels::from(700.0))
-            .style(|theme: &Theme| container::Style {
-                border: Border {
-                    radius: Radius::from(theme.editor.radius),
-                    ..Default::default()
-                },
-                ..theming::iced::container::background2(theme)
-            }),
-        ))
-        .padding(theme!(editor.padding))
-        .style(|theme: &Theme| container::Style {
-            background: Some(theme.editor.background.into()),
-            text_color: Some(theme.editor.text.into()),
-            ..Default::default()
-        });
-        editor.into()
+        TextEditor::new(self.content)
+            .on_action(&self.on_action)
+            .height(Length::Fill)
+            .size(16.0)
+            .into()
     }
 }
 

@@ -193,7 +193,12 @@ impl App {
             AppMessage::OpenPane(id) => self.panes.open(&id),
 
             AppMessage::ClosePane(id) => {
-                self.panes.remove(&id);
+                let pane = self.panes.remove(&id);
+
+                // Close document if editor pane was closed
+                if let Some(core::pane::Pane::Editor(doc_id)) = pane {
+                    self.documents.remove(&doc_id);
+                }
             }
 
             AppMessage::FileExplorerAction(message) => match message {
@@ -304,7 +309,9 @@ impl App {
                         changed: false,
                     };
 
-                    self.documents.add(handler);
+                    let doc_id = self.documents.add(handler);
+                    let pane_id = self.panes.add(core::pane::Pane::Editor(doc_id));
+                    return Task::done(AppMessage::OpenPane(pane_id));
                 }
             }
 
@@ -343,8 +350,8 @@ impl App {
                     .into(),
             );
         }
-        grid_elements.push(
-            pane_stack::pane_stack(&self.panes).map(|msg| -> AppMessage {
+        grid_elements.push(pane_stack::pane_stack(&self.panes, &self.documents).map(
+            |msg| -> AppMessage {
                 match msg {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
                         AppMessage::PickFile
@@ -354,10 +361,15 @@ impl App {
 
                     pane_stack::Message::ClosePane(id) => AppMessage::ClosePane(id),
 
+                    pane_stack::Message::TextEditor(
+                        id,
+                        pane::text_editor::Message::EditorAction(action),
+                    ) => AppMessage::TextEditorAction(action, id),
+
                     _ => AppMessage::None,
                 }
-            }),
-        );
+            },
+        ));
         let grid = row(grid_elements);
 
         let primary_screen = stack![
