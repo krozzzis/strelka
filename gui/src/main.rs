@@ -3,23 +3,22 @@
 mod util;
 
 use iced::{
-    advanced::graphics::core::SmolStr, keyboard::Key, widget::text_editor, Length, Subscription,
-    Task,
-};
-use iced::{
-    keyboard::on_key_press,
+    advanced::graphics::core::SmolStr,
+    keyboard::{on_key_press, Key},
     widget::{
-        column, horizontal_space, row, stack, text_editor::Content, vertical_space, Container,
+        column, horizontal_space, row, stack,
+        text_editor::{self, Content},
+        vertical_space, Container,
     },
+    Element, Length, Settings, Subscription, Task,
 };
-use iced::{Element, Settings};
 
-use widget::notificaton::notification_list;
-
-use std::{collections::HashMap, ffi::OsStr, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use crate::util::{delay, get_file_name, open_file, pick_file, save_file};
+
 use plugin::{ExamplePlugin, Plugin, PluginAction, PluginHost, PluginId, PluginInfo};
+
 use theming::{
     catalog::{get_themes, Catalog, ThemeID},
     metadata::ThemeMetadata,
@@ -27,18 +26,15 @@ use theming::{
 };
 use widget::{
     file_explorer,
-    pane::{file_explorer_pane, text_editor_pane},
+    notificaton::notification_list,
+    pane::{self, file_explorer_pane, pane_stack},
 };
 
-use core::HotKey;
 use core::{
-    document::DocumentStore,
-    notification::{Notification, NotificationKind, NotificationList},
+    document::{DocumentHandler, DocumentId, DocumentStore},
+    notification::{Notification, NotificationList},
     pane::PaneModel,
-};
-use core::{
-    document::{DocumentHandler, DocumentId},
-    Modifiers,
+    HotKey, Modifiers,
 };
 
 #[derive(Debug, Clone)]
@@ -72,7 +68,7 @@ pub enum AppMessage {
     LoadTheme(ThemeID),
     AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
-    PickFile(Option<PathBuf>),
+    PickFile,
     CloseDocument(DocumentId),
     OpenFile(PathBuf),
     SaveFile(DocumentId),
@@ -81,6 +77,7 @@ pub enum AppMessage {
     TextEditorAction(text_editor::Action, DocumentId),
     FileExplorerAction(file_explorer::Message),
     OnKeyPress(Key, iced::keyboard::Modifiers),
+    None,
 }
 
 impl Default for App {
@@ -104,7 +101,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            AppMessage::PickFile(None),
+            AppMessage::PickFile,
         );
 
         // Ctrl-d enable dark mode
@@ -125,12 +122,18 @@ impl Default for App {
             AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
         );
 
+        let mut panes = PaneModel::new();
+        {
+            let id = panes.add(core::pane::Pane::NewDocument);
+            panes.open(&id);
+        }
+
         Self {
             theme: Theme::default(),
             theme_catalog: Catalog::new(),
             default_theme: SmolStr::from("core.light"),
             documents: DocumentStore::new(),
-            panes: PaneModel::new(),
+            panes,
             plugin_host,
             opened_directory: Some(PathBuf::from("./content/")),
             notifications: NotificationList::new(),
@@ -183,6 +186,8 @@ impl App {
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         println!("{message:?}");
         match message {
+            AppMessage::None => {}
+
             AppMessage::FileExplorerAction(message) => match message {
                 file_explorer::Message::OpenFile(path) => {
                     return Task::done(AppMessage::OpenFile(path))
@@ -295,8 +300,8 @@ impl App {
                 }
             }
 
-            AppMessage::PickFile(dir) => {
-                return Task::perform(pick_file(dir), AppMessage::OpenedFile);
+            AppMessage::PickFile => {
+                return Task::perform(pick_file(None), AppMessage::OpenedFile);
             }
 
             AppMessage::OpenFile(path) => {
@@ -330,7 +335,17 @@ impl App {
                     .into(),
             );
         }
-        // grid_elements.push(Container::new(editor).into());
+        grid_elements.push(
+            pane_stack::pane_stack(&self.panes).map(|msg| -> AppMessage {
+                match msg {
+                    pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
+                        AppMessage::PickFile
+                    }
+
+                    _ => AppMessage::None,
+                }
+            }),
+        );
         let grid = row(grid_elements);
 
         let primary_screen = stack![

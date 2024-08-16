@@ -70,7 +70,15 @@ impl PaneModel {
         }
     }
 
-    pub fn get_open(&self) -> Option<&PaneId> {
+    pub fn get_open_id(&self) -> Option<&PaneId> {
         self.open.as_ref()
+    }
+
+    pub fn get_open(&self) -> Option<&Pane> {
+        if let Some(id) = self.open {
+            self.panes.get(&id)
+        } else {
+            None
+        }
     }
 }
