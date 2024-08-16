@@ -1,4 +1,4 @@
-use core::pane::{Pane, PaneModel};
+use core::pane::{Pane, PaneId, PaneModel};
 
 use iced::{
     widget::{column, Space},
@@ -10,30 +10,31 @@ use crate::{
     container::background,
     pane::new_document::{self, new_document_pane},
     tab::{tab_bar, Tab},
-    Label,
 };
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    OpenPane(PaneId),
+    ClosePane(PaneId),
     NewDocument(new_document::Message),
 }
 
 pub fn pane_stack(model: &PaneModel) -> Element<'_, Message, Theme> {
-    let titles: Vec<Option<Label>> = model
+    let tabs: Vec<Tab<Message>> = model
         .list()
         .iter()
-        .map(|(_id, pane)| match **pane {
-            Pane::Empty => None,
-            Pane::NewDocument => Some("New tab".into()),
-            Pane::Editor(_) => Some("Some document".into()),
-        })
-        .collect();
+        .map(|(id, pane)| {
+            let title = match **pane {
+                Pane::Empty => None,
+                Pane::NewDocument => Some("New tab".into()),
+                Pane::Editor(_) => Some("Some document".into()),
+            };
 
-    let tabs: Vec<Tab<Message>> = titles
-        .iter()
-        .map(|title| Tab {
-            label: title.clone(),
-            on_click: None,
+            Tab {
+                label: title,
+                on_click: Some(Message::OpenPane(**id)),
+                on_middle_click: Some(Message::ClosePane(**id)),
+            }
         })
         .collect();
 

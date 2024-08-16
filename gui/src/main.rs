@@ -33,7 +33,7 @@ use widget::{
 use core::{
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
-    pane::PaneModel,
+    pane::{PaneId, PaneModel},
     HotKey, Modifiers,
 };
 
@@ -70,6 +70,8 @@ pub enum AppMessage {
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile,
     CloseDocument(DocumentId),
+    OpenPane(PaneId),
+    ClosePane(PaneId),
     OpenFile(PathBuf),
     SaveFile(DocumentId),
     SavedFile(DocumentId),
@@ -187,6 +189,12 @@ impl App {
         println!("{message:?}");
         match message {
             AppMessage::None => {}
+
+            AppMessage::OpenPane(id) => self.panes.open(&id),
+
+            AppMessage::ClosePane(id) => {
+                self.panes.remove(&id);
+            }
 
             AppMessage::FileExplorerAction(message) => match message {
                 file_explorer::Message::OpenFile(path) => {
@@ -341,6 +349,10 @@ impl App {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
                         AppMessage::PickFile
                     }
+
+                    pane_stack::Message::OpenPane(id) => AppMessage::OpenPane(id),
+
+                    pane_stack::Message::ClosePane(id) => AppMessage::ClosePane(id),
 
                     _ => AppMessage::None,
                 }

@@ -2,7 +2,7 @@ use iced::{
     border::Radius,
     widget::{
         button::{self, Status},
-        container, text, Button, Row,
+        container, text, Button, MouseArea, Row,
     },
     Alignment, Border, Element, Length, Padding,
 };
@@ -13,12 +13,13 @@ use crate::Label;
 pub struct Tab<Message: Clone> {
     pub label: Option<Label>,
     pub on_click: Option<Message>,
+    pub on_middle_click: Option<Message>,
 }
 
 pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, Theme> {
     let title = tab.label.clone().unwrap_or_default();
 
-    Button::new(text(title).align_y(Alignment::Center))
+    let btn = Button::new(text(title).align_y(Alignment::Center))
         .on_press_maybe(tab.on_click.clone())
         .height(theme!(tab.active.height))
         .style(|theme: &Theme, status: Status| match status {
@@ -51,8 +52,14 @@ pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, 
                 },
                 ..Default::default()
             },
-        })
-        .into()
+        });
+
+    if let Some(message) = &tab.on_middle_click {
+        let middle_clickable = MouseArea::new(btn).on_middle_release(message.clone());
+        middle_clickable.into()
+    } else {
+        btn.into()
+    }
 }
 
 pub fn tab_bar<'a, Message: Clone + 'a>(tabs: Vec<Tab<Message>>) -> Element<'a, Message, Theme> {
