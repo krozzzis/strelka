@@ -31,6 +31,8 @@ pub fn pane_stack<'a>(
     model: &'a PaneModel,
     documents: &'a DocumentStore<Content>,
 ) -> Element<'a, Message, Theme> {
+    let open = model.get_open_id().unwrap_or(&0);
+
     let tabs: Vec<Tab<Message>> = model
         .list()
         .iter()
@@ -45,6 +47,7 @@ pub fn pane_stack<'a>(
 
             Tab {
                 label: title,
+                selected: *id == open,
                 on_click: Some(Message::OpenPane(**id)),
                 on_middle_click: Some(Message::ClosePane(**id)),
             }

@@ -12,6 +12,7 @@ use crate::Label;
 
 pub struct Tab<Message: Clone> {
     pub label: Option<Label>,
+    pub selected: bool,
     pub on_click: Option<Message>,
     pub on_middle_click: Option<Message>,
 }
@@ -19,11 +20,27 @@ pub struct Tab<Message: Clone> {
 pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, Theme> {
     let title = tab.label.clone().unwrap_or_default();
 
+    let selected = tab.selected;
     let btn = Button::new(text(title).align_y(Alignment::Center))
         .on_press_maybe(tab.on_click.clone())
         .height(theme!(tab.active.height))
-        .style(|theme: &Theme, status: Status| match status {
+        .style(move |theme: &Theme, status: Status| match status {
             Status::Hovered | Status::Pressed => button::Style {
+                background: Some(theme.tab.hover.background.into()),
+                text_color: theme.tab.hover.text.into(),
+                border: Border {
+                    radius: Radius {
+                        top_left: theme.tab.hover.radius,
+                        top_right: theme.tab.hover.radius,
+                        bottom_right: 0.0,
+                        bottom_left: 0.0,
+                    },
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+
+            Status::Active | Status::Disabled if selected => button::Style {
                 background: Some(theme.tab.hover.background.into()),
                 text_color: theme.tab.hover.text.into(),
                 border: Border {
