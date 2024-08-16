@@ -30,8 +30,12 @@ use widget::{
     pane::{file_explorer_pane, text_editor_pane},
 };
 
-use core::notification::{Notification, NotificationKind, NotificationList};
 use core::HotKey;
+use core::{
+    document::DocumentStore,
+    notification::{Notification, NotificationKind, NotificationList},
+    pane::PaneModel,
+};
 use core::{
     document::{DocumentHandler, DocumentId},
     Modifiers,
@@ -46,9 +50,8 @@ pub struct App {
     theme: Theme,
     theme_catalog: Catalog,
     default_theme: SmolStr,
-    documents: HashMap<DocumentId, DocumentHandler<Content>>,
-    next_doc_id: DocumentId,
-    opened_doc: DocumentId,
+    documents: DocumentStore<Content>,
+    panes: PaneModel,
     opened_directory: Option<PathBuf>,
     plugin_host: PluginHost<AppMessage>,
     hotkeys: HashMap<HotKey, AppMessage>,
@@ -70,10 +73,9 @@ pub enum AppMessage {
     AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile(Option<PathBuf>),
-    FocusDocument(DocumentId),
     CloseDocument(DocumentId),
     OpenFile(PathBuf),
-    SaveFile,
+    SaveFile(DocumentId),
     SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
@@ -105,16 +107,7 @@ impl Default for App {
             AppMessage::PickFile(None),
         );
 
-        // Ctrl-s save file
-        hotkeys.insert(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 's',
-            },
-            AppMessage::SaveFile,
-        );
-
-        // Ctrl-i enable dark mode
+        // Ctrl-d enable dark mode
         hotkeys.insert(
             HotKey {
                 modifiers: Modifiers::Ctrl,
@@ -136,9 +129,8 @@ impl Default for App {
             theme: Theme::default(),
             theme_catalog: Catalog::new(),
             default_theme: SmolStr::from("core.light"),
-            documents: HashMap::new(),
-            next_doc_id: 1,
-            opened_doc: 0,
+            documents: DocumentStore::new(),
+            panes: PaneModel::new(),
             plugin_host,
             opened_directory: Some(PathBuf::from("./content/")),
             notifications: NotificationList::new(),
@@ -189,6 +181,7 @@ impl App {
     }
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
+        println!("{message:?}");
         match message {
             AppMessage::FileExplorerAction(message) => match message {
                 file_explorer::Message::OpenFile(path) => {
@@ -223,30 +216,18 @@ impl App {
                 }
             }
 
-            AppMessage::SaveFile => {
-                if let Some(handler) = self.documents.get(&self.opened_doc) {
-                    let message = AppMessage::SavedFile(self.opened_doc);
+            AppMessage::SaveFile(id) => {
+                if let Some(handler) = self.documents.get(&id) {
+                    let message = AppMessage::SavedFile(id);
                     return Task::perform(
                         save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
                         move |_| message.clone(),
                     );
                 }
             }
-            AppMessage::FocusDocument(id) => {
-                if id < self.next_doc_id {
-                    self.opened_doc = id;
-
-                    return Task::done(AppMessage::SendNotification(Arc::new(Notification {
-                        text: format!("Focused document {id}",),
-                        kind: NotificationKind::None,
-                    })));
-                }
-            }
 
             AppMessage::CloseDocument(id) => {
-                if self.documents.contains_key(&id) {
-                    self.documents.remove(&id);
-                }
+                self.documents.remove(&id);
             }
 
             AppMessage::OnKeyPress(key, modifiers) => {
@@ -306,26 +287,11 @@ impl App {
                     let handler = DocumentHandler {
                         text_content: Content::with_text(&content),
                         path: path.clone(),
-                        filename: Arc::new(get_file_name(&path)),
+                        filename: get_file_name(&path),
                         changed: false,
                     };
 
-                    self.documents.insert(self.next_doc_id, handler);
-                    let focus_doc = Task::done(AppMessage::FocusDocument(self.next_doc_id));
-                    let notificaton = Task::done(AppMessage::SendNotification(Arc::new(
-                        Notification::info(format!(
-                            "Opened file {} | ID: {}",
-                            path.file_name()
-                                .unwrap_or(OsStr::new(""))
-                                .to_str()
-                                .unwrap_or(""),
-                            self.next_doc_id,
-                        )),
-                    )));
-
-                    self.next_doc_id += 1;
-
-                    return Task::batch([focus_doc, notificaton]);
+                    self.documents.add(handler);
                 }
             }
 
@@ -353,15 +319,6 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let editor = text_editor_pane(
-            &self.documents,
-            self.opened_doc,
-            AppMessage::TextEditorAction,
-            AppMessage::FocusDocument,
-            AppMessage::CloseDocument,
-            Some(AppMessage::PickFile(None)),
-        );
-
         let file_explorer =
             file_explorer_pane(&self.file_explorer).map(AppMessage::FileExplorerAction);
 
@@ -373,7 +330,7 @@ impl App {
                     .into(),
             );
         }
-        grid_elements.push(Container::new(editor).into());
+        // grid_elements.push(Container::new(editor).into());
         let grid = row(grid_elements);
 
         let primary_screen = stack![
