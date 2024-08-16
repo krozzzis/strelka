@@ -365,8 +365,6 @@ impl App {
                         id,
                         pane::text_editor::Message::EditorAction(action),
                     ) => AppMessage::TextEditorAction(action, id),
-
-                    _ => AppMessage::None,
                 }
             },
         ));

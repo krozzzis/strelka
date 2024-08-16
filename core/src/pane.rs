@@ -17,6 +17,7 @@ pub struct PaneModel {
     panes: HashMap<PaneId, Pane>,
     next_id: PaneId,
     open: Option<PaneId>,
+    prev_open: Option<PaneId>,
 }
 
 impl PaneModel {
@@ -25,6 +26,7 @@ impl PaneModel {
             panes: HashMap::new(),
             next_id: 1,
             open: None,
+            prev_open: None,
         }
     }
 
@@ -40,10 +42,27 @@ impl PaneModel {
     pub fn remove(&mut self, id: &PaneId) -> Option<Pane> {
         // If removing pane is opened, close them
         if self.open == Some(*id) {
-            self.open = None
+            if self.contains(&self.prev_open.unwrap_or(0)) {
+                // Open previously opened pane if exists yet
+                self.open = self.prev_open;
+            } else if self.count() > 0 {
+                // if there are more panels, open the last one
+                let mut panes = self.list();
+                panes.sort_unstable_by(|a, b| a.0.cmp(b.0));
+                if let Some((newest, _pane)) = panes.last() {
+                    self.open = Some(**newest);
+                }
+            } else {
+                // Otherwise leave it not opened
+                self.open = None;
+            }
         }
 
         self.panes.remove(id)
+    }
+
+    pub fn contains(&self, id: &PaneId) -> bool {
+        self.panes.contains_key(id)
     }
 
     pub fn count(&self) -> usize {
@@ -63,10 +82,9 @@ impl PaneModel {
     }
 
     pub fn open(&mut self, id: &PaneId) {
-        if self.panes.contains_key(id) {
+        if self.panes.contains_key(id) && self.open != Some(*id) {
+            self.prev_open = self.open;
             self.open = Some(*id);
-        } else {
-            self.open = None;
         }
     }
 
