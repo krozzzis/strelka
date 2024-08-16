@@ -27,7 +27,7 @@ use theming::{
 use widget::{
     file_explorer,
     notificaton::notification_list,
-    pane::{self, file_explorer_pane, pane_stack},
+    pane::{self, file_explorer::file_explorer_pane, pane_stack},
 };
 
 use core::{

@@ -5,7 +5,7 @@ pub mod file_explorer;
 pub mod list;
 pub mod notificaton;
 pub mod pane;
-pub mod tabs;
+pub mod tab;
 
 use std::borrow::Cow;
 
