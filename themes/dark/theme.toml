@@ -132,7 +132,7 @@ shadow_blur = 2
 
 # File explorer
 [file_explorer]
-background = "#444444"
+background = "#555555"
 text = "#eeeeee"
 padding = 4
 width = 300
