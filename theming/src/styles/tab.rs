@@ -1,4 +1,4 @@
-use crate::Color;
+use crate::{Border, Color, Padding};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -13,8 +13,9 @@ pub struct Tab {
 pub struct TabStyle {
     pub text: Color,
     pub background: Color,
-    pub radius: f32,
     pub height: f32,
+    pub padding: Padding,
+    pub border: Border,
 }
 
 impl Tab {
@@ -22,20 +23,41 @@ impl Tab {
         hover: TabStyle {
             text: Color::BLACK,
             background: Color::new(0.8, 0.8, 0.8, 1.0),
-            radius: 4.0,
             height: 32.0,
+            padding: Padding::new(4.0),
+            border: Border::with_radius(4.0),
         },
         active: TabStyle {
             text: Color::BLACK,
             background: Color::new(1.0, 1.0, 1.0, 1.0),
-            radius: 4.0,
             height: 32.0,
+            padding: Padding::new(4.0),
+            border: Border::with_radius(4.0),
         },
         selected: TabStyle {
             text: Color::BLACK,
             background: Color::new(0.9, 0.9, 0.9, 1.0),
-            radius: 4.0,
             height: 32.0,
+            padding: Padding::new(4.0),
+            border: Border::with_radius(4.0),
         },
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Deserialize, Serialize)]
+    pub struct Theme {
+        pub tab: Tab,
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serialize() {
+        let theme = Theme { tab: Tab::FALLBACK };
+
+        assert_eq!(toml::to_string(&theme), Ok("".to_string()));
+    }
 }

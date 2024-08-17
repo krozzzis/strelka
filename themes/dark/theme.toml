@@ -46,17 +46,65 @@ text = "#eeeeee"
 radius = 10.0
 height = 44.0
 
+[tab.active.padding]
+left = 0.0
+top = 0.0
+right = 0.0
+bottom = 0.0
+
+[tab.active.border]
+color = "#00000000"
+width = 0.0
+
+[tab.active.border.radius]
+top_left = 10.0
+top_right = 10.0
+bottom_left = 10.0
+bottom_right = 10.0
+
 [tab.hover]
 background = "#cecece"
 text = "#eeeeee"
 radius = 10.0
 height = 44.0
 
+[tab.hover.padding]
+left = 0.0
+top = 0.0
+right = 0.0
+bottom = 0.0
+
+[tab.hover.border]
+color = "#00000000"
+width = 0.0
+
+[tab.hover.border.radius]
+top_left = 10.0
+top_right = 10.0
+bottom_left = 10.0
+bottom_right = 10.0
+
 [tab.selected]
 background = "#333333"
 text = "#eeeeee"
 radius = 10.0
 height = 44.0
+
+[tab.selected.padding]
+left = 0.0
+top = 0.0
+right = 0.0
+bottom = 0.0
+
+[tab.selected.border]
+color = "#00000000"
+width = 0.0
+
+[tab.selected.border.radius]
+top_left = 10.0
+top_right = 10.0
+bottom_left = 0.0
+bottom_right = 0.0
 
 
 # TabBar

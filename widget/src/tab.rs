@@ -1,5 +1,4 @@
 use iced::{
-    border::Radius,
     widget::{
         button::{self, Status},
         container, text, Button, MouseArea, Row,
@@ -29,28 +28,20 @@ pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, 
                 background: Some(theme.tab.hover.background.into()),
                 text_color: theme.tab.hover.text.into(),
                 border: Border {
-                    radius: Radius {
-                        top_left: theme.tab.hover.radius,
-                        top_right: theme.tab.hover.radius,
-                        bottom_right: 0.0,
-                        bottom_left: 0.0,
-                    },
-                    ..Default::default()
+                    radius: theme.tab.hover.border.radius.clone().into(),
+                    color: theme.tab.hover.border.color.into(),
+                    width: theme.tab.hover.border.width,
                 },
                 ..Default::default()
             },
 
-            Status::Active | Status::Disabled if selected => button::Style {
-                background: Some(theme.tab.hover.background.into()),
-                text_color: theme.tab.hover.text.into(),
+            _ if selected => button::Style {
+                background: Some(theme.tab.selected.background.into()),
+                text_color: theme.tab.selected.text.into(),
                 border: Border {
-                    radius: Radius {
-                        top_left: theme.tab.hover.radius,
-                        top_right: theme.tab.hover.radius,
-                        bottom_right: 0.0,
-                        bottom_left: 0.0,
-                    },
-                    ..Default::default()
+                    radius: theme.tab.selected.border.radius.clone().into(),
+                    color: theme.tab.selected.border.color.into(),
+                    width: theme.tab.selected.border.width,
                 },
                 ..Default::default()
             },
@@ -59,13 +50,9 @@ pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, 
                 background: Some(theme.tab.active.background.into()),
                 text_color: theme.tab.active.text.into(),
                 border: Border {
-                    radius: Radius {
-                        top_left: theme.tab.active.radius,
-                        top_right: theme.tab.active.radius,
-                        bottom_right: 0.0,
-                        bottom_left: 0.0,
-                    },
-                    ..Default::default()
+                    radius: theme.tab.active.border.radius.clone().into(),
+                    color: theme.tab.active.border.color.into(),
+                    width: theme.tab.active.border.width,
                 },
                 ..Default::default()
             },

@@ -1,14 +1,20 @@
+mod border;
 pub mod catalog;
 mod color;
 #[cfg(feature = "iced")]
 pub mod iced;
+mod margin;
 pub mod metadata;
+mod padding;
 mod styles;
 mod theme;
 
 use std::sync::{Arc, RwLock};
 
+pub use border::*;
 pub use color::*;
+pub use margin::*;
+pub use padding::*;
 pub use theme::{Theme, FALLBACK};
 
 lazy_static::lazy_static! {
