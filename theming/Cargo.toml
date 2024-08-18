@@ -2,6 +2,8 @@
 name = "theming"
 version = "0.1.0"
 edition = "2021"
+license = "BSD-3-Clause"
+authors = ["Nikita Shumov"]
 
 [dependencies]
 iced_core = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
