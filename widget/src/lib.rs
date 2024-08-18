@@ -6,6 +6,7 @@ pub mod list;
 pub mod notificaton;
 pub mod pane;
 pub mod tab;
+pub mod util;
 
 use std::borrow::Cow;
 

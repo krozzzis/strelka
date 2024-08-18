@@ -137,7 +137,11 @@ impl Default for App {
             documents: DocumentStore::new(),
             panes,
             plugin_host,
-            opened_directory: Some(PathBuf::from("./content/")),
+            opened_directory: Some(
+                PathBuf::from("./content")
+                    .canonicalize()
+                    .unwrap_or_default(),
+            ),
             notifications: NotificationList::new(),
             hotkeys,
             file_explorer: file_explorer::State::default(),
@@ -170,13 +174,13 @@ impl App {
 
         tasks.push(read_themes.chain(apply_default_theme));
 
+        tasks.push(Task::done(AppMessage::OpenDirectory("./content".into())));
+
         tasks.push(Task::done(AppMessage::FileExplorerAction(
             file_explorer::Message::GetFolderContent(
                 app.opened_directory.clone().unwrap_or_default(),
             ),
         )));
-
-        tasks.push(Task::done(AppMessage::OpenDirectory("./content".into())));
 
         (app, Task::batch(tasks))
     }
@@ -325,11 +329,13 @@ impl App {
 
             AppMessage::OpenDirectory(path) => {
                 if path.is_dir() {
-                    self.opened_directory = Some(path.clone());
+                    self.opened_directory = Some(path.clone().canonicalize().unwrap_or_default());
 
                     // Open directory in file explorer
                     return self.file_explorer.perform(
-                        file_explorer::Message::SetDirectory(path),
+                        file_explorer::Message::SetDirectory(
+                            path.canonicalize().unwrap_or_default(),
+                        ),
                         AppMessage::FileExplorerAction,
                     );
                 }
