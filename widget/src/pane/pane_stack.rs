@@ -50,6 +50,7 @@ pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
                 label: title,
                 selected: *id == open,
                 on_click: Some(Message::OpenPane(**id)),
+                on_close: Some(Message::ClosePane(**id)),
                 on_middle_click: Some(Message::ClosePane(**id)),
             }
         })

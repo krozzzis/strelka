@@ -1,15 +1,18 @@
 use iced::{
-    widget::{container, text, MouseArea, Row},
-    Element, Length, Padding,
+    widget::{container, svg, text, MouseArea, Row}, Alignment, Element, Length, Padding
 };
 use theming::{iced::container::background, theme, Theme};
 
-use crate::{button::a, Label};
+use crate::{
+    button::{a, text_button},
+    Label,
+};
 
 pub struct Tab<Message: Clone> {
     pub label: Option<Label>,
     pub selected: bool,
     pub on_click: Option<Message>,
+    pub on_close: Option<Message>,
     pub on_middle_click: Option<Message>,
 }
 
@@ -17,10 +20,26 @@ pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, 
     let title = tab.label.clone().unwrap_or_default();
 
     let selected = tab.selected;
-    let btn = a::Button::new(container(text(title)).padding(Padding::from(0.0).left(8.0).top(6.0)))
-        .selected(selected)
-        .on_press_maybe(tab.on_click.clone())
-        .height(theme!(tab.height));
+
+    let mut content = vec![text(title).width(Length::Fill).height(24.0).into()];
+    if let Some(message) = tab.on_close.clone() {
+        content.push(
+            text_button(svg::Svg::new("./images/close.svg").content_fit(iced::ContentFit::Fill))
+                .width(20.0)
+                .height(20.0)
+                .on_press(message)
+                .padding(1.0)
+                .into(),
+        );
+    }
+
+    let btn = a::Button::new(
+        container(Row::with_children(content).align_y(Alignment::Center))
+            .padding(Padding::from(0.0).left(12.0).top(6.0).right(10.0)),
+    )
+    .selected(selected)
+    .on_press_maybe(tab.on_click.clone())
+    .height(theme!(tab.height));
 
     if let Some(message) = &tab.on_middle_click {
         let middle_clickable = MouseArea::new(btn).on_middle_release(message.clone());
