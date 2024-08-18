@@ -1,6 +1,7 @@
 use core::{
-    document::{DocumentId, DocumentStore},
-    pane::{Pane, PaneId, PaneModel},
+    document::DocumentId,
+    pane::{Pane, PaneId},
+    State,
 };
 
 use iced::{
@@ -27,13 +28,11 @@ pub enum Message {
     TextEditor(DocumentId, text_editor::Message),
 }
 
-pub fn pane_stack<'a>(
-    model: &'a PaneModel,
-    documents: &'a DocumentStore<Content>,
-) -> Element<'a, Message, Theme> {
-    let open = model.get_open_id().unwrap_or(&0);
+pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
+    let open = state.panes.get_open_id().unwrap_or(&0);
 
-    let tabs: Vec<Tab<Message>> = model
+    let tabs: Vec<Tab<Message>> = state
+        .panes
         .list()
         .iter()
         .map(|(id, pane)| {
@@ -41,7 +40,7 @@ pub fn pane_stack<'a>(
                 Pane::Empty => None,
                 Pane::NewDocument => Some("New tab".into()),
                 Pane::Editor(id) => {
-                    if let Some(handler) = documents.get(&id) {
+                    if let Some(handler) = state.documents.get(&id) {
                         if let Some(Some("md")) = handler.path.extension().map(|x| x.to_str()) {
                             if let Some(filename) = handler.path.file_stem() {
                                 let filename = filename.to_string_lossy().to_string();
@@ -75,11 +74,11 @@ pub fn pane_stack<'a>(
 
     let tab_bar = tab_bar(tabs);
 
-    let pane = if let Some(pane) = model.get_open() {
+    let pane = if let Some(pane) = state.panes.get_open() {
         match *pane {
             Pane::Empty => background(Space::new(Length::Fill, Length::Fill)).into(),
             Pane::NewDocument => new_document_pane().map(Message::NewDocument),
-            Pane::Editor(id) => text_editor::text_editor(id, documents)
+            Pane::Editor(id) => text_editor::text_editor(id, state)
                 .map(move |action| Message::TextEditor(id, action)),
         }
     } else {

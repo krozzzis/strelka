@@ -1,4 +1,4 @@
-use core::document::{DocumentId, DocumentStore};
+use core::{document::DocumentId, State};
 
 use iced::{
     border::Radius,
@@ -18,11 +18,8 @@ pub enum Message {
     EditorAction(Action),
 }
 
-pub fn text_editor(
-    id: DocumentId,
-    documents: &DocumentStore<Content>,
-) -> Element<'_, Message, Theme> {
-    if let Some(handler) = documents.get(&id) {
+pub fn text_editor(id: DocumentId, state: State<'_, Content>) -> Element<'_, Message, Theme> {
+    if let Some(handler) = state.documents.get(&id) {
         let editor = container(
             center(
                 container(NoteEditor::new(

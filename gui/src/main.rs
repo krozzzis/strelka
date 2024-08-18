@@ -34,7 +34,7 @@ use core::{
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
     pane::{PaneId, PaneModel},
-    HotKey, Modifiers,
+    HotKey, Modifiers, State,
 };
 
 #[derive(Debug, Clone)]
@@ -350,8 +350,13 @@ impl App {
                     .into(),
             );
         }
-        grid_elements.push(pane_stack::pane_stack(&self.panes, &self.documents).map(
-            |msg| -> AppMessage {
+        grid_elements.push(
+            pane_stack::pane_stack(State {
+                documents: &self.documents,
+                panes: &self.panes,
+                working_directory: self.opened_directory.clone().unwrap_or_default(),
+            })
+            .map(|msg| -> AppMessage {
                 match msg {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
                         AppMessage::PickFile
@@ -366,8 +371,8 @@ impl App {
                         pane::text_editor::Message::EditorAction(action),
                     ) => AppMessage::TextEditorAction(action, id),
                 }
-            },
-        ));
+            }),
+        );
         let grid = row(grid_elements);
 
         let primary_screen = stack![
