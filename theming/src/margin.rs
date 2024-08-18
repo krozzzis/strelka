@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Margin {
     pub left: f32,
@@ -25,6 +25,26 @@ impl Margin {
             right: value,
             bottom: value,
         }
+    }
+
+    pub const fn top(mut self, value: f32) -> Self {
+        self.top = value;
+        self
+    }
+
+    pub const fn bottom(mut self, value: f32) -> Self {
+        self.bottom = value;
+        self
+    }
+
+    pub const fn left(mut self, value: f32) -> Self {
+        self.left = value;
+        self
+    }
+
+    pub const fn right(mut self, value: f32) -> Self {
+        self.right = value;
+        self
     }
 }
 

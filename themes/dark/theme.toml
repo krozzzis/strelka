@@ -40,17 +40,20 @@ radius = 4.0
 
 
 # Tab
+[tab]
+height = 44.0
+min_width = 200.0
+
 [tab.active]
 background = "#333333"
 text = "#eeeeee"
 radius = 10.0
-height = 44.0
 
-[tab.active.padding]
+[tab.active.margin]
 left = 0.0
 top = 0.0
 right = 0.0
-bottom = 0.0
+bottom = 8.0
 
 [tab.active.border]
 color = "#00000000"
@@ -66,13 +69,12 @@ bottom_right = 10.0
 background = "#cecece"
 text = "#eeeeee"
 radius = 10.0
-height = 44.0
 
-[tab.hover.padding]
+[tab.hover.margin]
 left = 0.0
 top = 0.0
 right = 0.0
-bottom = 0.0
+bottom = 8.0
 
 [tab.hover.border]
 color = "#00000000"
@@ -88,9 +90,8 @@ bottom_right = 10.0
 background = "#333333"
 text = "#eeeeee"
 radius = 10.0
-height = 44.0
 
-[tab.selected.padding]
+[tab.selected.margin]
 left = 0.0
 top = 0.0
 right = 0.0
@@ -103,15 +104,21 @@ width = 0.0
 [tab.selected.border.radius]
 top_left = 10.0
 top_right = 10.0
-bottom_left = 0.0
-bottom_right = 0.0
+bottom_left = -10.0
+bottom_right = -10.0
 
 
 # TabBar
 [tab_bar]
 background = "#444444"
-padding = 8.0
+height = 52
 spacing = 8.0
+
+[tab_bar.padding]
+left = 8.0
+top = 8.0
+right = 8.0
+bottom = 0.0
 
 
 # ListItem

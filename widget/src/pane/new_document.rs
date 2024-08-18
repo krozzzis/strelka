@@ -1,4 +1,7 @@
-use iced::{widget::center, Element};
+use iced::{
+    widget::{center, column},
+    Element,
+};
 use theming::Theme;
 
 use crate::{button::text_button, container::background};
@@ -9,8 +12,8 @@ pub enum Message {
 }
 
 pub fn new_document_pane<'a>() -> Element<'a, Message, Theme> {
-    background(center(
+    background(center(column![
         text_button("Open file Ctrl+O").on_press(Message::PickFile),
-    ))
+    ]))
     .into()
 }

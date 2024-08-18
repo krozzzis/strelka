@@ -1,12 +1,13 @@
 use core::document::{DocumentId, DocumentStore};
 
 use iced::{
+    border::Radius,
     widget::{
         center, container,
         text_editor::{Action, Content},
         Space,
     },
-    Element, Length,
+    Border, Element, Length, Padding,
 };
 use theming::Theme;
 
@@ -22,13 +23,27 @@ pub fn text_editor(
     documents: &DocumentStore<Content>,
 ) -> Element<'_, Message, Theme> {
     if let Some(handler) = documents.get(&id) {
-        let editor = container(center(
-            container(NoteEditor::new(
-                &handler.text_content,
-                Message::EditorAction,
-            ))
-            .width(600.0),
-        ));
+        let editor = container(
+            center(
+                container(NoteEditor::new(
+                    &handler.text_content,
+                    Message::EditorAction,
+                ))
+                .padding(50.0)
+                .width(600.0)
+                .style(|theme: &Theme| container::Style {
+                    text_color: Some(theme.editor.text.into()),
+                    background: Some(theme.editor.background2.into()),
+                    border: Border::default().rounded(Radius {
+                        top_left: theme.editor.radius,
+                        top_right: theme.editor.radius,
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+            )
+            .padding(Padding::from(0.0).top(50.0)),
+        );
         editor.into()
     } else {
         container(Space::new(Length::Fill, Length::Fill)).into()

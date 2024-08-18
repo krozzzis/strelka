@@ -17,4 +17,4 @@ features = ["fs", "io-util"]
 [dependencies.iced]
 git = "https://github.com/iced-rs/iced.git"
 branch = "master"
-features = ["canvas", "debug", "lazy", "advanced", "svg", "tokio"]
+features = ["lazy", "advanced", "svg", "tokio"]
