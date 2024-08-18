@@ -40,9 +40,28 @@ pub fn pane_stack<'a>(
             let title: Option<Label> = match **pane {
                 Pane::Empty => None,
                 Pane::NewDocument => Some("New tab".into()),
-                Pane::Editor(id) => documents
-                    .get(&id)
-                    .map(|handler| handler.filename.clone().into()),
+                Pane::Editor(id) => {
+                    if let Some(handler) = documents.get(&id) {
+                        if let Some(Some("md")) = handler.path.extension().map(|x| x.to_str()) {
+                            if let Some(filename) = handler.path.file_stem() {
+                                let filename = filename.to_string_lossy().to_string();
+                                Some(filename.into())
+                            } else {
+                                None
+                            }
+                        } else {
+                            match handler.path.file_name() {
+                                Some(filename) => {
+                                    let filename = filename.to_string_lossy().to_string();
+                                    Some(filename.into())
+                                }
+                                None => None,
+                            }
+                        }
+                    } else {
+                        None
+                    }
+                }
             };
 
             Tab {
