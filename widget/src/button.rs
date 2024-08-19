@@ -32,13 +32,14 @@ pub mod a {
         widget::canvas::{self, path::Builder, Fill, Stroke},
         Element, Event, Length, Point, Rectangle, Size, Vector,
     };
-    use theming::{Border, Color, Margin, Theme};
+    use theming::{Border, Color, Font, Margin, Theme};
 
     #[derive(Debug, Clone)]
     pub struct Style {
         pub background: Color,
         pub margin: Margin,
         pub border: Border,
+        pub font: Font,
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -255,6 +256,7 @@ pub mod a {
                     background: theme.tab.selected.background,
                     border: theme.tab.selected.border.clone(),
                     margin: theme.tab.selected.margin,
+                    font: theme.tab.selected.font.clone(),
                 }
             } else {
                 match status {
@@ -262,16 +264,19 @@ pub mod a {
                         background: theme.tab.active.background,
                         border: theme.tab.active.border.clone(),
                         margin: theme.tab.active.margin,
+                        font: theme.tab.active.font.clone(),
                     },
                     Status::Hovered => Style {
                         background: theme.tab.hover.background,
                         border: theme.tab.hover.border.clone(),
                         margin: theme.tab.hover.margin,
+                        font: theme.tab.hover.font.clone(),
                     },
                     Status::Pressed => Style {
                         background: theme.tab.hover.background,
                         border: theme.tab.hover.border.clone(),
                         margin: theme.tab.hover.margin,
+                        font: theme.tab.hover.font.clone(),
                     },
                 }
             };

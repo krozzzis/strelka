@@ -1,4 +1,4 @@
-use crate::{Border, Color, Margin};
+use crate::{font::Font, Border, Color, Margin};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +17,8 @@ pub struct TabStyle {
     pub background: Color,
     pub margin: Margin,
     pub border: Border,
+    #[serde(default)]
+    pub font: Font,
 }
 
 impl Tab {
@@ -28,18 +30,21 @@ impl Tab {
             background: Color::new(0.8, 0.8, 0.8, 1.0),
             margin: Margin::new(4.0),
             border: Border::with_radius(4.0),
+            font: Font::SANS_SERIF,
         },
         active: TabStyle {
             text: Color::BLACK,
             background: Color::new(1.0, 1.0, 1.0, 1.0),
             margin: Margin::new(4.0),
             border: Border::with_radius(4.0),
+            font: Font::SANS_SERIF,
         },
         selected: TabStyle {
             text: Color::BLACK,
             background: Color::new(0.9, 0.9, 0.9, 1.0),
             margin: Margin::new(4.0),
             border: Border::with_radius(4.0),
+            font: Font::SANS_SERIF,
         },
     };
 }
