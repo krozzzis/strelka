@@ -53,6 +53,7 @@ impl State {
                 vector.sort_by_key(|a| Reverse(a.is_dir()));
                 self.content.insert(dir, vector);
 
+                self.list.elements.clear();
                 for path in self.content.get(&self.directory).unwrap_or(&vec![]).iter() {
                     let button = TextButton::new(get_file_name(path).unwrap_or_default())
                         .on_click(Message::OpenFile((*path).clone()));

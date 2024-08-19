@@ -7,6 +7,7 @@ authors = ["Nikita Shumov"]
 
 [dependencies]
 rfd = "0.14.1"
+dirs = "5"
 core = { path = "../core" }
 plugin = { path = "../plugin" }
 theming = { path = "../theming" }

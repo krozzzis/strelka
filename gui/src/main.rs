@@ -48,7 +48,7 @@ pub struct App {
     default_theme: SmolStr,
     documents: DocumentStore<Content>,
     panes: PaneModel,
-    opened_directory: Option<PathBuf>,
+    opened_directory: PathBuf,
     plugin_host: PluginHost<AppMessage>,
     hotkeys: HashMap<HotKey, AppMessage>,
     notifications: NotificationList,
@@ -137,11 +137,9 @@ impl Default for App {
             documents: DocumentStore::new(),
             panes,
             plugin_host,
-            opened_directory: Some(
-                PathBuf::from("./content")
-                    .canonicalize()
-                    .unwrap_or_default(),
-            ),
+            opened_directory: PathBuf::from("./content")
+                .canonicalize()
+                .unwrap_or_default(),
             notifications: NotificationList::new(),
             hotkeys,
             file_explorer: file_explorer::State::default(),
@@ -174,12 +172,22 @@ impl App {
 
         tasks.push(read_themes.chain(apply_default_theme));
 
-        tasks.push(Task::done(AppMessage::OpenDirectory("./content".into())));
+        if let Some(home) = dirs::home_dir() {
+            let mut workdir = home;
+            workdir.push("strelka");
+
+            let file_explorer_content = Task::done(AppMessage::FileExplorerAction(
+                file_explorer::Message::GetFolderContent(workdir.clone()),
+            ));
+
+            tasks.push(Task::perform(util::init_workdir(workdir.clone()), |_| {
+                AppMessage::None
+            }));
+            tasks.push(Task::done(AppMessage::OpenDirectory(workdir)).chain(file_explorer_content));
+        }
 
         tasks.push(Task::done(AppMessage::FileExplorerAction(
-            file_explorer::Message::GetFolderContent(
-                app.opened_directory.clone().unwrap_or_default(),
-            ),
+            file_explorer::Message::GetFolderContent(app.opened_directory.clone()),
         )));
 
         (app, Task::batch(tasks))
@@ -344,13 +352,13 @@ impl App {
 
             AppMessage::OpenDirectory(path) => {
                 if path.is_dir() {
-                    self.opened_directory = Some(path.clone().canonicalize().unwrap_or_default());
+                    let path: PathBuf = path.canonicalize().unwrap_or_default();
+
+                    self.opened_directory.clone_from(&path);
 
                     // Open directory in file explorer
                     return self.file_explorer.perform(
-                        file_explorer::Message::SetDirectory(
-                            path.canonicalize().unwrap_or_default(),
-                        ),
+                        file_explorer::Message::SetDirectory(path),
                         AppMessage::FileExplorerAction,
                     );
                 }
@@ -360,8 +368,15 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let file_explorer =
-            file_explorer_pane(&self.file_explorer).map(AppMessage::FileExplorerAction);
+        let file_explorer = file_explorer_pane(
+            State {
+                documents: &self.documents,
+                panes: &self.panes,
+                working_directory: self.opened_directory.clone(),
+            },
+            &self.file_explorer,
+        )
+        .map(AppMessage::FileExplorerAction);
 
         let mut grid_elements = Vec::new();
         if self.file_explorer.visible {
@@ -375,7 +390,7 @@ impl App {
             pane_stack::pane_stack(State {
                 documents: &self.documents,
                 panes: &self.panes,
-                working_directory: self.opened_directory.clone().unwrap_or_default(),
+                working_directory: self.opened_directory.clone(),
             })
             .map(|msg| -> AppMessage {
                 match msg {

@@ -1,18 +1,30 @@
-use iced::widget::{container, Container};
+use core::State;
+
+use iced::widget::{column, container, text, text_editor::Content, Container};
 use iced::{Element, Length};
 
-use crate::file_explorer::{self, State};
+use crate::file_explorer;
 use theming::Theme;
 
-pub fn file_explorer_pane(state: &State) -> Element<file_explorer::Message, Theme> {
-    let explorer = Container::new(state.view())
-        .width(Length::Fill)
-        .height(Length::Fill)
-        .style(|theme: &Theme| container::Style {
-            background: Some(theme.file_explorer.background.into()),
-            text_color: Some(theme.file_explorer.text.into()),
-            ..theming::iced::container::background(theme)
-        });
+pub fn file_explorer_pane<'a>(
+    state: State<'a, Content>,
+    file_explorer: &'a file_explorer::State,
+) -> Element<'a, file_explorer::Message, Theme> {
+    let explorer = file_explorer.view();
+    let pane = Container::new(
+        column![
+            container(text(state.working_directory.to_string_lossy().to_string())).padding(4.0),
+            explorer
+        ]
+        .spacing(8.0),
+    )
+    .width(Length::Fill)
+    .height(Length::Fill)
+    .style(|theme: &Theme| container::Style {
+        background: Some(theme.file_explorer.background.into()),
+        text_color: Some(theme.file_explorer.text.into()),
+        ..theming::iced::container::background(theme)
+    });
 
-    explorer.into()
+    pane.into()
 }
