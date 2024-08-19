@@ -99,4 +99,10 @@ impl PaneModel {
             None
         }
     }
+
+    pub fn replace(&mut self, id: &PaneId, new: Pane) {
+        if let Some(pane) = self.panes.get_mut(id) {
+            *pane = new;
+        }
+    }
 }

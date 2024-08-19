@@ -33,7 +33,7 @@ use widget::{
 use core::{
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
-    pane::{PaneId, PaneModel},
+    pane::{Pane, PaneId, PaneModel},
     HotKey, Modifiers, State,
 };
 
@@ -126,7 +126,7 @@ impl Default for App {
 
         let mut panes = PaneModel::new();
         {
-            let id = panes.add(core::pane::Pane::NewDocument);
+            let id = panes.add(Pane::NewDocument);
             panes.open(&id);
         }
 
@@ -200,8 +200,14 @@ impl App {
                 let pane = self.panes.remove(&id);
 
                 // Close document if editor pane was closed
-                if let Some(core::pane::Pane::Editor(doc_id)) = pane {
+                if let Some(Pane::Editor(doc_id)) = pane {
                     self.documents.remove(&doc_id);
+                }
+
+                // If there no panes left, create a NewDocument one
+                if self.panes.count() == 0 {
+                    let id = self.panes.add(Pane::NewDocument);
+                    self.panes.open(&id);
                 }
             }
 
@@ -314,8 +320,17 @@ impl App {
                     };
 
                     let doc_id = self.documents.add(handler);
-                    let pane_id = self.panes.add(core::pane::Pane::Editor(doc_id));
-                    return Task::done(AppMessage::OpenPane(pane_id));
+                    let pane = Pane::Editor(doc_id);
+
+                    // If opened pane is NewDocument, replace it with Editor pane
+                    // otherwise add new one with Editor
+                    if let Some(&Pane::NewDocument) = self.panes.get_open() {
+                        self.panes
+                            .replace(&self.panes.get_open_id().cloned().unwrap_or(0usize), pane);
+                    } else {
+                        let pane_id = self.panes.add(pane);
+                        self.panes.open(&pane_id);
+                    }
                 }
             }
 
