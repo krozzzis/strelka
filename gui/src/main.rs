@@ -34,13 +34,11 @@ use core::{
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
     pane::{Pane, PaneId, PaneModel},
-    HotKey, Modifiers, State,
+    HotKey, Modifiers,
 };
 
-#[derive(Debug, Clone)]
-pub enum PaneType {
-    TextEditor(DocumentId),
-}
+type State<'a> = core::State<'a, Content>;
+type HotKeyHandler = dyn Fn(State) -> AppMessage;
 
 pub struct App {
     theme: Theme,
@@ -50,7 +48,7 @@ pub struct App {
     panes: PaneModel,
     opened_directory: PathBuf,
     plugin_host: PluginHost<AppMessage>,
-    hotkeys: HashMap<HotKey, AppMessage>,
+    hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
     notifications: NotificationList,
     file_explorer: file_explorer::State,
 }
@@ -96,42 +94,13 @@ impl Default for App {
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
 
-        let mut hotkeys = HashMap::new();
-
-        // Ctrl-o open file
-        hotkeys.insert(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'o',
-            },
-            AppMessage::PickFile,
-        );
-
-        // Ctrl-d enable dark mode
-        hotkeys.insert(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'd',
-            },
-            AppMessage::LoadTheme("core.dark".into()),
-        );
-
-        // Ctrl-p toggle file explorer
-        hotkeys.insert(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'p',
-            },
-            AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
-        );
-
         let mut panes = PaneModel::new();
         {
             let id = panes.add(Pane::NewDocument);
             panes.open(&id);
         }
 
-        Self {
+        let mut app = Self {
             theme: Theme::default(),
             theme_catalog: Catalog::new(),
             default_theme: SmolStr::from("core.light"),
@@ -142,9 +111,62 @@ impl Default for App {
                 .canonicalize()
                 .unwrap_or_default(),
             notifications: NotificationList::new(),
-            hotkeys,
+            hotkeys: HashMap::new(),
             file_explorer: file_explorer::State::default(),
-        }
+        };
+
+        // Ctrl-o open file
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'o',
+            },
+            |_: State| AppMessage::PickFile,
+        );
+
+        // Ctrl-d enable dark mode
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'd',
+            },
+            |_: State| AppMessage::LoadTheme("core.dark".into()),
+        );
+
+        // Ctrl-p toggle file explorer
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'p',
+            },
+            |_: State| AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
+        );
+
+        // Ctrl-t open new document tab
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 't',
+            },
+            |_: State| AppMessage::AddPane(Pane::NewDocument),
+        );
+
+        // Ctrl-w close open tab
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'w',
+            },
+            |state: State| {
+                if let Some(id) = state.panes.get_open_id() {
+                    AppMessage::ClosePane(*id)
+                } else {
+                    AppMessage::None
+                }
+            },
+        );
+
+        app
     }
 }
 
@@ -192,6 +214,21 @@ impl App {
         )));
 
         (app, Task::batch(tasks))
+    }
+
+    fn get_state(&self) -> State {
+        State {
+            documents: &self.documents,
+            panes: &self.panes,
+            working_directory: self.opened_directory.clone(),
+        }
+    }
+
+    fn add_hotkey<F>(&mut self, hotkey: HotKey, func: F)
+    where
+        F: Fn(State) -> AppMessage + 'static,
+    {
+        self.hotkeys.insert(hotkey, Box::new(func));
     }
 
     fn title(&self) -> String {
@@ -463,8 +500,8 @@ impl App {
                 modifiers: modifier,
             };
 
-            if let Some(message) = self.hotkeys.get(&hotkey) {
-                return Some(message.clone());
+            if let Some(func) = self.hotkeys.get(&hotkey) {
+                return Some(func(self.get_state()));
             }
         }
         None

@@ -44,8 +44,8 @@ impl PaneModel {
         // If removing pane is opened, close them
         if self.open == Some(*id) {
             // if there are more panels, open the last one
-            if let Some(first) = self.visible.first() {
-                self.open = Some(*first);
+            if let Some(last) = self.visible.last() {
+                self.open = Some(*last);
             } else {
                 // Otherwise leave it not opened
                 self.open = None;
