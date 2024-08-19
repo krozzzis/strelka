@@ -15,6 +15,7 @@ pub enum Pane {
 #[derive(Default, Debug)]
 pub struct PaneModel {
     panes: HashMap<PaneId, Pane>,
+    visible: Vec<PaneId>,
     next_id: PaneId,
     open: Option<PaneId>,
     prev_open: Option<PaneId>,
@@ -24,6 +25,7 @@ impl PaneModel {
     pub fn new() -> Self {
         Self {
             panes: HashMap::new(),
+            visible: Vec::new(),
             next_id: 1,
             open: None,
             prev_open: None,
@@ -34,6 +36,7 @@ impl PaneModel {
         let id = self.next_id;
 
         self.panes.insert(id, pane);
+        self.visible.push(id);
         self.next_id += 1;
 
         id
@@ -58,6 +61,7 @@ impl PaneModel {
             }
         }
 
+        self.visible.retain(|&x| x != *id);
         self.panes.remove(id)
     }
 
@@ -78,7 +82,10 @@ impl PaneModel {
     }
 
     pub fn list(&self) -> Vec<(&PaneId, &Pane)> {
-        self.panes.iter().collect()
+        self.visible
+            .iter()
+            .filter_map(|id| self.panes.get(id).map(|pane| (id, pane)))
+            .collect()
     }
 
     pub fn open(&mut self, id: &PaneId) {

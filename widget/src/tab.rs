@@ -5,7 +5,7 @@ use iced::{
 use theming::{iced::container::background, theme, Theme};
 
 use crate::{
-    button::{a, text_button},
+    button::{a, secondary_button},
     Label,
 };
 
@@ -25,12 +25,14 @@ pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, 
     let mut content = vec![text(title).width(Length::Fill).height(24.0).into()];
     if let Some(message) = tab.on_close.clone() {
         content.push(
-            text_button(svg::Svg::new("./images/close.svg").content_fit(iced::ContentFit::Fill))
-                .width(20.0)
-                .height(20.0)
-                .on_press(message)
-                .padding(1.0)
-                .into(),
+            secondary_button(
+                svg::Svg::new("./images/close.svg").content_fit(iced::ContentFit::Fill),
+            )
+            .width(20.0)
+            .height(20.0)
+            .padding(1.0)
+            .on_press(message)
+            .into(),
         );
     }
 
