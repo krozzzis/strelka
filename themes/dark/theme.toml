@@ -1,7 +1,7 @@
 [generic]
-background = "#333333"
-background2 = "#444444"
-text = "#eeeeee"
+background = "#141414"
+background2 = "#191919"
+text = "#cccccc"
 
 
 # Buttons
@@ -45,8 +45,8 @@ height = 44.0
 min_width = 200.0
 
 [tab.active]
-background = "#333333"
-text = "#eeeeee"
+background = "#222222"
+text = "#cccccc"
 radius = 10.0
 
 [tab.active.margin]
@@ -66,8 +66,8 @@ bottom_left = 10.0
 bottom_right = 10.0
 
 [tab.hover]
-background = "#cecece"
-text = "#eeeeee"
+background = "#333333"
+text = "#cccccc"
 radius = 10.0
 
 [tab.hover.margin]
@@ -87,8 +87,8 @@ bottom_left = 10.0
 bottom_right = 10.0
 
 [tab.selected]
-background = "#333333"
-text = "#eeeeee"
+background = "#141414"
+text = "#cccccc"
 radius = 10.0
 
 [tab.selected.margin]
@@ -110,7 +110,7 @@ bottom_right = -10.0
 
 # TabBar
 [tab_bar]
-background = "#444444"
+background = "#191919"
 height = 52
 spacing = 8.0
 
@@ -124,17 +124,17 @@ bottom = 0.0
 # ListItem
 [list_item.active]
 background = "#ffffff00"
-text = "#eeeeee"
+text = "#cccccc"
 radius = 4.0
 
 [list_item.hover]
-background = "#333333"
-text = "#eeeeee"
+background = "#222222"
+text = "#cccccc"
 radius = 4.0
 
 [list_item.selected]
-background = "#333333"
-text = "#eeeeee"
+background = "#222222"
+text = "#cccccc"
 radius = 4.0
 
 
@@ -145,19 +145,20 @@ spacing = 4.0
 
 # Editor
 [editor]
-background = "#333333"
-background2 = "#444444"
-text = "#eeeeee"
+background = "#141414"
+background2 = "#191919"
+text = "#cccccc"
 cursor = "#efefef"
-selection = "#cecece"
+selection = "#444444"
 radius = 50.0
 padding = 50.0
+width = 800.0
 
 
 # Notification
 [notification]
 background = "#444444"
-text = "#eeeeee"
+text = "#cccccc"
 border_color = "#111111"
 border_width = 1
 radius = 4
@@ -187,7 +188,7 @@ shadow_blur = 2
 
 # File explorer
 [file_explorer]
-background = "#555555"
-text = "#eeeeee"
+background = "#161616"
+text = "#cccccc"
 padding = 4
 width = 300

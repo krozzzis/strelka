@@ -11,6 +11,7 @@ pub struct Editor {
     pub cursor: Color,
     pub radius: f32,
     pub padding: f32,
+    pub width: f32,
 }
 
 impl Editor {
@@ -22,5 +23,6 @@ impl Editor {
         cursor: Color::new(0.2, 0.8, 0.2, 1.0),
         radius: 0.0,
         padding: 0.0,
+        width: 500.0,
     };
 }

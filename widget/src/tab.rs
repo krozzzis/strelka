@@ -1,5 +1,6 @@
 use iced::{
-    widget::{container, svg, text, MouseArea, Row}, Alignment, Element, Length, Padding
+    widget::{container, svg, text, MouseArea, Row},
+    Alignment, Element, Length, Padding,
 };
 use theming::{iced::container::background, theme, Theme};
 

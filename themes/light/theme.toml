@@ -1,6 +1,6 @@
 [generic]
 background = "#ffffff"
-background2 = "#eeeeee"
+background2 = "#f1f1f1"
 text = "#444444"
 
 
@@ -18,7 +18,7 @@ radius = 4.0
 
 ## Secondary button
 [secondary_button.active]
-background = "#eeeeee"
+background = "#f1f1f1"
 text = "#444444"
 radius = 4.0
 
@@ -31,12 +31,12 @@ radius = 4.0
 [text_button.active]
 background = "#ffffff00"
 text = "#444444"
-radius = 4.0
+radius = 0.0
 
 [text_button.hover]
 background = "#ffffff00"
 text = "#8ccccc"
-radius = 4.0
+radius = 0.0
 
 
 # Tab
@@ -107,7 +107,7 @@ bottom_right = -10.0
 
 # TabBar
 [tab_bar]
-background = "#eeeeee"
+background = "#f1f1f1"
 height = 52
 spacing = 8.0
 
@@ -143,19 +143,20 @@ spacing = 4.0
 # Editor
 [editor]
 background = "#ffffff"
-background2 = "#f9f9f9"
+background2 = "#f1f1f1"
 text = "#000000"
 cursor = "#444444"
-selection = "#cecece"
+selection = "#dddddd"
 radius = 50.0
 padding = 50.0
+width = 800.0
 
 
 # Notification
 [notification]
 background = "#ffffff"
 text = "#000000"
-border_color = "#cecece"
+border_color = "#dddddd"
 border_width = 1
 radius = 4
 shadow_x = 2
@@ -184,7 +185,7 @@ shadow_blur = 2
 
 # File explorer
 [file_explorer]
-background = "#cecece"
+background = "#dddddd"
 text = "#444444"
 padding = 4
 width = 300
