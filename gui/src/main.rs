@@ -70,6 +70,7 @@ pub enum AppMessage {
     OpenedFile(Result<(PathBuf, String), ()>),
     PickFile,
     CloseDocument(DocumentId),
+    AddPane(Pane),
     OpenPane(PaneId),
     ClosePane(PaneId),
     OpenFile(PathBuf),
@@ -201,6 +202,11 @@ impl App {
         println!("{message:?}");
         match message {
             AppMessage::None => {}
+
+            AppMessage::AddPane(pane) => {
+                let id = self.panes.add(pane);
+                self.panes.open(&id);
+            }
 
             AppMessage::OpenPane(id) => self.panes.open(&id),
 
@@ -397,6 +403,8 @@ impl App {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
                         AppMessage::PickFile
                     }
+
+                    pane_stack::Message::NewPane(pane) => AppMessage::AddPane(pane),
 
                     pane_stack::Message::OpenPane(id) => AppMessage::OpenPane(id),
 

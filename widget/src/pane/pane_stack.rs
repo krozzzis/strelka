@@ -5,7 +5,7 @@ use core::{
 };
 
 use iced::{
-    widget::{column, text_editor::Content, Space},
+    widget::{column, svg, text_editor::Content, Space},
     Element, Length,
 };
 use theming::Theme;
@@ -25,6 +25,7 @@ use crate::{
 pub enum Message {
     OpenPane(PaneId),
     ClosePane(PaneId),
+    NewPane(Pane),
     NewDocument(new_document::Message),
     TextEditor(DocumentId, text_editor::Message),
 }
@@ -32,7 +33,7 @@ pub enum Message {
 pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
     let open = state.panes.get_open_id().unwrap_or(&0);
 
-    let tabs: Vec<Tab<Message>> = state
+    let mut tabs: Vec<Tab<Message>> = state
         .panes
         .list()
         .iter()
@@ -48,6 +49,7 @@ pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
 
             Tab {
                 label: title,
+                icon: None,
                 selected: *id == open,
                 on_click: Some(Message::OpenPane(**id)),
                 on_close: Some(Message::ClosePane(**id)),
@@ -55,6 +57,17 @@ pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
             }
         })
         .collect();
+
+    let new_tab_button = Tab {
+        label: None,
+        icon: Some(svg::Handle::from_path("./images/plus.svg")),
+        selected: false,
+        on_click: Some(Message::NewPane(Pane::NewDocument)),
+        on_close: None,
+        on_middle_click: None,
+    };
+
+    tabs.push(new_tab_button);
 
     let tab_bar = tab_bar(tabs);
 
