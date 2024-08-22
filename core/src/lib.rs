@@ -1,8 +1,11 @@
+pub mod buffer;
+pub mod color;
 pub mod document;
-mod hotkey;
+pub mod hotkey;
 pub mod notification;
 pub mod pane;
-mod state;
+pub mod state;
 
+pub use color::*;
 pub use hotkey::*;
 pub use state::*;

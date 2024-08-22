@@ -166,6 +166,15 @@ impl Default for App {
             },
         );
 
+        // Ctrl-b open experimental buffer pane
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'b',
+            },
+            |_state: State| AppMessage::AddPane(Pane::Buffer),
+        );
+
         app
     }
 }

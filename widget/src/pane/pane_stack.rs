@@ -1,4 +1,5 @@
 use core::{
+    buffer::{Buffer, FormattedBuffer},
     document::DocumentId,
     pane::{Pane, PaneId},
     State,
@@ -11,6 +12,7 @@ use iced::{
 use theming::Theme;
 
 use crate::{
+    buffer::buffer,
     container::background,
     pane::{
         new_document::{self, new_document_pane},
@@ -20,6 +22,11 @@ use crate::{
     util::filename,
     Label,
 };
+
+lazy_static::lazy_static! {
+    pub static ref BUFFER: Buffer = Buffer::new("Hello\nAboba");
+    pub static ref FORMATTED: FormattedBuffer = FormattedBuffer::from_buffer(&BUFFER);
+}
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -45,6 +52,7 @@ pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
                     .documents
                     .get(&id)
                     .map(|handler| filename(handler.path.clone()).unwrap_or_default().into()),
+                Pane::Buffer => Some("Buffer tab (EXPERIMENTAL)".into()),
             };
 
             Tab {
@@ -77,6 +85,7 @@ pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
             Pane::NewDocument => new_document_pane().map(Message::NewDocument),
             Pane::Editor(id) => text_editor::text_editor(id, state)
                 .map(move |action| Message::TextEditor(id, action)),
+            Pane::Buffer => background(buffer(&FORMATTED)).into(),
         }
     } else {
         Space::new(Length::Fill, Length::Fill).into()

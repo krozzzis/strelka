@@ -1,6 +1,5 @@
 mod border;
 pub mod catalog;
-mod color;
 mod font;
 #[cfg(feature = "iced")]
 pub mod iced;
@@ -13,7 +12,7 @@ mod theme;
 use std::sync::{Arc, RwLock};
 
 pub use border::*;
-pub use color::*;
+pub use core::color::*;
 pub use font::*;
 pub use margin::*;
 pub use padding::*;

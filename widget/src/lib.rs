@@ -1,3 +1,4 @@
+pub mod buffer;
 pub mod button;
 pub mod container;
 pub mod editor;

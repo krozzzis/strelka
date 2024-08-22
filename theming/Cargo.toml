@@ -6,6 +6,7 @@ license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
 [dependencies]
+core = {path = "../core", features = ["iced", "serde"]}
 iced_core = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
 iced_futures = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
 iced_widget = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }

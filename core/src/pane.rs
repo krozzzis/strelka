@@ -10,6 +10,7 @@ pub enum Pane {
     Empty,
     NewDocument,
     Editor(DocumentId),
+    Buffer,
 }
 
 #[derive(Default, Debug)]

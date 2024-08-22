@@ -9,6 +9,7 @@ authors = ["Nikita Shumov"]
 core = { path = "../core" }
 theming = { path = "../theming" }
 plugin = { path = "../plugin" }
+lazy_static = "1.5"
 tokio = { version = "1.9", features = ["fs"]}
 iced = { git = "https://github.com/iced-rs/iced.git", features = ["advanced", "canvas", "svg"], branch = "master" }
 iced_renderer = { git = "https://github.com/iced-rs/iced.git", features = ["wgpu", "tiny-skia"]}
