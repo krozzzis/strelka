@@ -33,7 +33,7 @@ use widget::{
 use core::{
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
-    pane::{Pane, PaneId, PaneModel},
+    pane::{Action as PaneAction, Pane, PaneModel},
     HotKey, Modifiers,
 };
 
@@ -66,11 +66,9 @@ pub enum AppMessage {
     LoadTheme(ThemeID),
     AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
+    Pane(PaneAction),
     PickFile,
     CloseDocument(DocumentId),
-    AddPane(Pane),
-    OpenPane(PaneId),
-    ClosePane(PaneId),
     OpenFile(PathBuf),
     SaveFile(DocumentId),
     SavedFile(DocumentId),
@@ -148,7 +146,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            |_: State| AppMessage::AddPane(Pane::NewDocument),
+            |_: State| AppMessage::Pane(PaneAction::Add(Pane::NewDocument)),
         );
 
         // Ctrl-w close open tab
@@ -159,7 +157,7 @@ impl Default for App {
             },
             |state: State| {
                 if let Some(id) = state.panes.get_open_id() {
-                    AppMessage::ClosePane(*id)
+                    AppMessage::Pane(PaneAction::Close(*id))
                 } else {
                     AppMessage::None
                 }
@@ -172,7 +170,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            |_state: State| AppMessage::AddPane(Pane::Buffer),
+            |_state: State| AppMessage::Pane(PaneAction::Add(Pane::Buffer)),
         );
 
         app
@@ -249,27 +247,30 @@ impl App {
         match message {
             AppMessage::None => {}
 
-            AppMessage::AddPane(pane) => {
-                let id = self.panes.add(pane);
-                self.panes.open(&id);
-            }
+            AppMessage::Pane(action) => match action {
+                PaneAction::Close(id) => {
+                    let pane = self.panes.remove(&id);
 
-            AppMessage::OpenPane(id) => self.panes.open(&id),
+                    // Close document if Editor pane was closed
+                    if let Some(Pane::Editor(doc_id)) = pane {
+                        self.documents.remove(&doc_id);
+                    }
 
-            AppMessage::ClosePane(id) => {
-                let pane = self.panes.remove(&id);
-
-                // Close document if editor pane was closed
-                if let Some(Pane::Editor(doc_id)) = pane {
-                    self.documents.remove(&doc_id);
+                    // If there no panes left, create a NewDocument one
+                    if self.panes.count() == 0 {
+                        let id = self.panes.add(Pane::NewDocument);
+                        self.panes.open(&id);
+                    }
                 }
-
-                // If there no panes left, create a NewDocument one
-                if self.panes.count() == 0 {
-                    let id = self.panes.add(Pane::NewDocument);
+                PaneAction::Open(id) => self.panes.open(&id),
+                PaneAction::Add(pane) => {
+                    let id = self.panes.add(pane);
                     self.panes.open(&id);
                 }
-            }
+                PaneAction::Replace(id, pane) => {
+                    self.panes.replace(&id, pane);
+                }
+            },
 
             AppMessage::FileExplorerAction(message) => match message {
                 file_explorer::Message::OpenFile(path) => {
@@ -450,11 +451,11 @@ impl App {
                         AppMessage::PickFile
                     }
 
-                    pane_stack::Message::NewPane(pane) => AppMessage::AddPane(pane),
+                    pane_stack::Message::NewPane(pane) => AppMessage::Pane(PaneAction::Add(pane)),
 
-                    pane_stack::Message::OpenPane(id) => AppMessage::OpenPane(id),
+                    pane_stack::Message::OpenPane(id) => AppMessage::Pane(PaneAction::Open(id)),
 
-                    pane_stack::Message::ClosePane(id) => AppMessage::ClosePane(id),
+                    pane_stack::Message::ClosePane(id) => AppMessage::Pane(PaneAction::Close(id)),
 
                     pane_stack::Message::TextEditor(
                         id,
