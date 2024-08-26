@@ -31,9 +31,10 @@ use widget::{
 };
 
 use core::{
+    actions::FileAction,
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
-    pane::{Action as PaneAction, Pane, PaneModel},
+    pane::{Pane, PaneAction, PaneModel},
     HotKey, Modifiers,
 };
 
@@ -67,9 +68,8 @@ pub enum AppMessage {
     AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
     Pane(PaneAction),
-    PickFile,
+    File(FileAction),
     CloseDocument(DocumentId),
-    OpenFile(PathBuf),
     SaveFile(DocumentId),
     SavedFile(DocumentId),
     OpenDirectory(PathBuf),
@@ -119,7 +119,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            |_: State| AppMessage::PickFile,
+            |_: State| AppMessage::File(FileAction::PickFile),
         );
 
         // Ctrl-d enable dark mode
@@ -243,9 +243,25 @@ impl App {
     }
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
-        println!("{message:?}");
+        #[cfg(debug_assertions)]
+        println!("Message: {message:?}");
         match message {
             AppMessage::None => {}
+
+            AppMessage::File(action) => match action {
+                FileAction::PickFile => {
+                    return Task::perform(pick_file(None), AppMessage::OpenedFile)
+                }
+                FileAction::OpenFileCurrentTab(path) => {
+                    return Task::perform(open_file(path), AppMessage::OpenedFile)
+                }
+                FileAction::OpenFileForceCurrentTab(path) => {
+                    return Task::perform(open_file(path), AppMessage::OpenedFile)
+                }
+                FileAction::OpenFileNewTab(path) => {
+                    return Task::perform(open_file(path), AppMessage::OpenedFile)
+                }
+            },
 
             AppMessage::Pane(action) => match action {
                 PaneAction::Close(id) => {
@@ -274,7 +290,7 @@ impl App {
 
             AppMessage::FileExplorerAction(message) => match message {
                 file_explorer::Message::OpenFile(path) => {
-                    return Task::done(AppMessage::OpenFile(path))
+                    return Task::done(AppMessage::File(FileAction::OpenFileCurrentTab(path)))
                 }
 
                 _ => {
@@ -395,14 +411,6 @@ impl App {
                 }
             }
 
-            AppMessage::PickFile => {
-                return Task::perform(pick_file(None), AppMessage::OpenedFile);
-            }
-
-            AppMessage::OpenFile(path) => {
-                return Task::perform(open_file(path), AppMessage::OpenedFile);
-            }
-
             AppMessage::OpenDirectory(path) => {
                 if path.is_dir() {
                     let path: PathBuf = path.canonicalize().unwrap_or_default();
@@ -448,7 +456,7 @@ impl App {
             .map(|msg| -> AppMessage {
                 match msg {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
-                        AppMessage::PickFile
+                        AppMessage::File(FileAction::PickFile)
                     }
 
                     pane_stack::Message::NewPane(pane) => AppMessage::Pane(PaneAction::Add(pane)),
