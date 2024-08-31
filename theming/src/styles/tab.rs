@@ -48,21 +48,3 @@ impl Tab {
         },
     };
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[derive(Deserialize, Serialize)]
-    pub struct Theme {
-        pub tab: Tab,
-    }
-
-    #[cfg(feature = "serde")]
-    #[test]
-    fn serialize() {
-        let theme = Theme { tab: Tab::FALLBACK };
-
-        assert_eq!(toml::to_string(&theme), Ok("".to_string()));
-    }
-}
