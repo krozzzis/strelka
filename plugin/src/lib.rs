@@ -4,8 +4,6 @@ mod plugins;
 pub use host::*;
 pub use plugins::*;
 
-use std::sync::Arc;
-
 /// Plugin runtime status
 #[derive(Debug, Default, Clone, Copy)]
 pub enum PluginStatus {
@@ -14,33 +12,10 @@ pub enum PluginStatus {
     Unloaded,
 }
 
-/// Plugin action
-///
-/// Used for sending messages from application to plugin
-#[derive(Debug, Clone)]
-pub struct PluginMessage {
-    pub kind: String,
-    pub payload: String,
-}
-
-impl PluginMessage {
-    pub fn new(kind: String, payload: String) -> Self {
-        Self { kind, payload }
-    }
-}
-
 /// Generic plugin trait
 pub trait Plugin {
-    fn update(&mut self, _message: Arc<PluginMessage>) -> Option<PluginAction> {
-        None
-    }
-
-    fn load(&mut self) -> Option<PluginAction> {
-        None
-    }
-    fn unload(&mut self) -> Option<PluginAction> {
-        None
-    }
+    fn load(&mut self) {}
+    fn unload(&mut self) {}
 }
 
 /// Plugin information
@@ -97,9 +72,4 @@ pub struct PluginHandler {
     pub info: PluginInfo,
     pub status: PluginStatus,
     pub state: Box<dyn Plugin>,
-}
-
-#[derive(Debug, Clone)]
-pub enum PluginAction {
-    SendNotification(Arc<String>),
 }

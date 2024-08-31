@@ -66,9 +66,15 @@ impl Action {
         }
     }
 
-    pub fn batch(mut self, action: impl Into<GenericAction>) -> Self {
+    pub fn push(mut self, action: impl Into<GenericAction>) -> Self {
         self.actions.push(action.into());
         self
+    }
+
+    pub fn batch(actions: impl IntoIterator<Item = GenericAction>) -> Self {
+        Self {
+            actions: actions.into_iter().collect(),
+        }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = &GenericAction> {

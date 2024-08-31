@@ -17,7 +17,7 @@ use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use crate::util::{delay, get_file_name, open_file, pick_file, save_file};
 
-use plugin::{ExamplePlugin, Plugin, PluginAction, PluginHost, PluginId, PluginInfo};
+use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
 use theming::{
     catalog::{get_themes, Catalog, ThemeID},
@@ -48,7 +48,7 @@ pub struct App {
     documents: DocumentStore<Content>,
     panes: PaneModel,
     opened_directory: PathBuf,
-    plugin_host: PluginHost<AppMessage>,
+    plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
     notifications: NotificationList,
     file_explorer: file_explorer::State,
@@ -56,11 +56,6 @@ pub struct App {
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
-    SendPluginMessage {
-        id: PluginId,
-        message: Arc<plugin::PluginMessage>,
-    },
-    PluginAction(PluginId, PluginAction),
     LoadPlugin(PluginId, bool),
     SendNotification(Arc<Notification>),
     RemoveNotification(usize),
@@ -79,7 +74,7 @@ pub enum AppMessage {
 
 impl Default for App {
     fn default() -> Self {
-        let mut plugin_host = PluginHost::new().on_plugin_action(AppMessage::PluginAction);
+        let mut plugin_host = PluginHost::new();
         plugin_host.register_plugin(
             PluginInfo::new()
                 .name("ExamplePlugin")
@@ -379,30 +374,11 @@ impl App {
                 self.notifications.remove(id);
             }
 
-            AppMessage::PluginAction(_id, action) => match action {
-                PluginAction::SendNotification(text) => {
-                    return Task::done(AppMessage::SendNotification(Arc::new(
-                        Notification::with_text(text.to_string()),
-                    )))
-                }
-            },
-
             AppMessage::LoadPlugin(id, load) => {
                 if load {
-                    if let Some(message) = self.plugin_host.load_plugin(&id) {
-                        return Task::done(message);
-                    }
-                } else if let Some(message) = self.plugin_host.unload_plugin(&id) {
-                    return Task::done(message);
-                }
-            }
-
-            AppMessage::SendPluginMessage {
-                id: name,
-                message: action,
-            } => {
-                if let Some(message) = self.plugin_host.send_message(name, action) {
-                    return Task::done(message);
+                    self.plugin_host.load_plugin(&id);
+                } else {
+                    self.plugin_host.unload_plugin(&id);
                 }
             }
 
