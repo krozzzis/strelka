@@ -66,6 +66,12 @@ impl Action {
         }
     }
 
+    pub fn none() -> Self {
+        Self {
+            actions: Vec::new(),
+        }
+    }
+
     pub fn push(mut self, action: impl Into<GenericAction>) -> Self {
         self.actions.push(action.into());
         self
@@ -77,7 +83,22 @@ impl Action {
         }
     }
 
+    pub fn extend(mut self, actions: impl IntoIterator<Item = GenericAction>) -> Self {
+        self.actions.extend(actions);
+        self
+    }
+
     pub fn iter(&self) -> impl Iterator<Item = &GenericAction> {
+        self.actions.iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a Action {
+    type Item = &'a GenericAction;
+
+    type IntoIter = std::slice::Iter<'a, GenericAction>;
+
+    fn into_iter(self) -> Self::IntoIter {
         self.actions.iter()
     }
 }

@@ -6,3 +6,4 @@ license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
 [dependencies]
+core = {path = "../core"}

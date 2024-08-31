@@ -313,10 +313,11 @@ impl App {
         match message {
             AppMessage::None => {}
 
-            AppMessage::Action(actions) => {
+            AppMessage::Action(action) => {
+                let action = self.plugin_host.process_action(action);
                 let mut tasks = Vec::new();
-                for action in actions.iter() {
-                    tasks.push(self.perform_action(action.clone()));
+                for generic in action.iter() {
+                    tasks.push(self.perform_action(generic.clone()));
                 }
 
                 return Task::batch(tasks);

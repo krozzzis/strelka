@@ -1,11 +1,13 @@
 mod host;
 mod plugins;
 
+use core::action::Action;
+
 pub use host::*;
 pub use plugins::*;
 
 /// Plugin runtime status
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum PluginStatus {
     Loaded,
     #[default]
@@ -14,6 +16,9 @@ pub enum PluginStatus {
 
 /// Generic plugin trait
 pub trait Plugin {
+    fn on_action(&mut self, action: Action) -> Action {
+        action
+    }
     fn load(&mut self) {}
     fn unload(&mut self) {}
 }
