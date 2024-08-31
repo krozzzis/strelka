@@ -31,10 +31,10 @@ use widget::{
 };
 
 use core::{
-    actions::FileAction,
-    document::{DocumentAction, DocumentHandler, DocumentId, DocumentStore},
+    action::{Action, DocumentAction, FileAction, GenericAction, PaneAction},
+    document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
-    pane::{Pane, PaneAction, PaneModel},
+    pane::{Pane, PaneModel},
     HotKey, Modifiers,
 };
 
@@ -67,9 +67,8 @@ pub enum AppMessage {
     LoadTheme(ThemeID),
     AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
-    Pane(PaneAction),
-    File(FileAction),
-    Document(DocumentAction),
+    GenericAction(GenericAction),
+    Action(Action),
     SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
@@ -118,7 +117,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            |_: State| AppMessage::File(FileAction::PickFile),
+            |_: State| AppMessage::Action(Action::new(FileAction::PickFile)),
         );
 
         // Ctrl-d enable dark mode
@@ -145,7 +144,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            |_: State| AppMessage::Pane(PaneAction::Add(Pane::NewDocument)),
+            |_: State| AppMessage::Action(Action::new(PaneAction::Add(Pane::NewDocument))),
         );
 
         // Ctrl-w close open tab
@@ -156,7 +155,7 @@ impl Default for App {
             },
             |state: State| {
                 if let Some(id) = state.panes.get_open_id() {
-                    AppMessage::Pane(PaneAction::Close(*id))
+                    AppMessage::Action(Action::new(PaneAction::Close(*id)))
                 } else {
                     AppMessage::None
                 }
@@ -169,7 +168,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            |_state: State| AppMessage::Pane(PaneAction::Add(Pane::Buffer)),
+            |_state: State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer))),
         );
 
         app
@@ -241,42 +240,9 @@ impl App {
         String::from("Strelka")
     }
 
-    fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
-        #[cfg(debug_assertions)]
-        println!("Message: {message:?}");
-        match message {
-            AppMessage::None => {}
-
-            AppMessage::Document(action) => match action {
-                DocumentAction::Add(handler) => {
-                    let content = Content::with_text(&handler.text_content);
-                    let handler = DocumentHandler {
-                        text_content: content,
-                        path: handler.path.clone(),
-                        filename: handler.filename.clone(),
-                        changed: handler.changed,
-                    };
-                    self.documents.add(handler);
-                }
-                DocumentAction::Open(id) => {
-                    let pane = Pane::Editor(id);
-                    return Task::done(AppMessage::Pane(PaneAction::Add(pane)));
-                }
-                DocumentAction::Save(id) => {
-                    if let Some(handler) = self.documents.get(&id) {
-                        let message = AppMessage::SavedFile(id);
-                        return Task::perform(
-                            save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
-                            move |_| message.clone(),
-                        );
-                    }
-                }
-                DocumentAction::Remove(id) => {
-                    self.documents.remove(&id);
-                }
-            },
-
-            AppMessage::File(action) => match action {
+    fn perform_action(&mut self, action: GenericAction) -> Task<AppMessage> {
+        match action {
+            GenericAction::File(action) => match action {
                 FileAction::PickFile => {
                     return Task::perform(pick_file(None), AppMessage::OpenedFile)
                 }
@@ -290,8 +256,7 @@ impl App {
                     return Task::perform(open_file(path), AppMessage::OpenedFile)
                 }
             },
-
-            AppMessage::Pane(action) => match action {
+            GenericAction::Pane(action) => match action {
                 PaneAction::Close(id) => {
                     let pane = self.panes.remove(&id);
 
@@ -315,10 +280,60 @@ impl App {
                     self.panes.replace(&id, pane);
                 }
             },
+            GenericAction::Document(action) => match action {
+                DocumentAction::Add(handler) => {
+                    let content = Content::with_text(&handler.text_content);
+                    let handler = DocumentHandler {
+                        text_content: content,
+                        path: handler.path.clone(),
+                        filename: handler.filename.clone(),
+                        changed: handler.changed,
+                    };
+                    self.documents.add(handler);
+                }
+                DocumentAction::Open(id) => {
+                    let pane = Pane::Editor(id);
+                    return Task::done(AppMessage::Action(Action::new(PaneAction::Add(pane))));
+                }
+                DocumentAction::Save(id) => {
+                    if let Some(handler) = self.documents.get(&id) {
+                        let message = AppMessage::SavedFile(id);
+                        return Task::perform(
+                            save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
+                            move |_| message.clone(),
+                        );
+                    }
+                }
+                DocumentAction::Remove(id) => {
+                    self.documents.remove(&id);
+                }
+            },
+        }
+        Task::none()
+    }
+
+    fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
+        #[cfg(debug_assertions)]
+        println!("Message: {message:?}");
+        match message {
+            AppMessage::None => {}
+
+            AppMessage::Action(actions) => {
+                let mut tasks = Vec::new();
+                for action in actions.iter() {
+                    tasks.push(self.perform_action(action.clone()));
+                }
+
+                return Task::batch(tasks);
+            }
+
+            AppMessage::GenericAction(action) => return self.perform_action(action),
 
             AppMessage::FileExplorerAction(message) => match message {
                 file_explorer::Message::OpenFile(path) => {
-                    return Task::done(AppMessage::File(FileAction::OpenFileCurrentTab(path)))
+                    return Task::done(AppMessage::Action(Action::new(
+                        FileAction::OpenFileCurrentTab(path),
+                    )))
                 }
 
                 _ => {
@@ -470,14 +485,20 @@ impl App {
             .map(|msg| -> AppMessage {
                 match msg {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
-                        AppMessage::File(FileAction::PickFile)
+                        AppMessage::Action(Action::new(FileAction::PickFile))
                     }
 
-                    pane_stack::Message::NewPane(pane) => AppMessage::Pane(PaneAction::Add(pane)),
+                    pane_stack::Message::NewPane(pane) => {
+                        AppMessage::Action(Action::new(PaneAction::Add(pane)))
+                    }
 
-                    pane_stack::Message::OpenPane(id) => AppMessage::Pane(PaneAction::Open(id)),
+                    pane_stack::Message::OpenPane(id) => {
+                        AppMessage::Action(Action::new(PaneAction::Open(id)))
+                    }
 
-                    pane_stack::Message::ClosePane(id) => AppMessage::Pane(PaneAction::Close(id)),
+                    pane_stack::Message::ClosePane(id) => {
+                        AppMessage::Action(Action::new(PaneAction::Close(id)))
+                    }
 
                     pane_stack::Message::TextEditor(
                         id,

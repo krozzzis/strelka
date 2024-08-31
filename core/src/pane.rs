@@ -104,11 +104,3 @@ impl PaneModel {
         }
     }
 }
-
-#[derive(Debug, Clone)]
-pub enum PaneAction {
-    Close(PaneId),
-    Open(PaneId),
-    Add(Pane),
-    Replace(PaneId, Pane),
-}

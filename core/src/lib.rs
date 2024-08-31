@@ -1,4 +1,4 @@
-pub mod actions;
+pub mod action;
 pub mod buffer;
 pub mod color;
 pub mod document;
