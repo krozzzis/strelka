@@ -32,7 +32,7 @@ use widget::{
 
 use core::{
     actions::FileAction,
-    document::{DocumentHandler, DocumentId, DocumentStore},
+    document::{DocumentAction, DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
     pane::{Pane, PaneAction, PaneModel},
     HotKey, Modifiers,
@@ -69,8 +69,7 @@ pub enum AppMessage {
     OpenedFile(Result<(PathBuf, String), ()>),
     Pane(PaneAction),
     File(FileAction),
-    CloseDocument(DocumentId),
-    SaveFile(DocumentId),
+    Document(DocumentAction),
     SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
@@ -248,6 +247,35 @@ impl App {
         match message {
             AppMessage::None => {}
 
+            AppMessage::Document(action) => match action {
+                DocumentAction::Add(handler) => {
+                    let content = Content::with_text(&handler.text_content);
+                    let handler = DocumentHandler {
+                        text_content: content,
+                        path: handler.path.clone(),
+                        filename: handler.filename.clone(),
+                        changed: handler.changed,
+                    };
+                    self.documents.add(handler);
+                }
+                DocumentAction::Open(id) => {
+                    let pane = Pane::Editor(id);
+                    return Task::done(AppMessage::Pane(PaneAction::Add(pane)));
+                }
+                DocumentAction::Save(id) => {
+                    if let Some(handler) = self.documents.get(&id) {
+                        let message = AppMessage::SavedFile(id);
+                        return Task::perform(
+                            save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
+                            move |_| message.clone(),
+                        );
+                    }
+                }
+                DocumentAction::Remove(id) => {
+                    self.documents.remove(&id);
+                }
+            },
+
             AppMessage::File(action) => match action {
                 FileAction::PickFile => {
                     return Task::perform(pick_file(None), AppMessage::OpenedFile)
@@ -319,20 +347,6 @@ impl App {
                 if let Some(handler) = self.documents.get_mut(&id) {
                     handler.changed = false;
                 }
-            }
-
-            AppMessage::SaveFile(id) => {
-                if let Some(handler) = self.documents.get(&id) {
-                    let message = AppMessage::SavedFile(id);
-                    return Task::perform(
-                        save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
-                        move |_| message.clone(),
-                    );
-                }
-            }
-
-            AppMessage::CloseDocument(id) => {
-                self.documents.remove(&id);
             }
 
             AppMessage::OnKeyPress(key, modifiers) => {

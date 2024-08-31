@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 pub type DocumentId = usize;
 
@@ -48,4 +48,12 @@ impl<Content> DocumentStore<Content> {
     pub fn get_mut(&mut self, id: &DocumentId) -> Option<&mut DocumentHandler<Content>> {
         self.documents.get_mut(id)
     }
+}
+
+#[derive(Debug, Clone)]
+pub enum DocumentAction {
+    Add(Arc<DocumentHandler<String>>),
+    Open(DocumentId),
+    Save(DocumentId),
+    Remove(DocumentId),
 }
