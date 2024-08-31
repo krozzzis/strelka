@@ -5,8 +5,6 @@ pub mod document;
 pub mod hotkey;
 pub mod notification;
 pub mod pane;
-pub mod state;
 
 pub use color::*;
 pub use hotkey::*;
-pub use state::*;

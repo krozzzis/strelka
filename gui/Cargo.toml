@@ -11,6 +11,7 @@ dirs = "5"
 core = { path = "../core" }
 plugin = { path = "../plugin" }
 theming = { path = "../theming" }
+state = { path = "../state" }
 widget = { path = "../widget" }
 
 [dependencies.tokio]

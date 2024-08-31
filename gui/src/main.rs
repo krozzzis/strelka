@@ -38,11 +38,12 @@ use core::{
     HotKey, Modifiers,
 };
 
-type State<'a> = core::State<'a, Content>;
+type State<'a> = state::State<'a, Content>;
 type HotKeyHandler = dyn Fn(State) -> AppMessage;
 
 pub struct App {
     theme: Theme,
+    theme_id: ThemeID,
     theme_catalog: Catalog,
     default_theme: SmolStr,
     documents: DocumentStore<Content>,
@@ -91,10 +92,13 @@ impl Default for App {
             panes.open(&id);
         }
 
+        let default_theme = SmolStr::from("core.light");
+
         let mut app = Self {
             theme: Theme::default(),
+            theme_id: default_theme.clone(),
             theme_catalog: Catalog::new(),
-            default_theme: SmolStr::from("core.light"),
+            default_theme,
             documents: DocumentStore::new(),
             panes,
             plugin_host,
@@ -220,6 +224,8 @@ impl App {
         State {
             documents: &self.documents,
             panes: &self.panes,
+            theme: &self.theme_id,
+            themes: &self.theme_catalog,
             working_directory: self.opened_directory.clone(),
         }
     }
@@ -435,15 +441,8 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let file_explorer = file_explorer_pane(
-            State {
-                documents: &self.documents,
-                panes: &self.panes,
-                working_directory: self.opened_directory.clone(),
-            },
-            &self.file_explorer,
-        )
-        .map(AppMessage::FileExplorerAction);
+        let file_explorer = file_explorer_pane(self.get_state(), &self.file_explorer)
+            .map(AppMessage::FileExplorerAction);
 
         let mut grid_elements = Vec::new();
         if self.file_explorer.visible {
@@ -454,12 +453,7 @@ impl App {
             );
         }
         grid_elements.push(
-            pane_stack::pane_stack(State {
-                documents: &self.documents,
-                panes: &self.panes,
-                working_directory: self.opened_directory.clone(),
-            })
-            .map(|msg| -> AppMessage {
+            pane_stack::pane_stack(self.get_state()).map(|msg| -> AppMessage {
                 match msg {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
                         AppMessage::Action(Action::new(FileAction::PickFile))

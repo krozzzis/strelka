@@ -1,4 +1,4 @@
-use core::State;
+use state::State;
 
 use iced::widget::{column, container, text, text_editor::Content, Container};
 use iced::{Element, Length};

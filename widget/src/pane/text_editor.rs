@@ -1,4 +1,5 @@
-use core::{document::DocumentId, State};
+use core::document::DocumentId;
+use state::State;
 use std::path::{Path, PathBuf};
 
 use iced::{

@@ -1485,6 +1485,7 @@ dependencies = [
  "iced 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
  "plugin",
  "rfd",
+ "state",
  "theming",
  "tokio",
  "widget",
@@ -3534,6 +3535,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "state"
+version = "0.1.0"
+dependencies = [
+ "core",
+ "theming",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4349,6 +4358,7 @@ dependencies = [
  "iced_renderer 0.13.0-dev (git+https://github.com/iced-rs/iced.git)",
  "lazy_static",
  "plugin",
+ "state",
  "theming",
  "tokio",
 ]

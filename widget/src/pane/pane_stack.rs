@@ -2,8 +2,8 @@ use core::{
     buffer::{Buffer, FormattedBuffer},
     document::DocumentId,
     pane::{Pane, PaneId},
-    State,
 };
+use state::State;
 
 use iced::{
     widget::{column, svg, text_editor::Content, Space},

@@ -8,6 +8,7 @@ authors = ["Nikita Shumov"]
 [dependencies]
 core = { path = "../core" }
 theming = { path = "../theming" }
+state = { path = "../state" }
 plugin = { path = "../plugin" }
 lazy_static = "1.5"
 tokio = { version = "1.9", features = ["fs"]}
