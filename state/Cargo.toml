@@ -7,4 +7,5 @@ authors = ["Nikita Shumov"]
 
 [dependencies]
 core = {path = "../core"}
+iced = {git = "https://github.com/iced-rs/iced", branch = "master"}
 theming = {path = "../theming"}

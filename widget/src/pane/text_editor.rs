@@ -4,11 +4,7 @@ use std::path::{Path, PathBuf};
 
 use iced::{
     border::Radius,
-    widget::{
-        center, column, container, text,
-        text_editor::{Action, Content},
-        Row, Space,
-    },
+    widget::{center, column, container, text, text_editor::Action, Row, Space},
     Alignment, Border, Element, Length,
 };
 use theming::{theme, Theme};
@@ -34,7 +30,7 @@ fn get_directories_between<'a>(base: &'a Path, target: &'a Path) -> Vec<String> 
     }
 }
 
-pub fn text_editor(id: DocumentId, state: State<'_, Content>) -> Element<'_, Message, Theme> {
+pub fn text_editor(id: DocumentId, state: &State) -> Element<'_, Message, Theme> {
     let title: Element<'_, Message, Theme> = if let Some(handler) = state.documents.get(&id) {
         let mut folders = get_directories_between(
             if handler.path.starts_with(&state.working_directory) {

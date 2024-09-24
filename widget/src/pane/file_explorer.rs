@@ -1,13 +1,13 @@
 use state::State;
 
-use iced::widget::{column, container, text, text_editor::Content, Container};
+use iced::widget::{column, container, text, Container};
 use iced::{Element, Length};
 
 use crate::file_explorer;
 use theming::Theme;
 
 pub fn file_explorer_pane<'a>(
-    state: State<'a, Content>,
+    state: &State,
     file_explorer: &'a file_explorer::State,
 ) -> Element<'a, file_explorer::Message, Theme> {
     let explorer = file_explorer.view();

@@ -6,7 +6,7 @@ use core::{
 use state::State;
 
 use iced::{
-    widget::{column, svg, text_editor::Content, Space},
+    widget::{column, svg, Space},
     Element, Length,
 };
 use theming::Theme;
@@ -37,7 +37,7 @@ pub enum Message {
     TextEditor(DocumentId, text_editor::Message),
 }
 
-pub fn pane_stack(state: State<'_, Content>) -> Element<'_, Message, Theme> {
+pub fn pane_stack(state: &State) -> Element<'_, Message, Theme> {
     let open = state.panes.get_open_id().unwrap_or(&0);
 
     let mut tabs: Vec<Tab<Message>> = state

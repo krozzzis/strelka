@@ -1,13 +1,31 @@
 use std::path::PathBuf;
 
 use core::{document::DocumentStore, pane::PaneModel};
-use theming::catalog::{Catalog, ThemeID};
+use iced::widget::text_editor::Content;
+use theming::{
+    catalog::{Catalog, ThemeID},
+    Theme,
+};
 
-#[derive(Clone)]
-pub struct State<'a, Content> {
-    pub documents: &'a DocumentStore<Content>,
-    pub panes: &'a PaneModel,
-    pub theme: &'a ThemeID,
-    pub themes: &'a Catalog,
+pub struct State {
+    pub documents: DocumentStore<Content>,
+    pub panes: PaneModel,
+    pub theme: ThemeID,
+    pub themes: Catalog,
     pub working_directory: PathBuf,
+}
+
+impl State {
+    pub fn get_theme(&self) -> Theme {
+        let id = self.theme.clone();
+        if let Some(theme) = self.themes.get_theme(id) {
+            theme.clone()
+        } else {
+            Theme::default()
+        }
+    }
+
+    pub fn set_theme(&mut self, id: ThemeID) {
+        self.theme = id;
+    }
 }

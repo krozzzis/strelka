@@ -1,6 +1,8 @@
 use core::action::Action;
 use std::collections::HashMap;
 
+use state::State;
+
 use crate::{Plugin, PluginHandler, PluginInfo, PluginStatus};
 
 pub type PluginId = String;
@@ -64,13 +66,13 @@ impl PluginHost {
         self.plugins.insert(id.clone(), handler);
     }
 
-    pub fn process_action(&mut self, action: Action) -> Action {
+    pub fn process_action(&mut self, state: &State, action: Action) -> Action {
         let mut action = action;
         let ids: Vec<PluginId> = self.plugins.keys().cloned().collect();
         for id in ids {
             if let Some(handler) = self.plugins.get_mut(&id) {
                 if handler.status == PluginStatus::Loaded {
-                    action = handler.state.on_action(action);
+                    action = handler.state.on_action(state, action);
                 }
             }
         }

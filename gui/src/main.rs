@@ -12,6 +12,7 @@ use iced::{
     },
     Element, Length, Settings, Subscription, Task,
 };
+use state::State;
 
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
@@ -38,17 +39,11 @@ use core::{
     HotKey, Modifiers,
 };
 
-type State<'a> = state::State<'a, Content>;
-type HotKeyHandler = dyn Fn(State) -> AppMessage;
+type HotKeyHandler = dyn Fn(&State) -> AppMessage;
 
 pub struct App {
-    theme: Theme,
-    theme_id: ThemeID,
-    theme_catalog: Catalog,
     default_theme: SmolStr,
-    documents: DocumentStore<Content>,
-    panes: PaneModel,
-    opened_directory: PathBuf,
+    state: State,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
     notifications: NotificationList,
@@ -94,17 +89,20 @@ impl Default for App {
 
         let default_theme = SmolStr::from("core.light");
 
-        let mut app = Self {
-            theme: Theme::default(),
-            theme_id: default_theme.clone(),
-            theme_catalog: Catalog::new(),
-            default_theme,
+        let state = State {
             documents: DocumentStore::new(),
             panes,
-            plugin_host,
-            opened_directory: PathBuf::from("./content")
+            theme: default_theme.clone(),
+            themes: Catalog::new(),
+            working_directory: PathBuf::from("./content")
                 .canonicalize()
                 .unwrap_or_default(),
+        };
+
+        let mut app = Self {
+            state,
+            default_theme,
+            plugin_host,
             notifications: NotificationList::new(),
             hotkeys: HashMap::new(),
             file_explorer: file_explorer::State::default(),
@@ -116,7 +114,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            |_: State| AppMessage::Action(Action::new(FileAction::PickFile)),
+            |_: &State| AppMessage::Action(Action::new(FileAction::PickFile)),
         );
 
         // Ctrl-d enable dark mode
@@ -125,7 +123,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'd',
             },
-            |_: State| AppMessage::LoadTheme("core.dark".into()),
+            |_: &State| AppMessage::LoadTheme("core.dark".into()),
         );
 
         // Ctrl-p toggle file explorer
@@ -134,7 +132,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'p',
             },
-            |_: State| AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
+            |_: &State| AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
         );
 
         // Ctrl-t open new document tab
@@ -143,7 +141,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            |_: State| AppMessage::Action(Action::new(PaneAction::Add(Pane::NewDocument))),
+            |_: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::NewDocument))),
         );
 
         // Ctrl-w close open tab
@@ -152,7 +150,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'w',
             },
-            |state: State| {
+            |state: &State| {
                 if let Some(id) = state.panes.get_open_id() {
                     AppMessage::Action(Action::new(PaneAction::Close(*id)))
                 } else {
@@ -167,7 +165,7 @@ impl Default for App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            |_state: State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer))),
+            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer))),
         );
 
         app
@@ -214,25 +212,15 @@ impl App {
         }
 
         tasks.push(Task::done(AppMessage::FileExplorerAction(
-            file_explorer::Message::GetFolderContent(app.opened_directory.clone()),
+            file_explorer::Message::GetFolderContent(app.state.working_directory.clone()),
         )));
 
         (app, Task::batch(tasks))
     }
 
-    fn get_state(&self) -> State {
-        State {
-            documents: &self.documents,
-            panes: &self.panes,
-            theme: &self.theme_id,
-            themes: &self.theme_catalog,
-            working_directory: self.opened_directory.clone(),
-        }
-    }
-
     fn add_hotkey<F>(&mut self, hotkey: HotKey, func: F)
     where
-        F: Fn(State) -> AppMessage + 'static,
+        F: Fn(&State) -> AppMessage + 'static,
     {
         self.hotkeys.insert(hotkey, Box::new(func));
     }
@@ -259,26 +247,26 @@ impl App {
             },
             GenericAction::Pane(action) => match action {
                 PaneAction::Close(id) => {
-                    let pane = self.panes.remove(&id);
+                    let pane = self.state.panes.remove(&id);
 
                     // Close document if Editor pane was closed
                     if let Some(Pane::Editor(doc_id)) = pane {
-                        self.documents.remove(&doc_id);
+                        self.state.documents.remove(&doc_id);
                     }
 
                     // If there no panes left, create a NewDocument one
-                    if self.panes.count() == 0 {
-                        let id = self.panes.add(Pane::NewDocument);
-                        self.panes.open(&id);
+                    if self.state.panes.count() == 0 {
+                        let id = self.state.panes.add(Pane::NewDocument);
+                        self.state.panes.open(&id);
                     }
                 }
-                PaneAction::Open(id) => self.panes.open(&id),
+                PaneAction::Open(id) => self.state.panes.open(&id),
                 PaneAction::Add(pane) => {
-                    let id = self.panes.add(pane);
-                    self.panes.open(&id);
+                    let id = self.state.panes.add(pane);
+                    self.state.panes.open(&id);
                 }
                 PaneAction::Replace(id, pane) => {
-                    self.panes.replace(&id, pane);
+                    self.state.panes.replace(&id, pane);
                 }
             },
             GenericAction::Document(action) => match action {
@@ -290,14 +278,14 @@ impl App {
                         filename: handler.filename.clone(),
                         changed: handler.changed,
                     };
-                    self.documents.add(handler);
+                    self.state.documents.add(handler);
                 }
                 DocumentAction::Open(id) => {
                     let pane = Pane::Editor(id);
                     return Task::done(AppMessage::Action(Action::new(PaneAction::Add(pane))));
                 }
                 DocumentAction::Save(id) => {
-                    if let Some(handler) = self.documents.get(&id) {
+                    if let Some(handler) = self.state.documents.get(&id) {
                         let message = AppMessage::SavedFile(id);
                         return Task::perform(
                             save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
@@ -306,7 +294,7 @@ impl App {
                     }
                 }
                 DocumentAction::Remove(id) => {
-                    self.documents.remove(&id);
+                    self.state.documents.remove(&id);
                 }
             },
         }
@@ -320,7 +308,7 @@ impl App {
             AppMessage::None => {}
 
             AppMessage::Action(action) => {
-                let action = self.plugin_host.process_action(action);
+                let action = self.plugin_host.process_action(&self.state, action);
                 let mut tasks = Vec::new();
                 for generic in action.iter() {
                     tasks.push(self.perform_action(generic.clone()));
@@ -346,22 +334,13 @@ impl App {
             },
 
             AppMessage::AddTheme(id, theme, metadata) => {
-                self.theme_catalog.insert(id, *theme, metadata);
+                self.state.themes.insert(id, *theme, metadata);
             }
 
-            AppMessage::LoadTheme(id) => {
-                if let Some(theme) = self.theme_catalog.get_theme(id) {
-                    self.theme = theme.clone();
-                    {
-                        if let Ok(mut global) = theming::THEME.try_write() {
-                            *global = theme.clone();
-                        }
-                    }
-                }
-            }
+            AppMessage::LoadTheme(id) => self.state.set_theme(id),
 
             AppMessage::SavedFile(id) => {
-                if let Some(handler) = self.documents.get_mut(&id) {
+                if let Some(handler) = self.state.documents.get_mut(&id) {
                     handler.changed = false;
                 }
             }
@@ -390,7 +369,7 @@ impl App {
             }
 
             AppMessage::TextEditorAction(action, document) => {
-                if let Some(handler) = self.documents.get_mut(&document) {
+                if let Some(handler) = self.state.documents.get_mut(&document) {
                     if action.is_edit() {
                         handler.changed = true;
                     }
@@ -408,17 +387,19 @@ impl App {
                         changed: false,
                     };
 
-                    let doc_id = self.documents.add(handler);
+                    let doc_id = self.state.documents.add(handler);
                     let pane = Pane::Editor(doc_id);
 
                     // If opened pane is NewDocument, replace it with Editor pane
                     // otherwise add new one with Editor
-                    if let Some(&Pane::NewDocument) = self.panes.get_open() {
-                        self.panes
-                            .replace(&self.panes.get_open_id().cloned().unwrap_or(0usize), pane);
+                    if let Some(&Pane::NewDocument) = self.state.panes.get_open() {
+                        self.state.panes.replace(
+                            &self.state.panes.get_open_id().cloned().unwrap_or(0usize),
+                            pane,
+                        );
                     } else {
-                        let pane_id = self.panes.add(pane);
-                        self.panes.open(&pane_id);
+                        let pane_id = self.state.panes.add(pane);
+                        self.state.panes.open(&pane_id);
                     }
                 }
             }
@@ -427,7 +408,7 @@ impl App {
                 if path.is_dir() {
                     let path: PathBuf = path.canonicalize().unwrap_or_default();
 
-                    self.opened_directory.clone_from(&path);
+                    self.state.working_directory.clone_from(&path);
 
                     // Open directory in file explorer
                     return self.file_explorer.perform(
@@ -441,19 +422,19 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let file_explorer = file_explorer_pane(self.get_state(), &self.file_explorer)
+        let file_explorer = file_explorer_pane(&self.state, &self.file_explorer)
             .map(AppMessage::FileExplorerAction);
 
         let mut grid_elements = Vec::new();
         if self.file_explorer.visible {
             grid_elements.push(
                 Container::new(file_explorer)
-                    .width(Length::Fixed(self.theme.file_explorer.width))
+                    .width(Length::Fixed(self.state.get_theme().file_explorer.width))
                     .into(),
             );
         }
         grid_elements.push(
-            pane_stack::pane_stack(self.get_state()).map(|msg| -> AppMessage {
+            pane_stack::pane_stack(&self.state).map(|msg| -> AppMessage {
                 match msg {
                     pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
                         AppMessage::Action(Action::new(FileAction::PickFile))
@@ -496,7 +477,7 @@ impl App {
     }
 
     fn theme(&self) -> Theme {
-        self.theme.clone()
+        self.state.get_theme()
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {
@@ -525,7 +506,7 @@ impl App {
             };
 
             if let Some(func) = self.hotkeys.get(&hotkey) {
-                return Some(func(self.get_state()));
+                return Some(func(&self.state));
             }
         }
         None

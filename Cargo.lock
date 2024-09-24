@@ -2915,6 +2915,7 @@ name = "plugin"
 version = "0.1.0"
 dependencies = [
  "core",
+ "state",
 ]
 
 [[package]]
@@ -3539,6 +3540,7 @@ name = "state"
 version = "0.1.0"
 dependencies = [
  "core",
+ "iced 0.13.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
  "theming",
 ]
 

@@ -298,7 +298,7 @@ pub mod a {
                 layout.bounds().height + style.border.width * 2.0,
             );
 
-            // Position of content
+            // Offset of inner content due to possible outer border radius
             let content_x = if radius.bottom_left < 0.0 {
                 radius.bottom_left.abs()
             } else {
@@ -312,6 +312,15 @@ pub mod a {
 
             let mut frame = Frame::new(renderer, draw_bound);
             let mut builder = Builder::new();
+
+            frame.fill_rectangle(
+                Point::new(content_x, content_y),
+                Size::new(content_width, content_height),
+                Fill {
+                    style: canvas::Style::Solid(Color::new(0.0, 1.0, 0.0, 1.0).into()),
+                    ..Default::default()
+                },
+            );
 
             // Top line
             builder.move_to(Point::new(content_x + radius.top_left, content_y));
@@ -386,7 +395,8 @@ pub mod a {
 
             let geometry = frame.into_geometry();
             renderer.with_translation(
-                Vector::new(layout.bounds().x - content_x, layout.bounds().y - content_y),
+                // Vector::new(layout.bounds().x - content_x, layout.bounds().y - content_y),
+                Vector::new(0.0, 0.0),
                 |renderer| {
                     renderer.draw_geometry(geometry);
                 },

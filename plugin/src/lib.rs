@@ -5,6 +5,7 @@ use core::action::Action;
 
 pub use host::*;
 pub use plugins::*;
+use state::State;
 
 /// Plugin runtime status
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -16,7 +17,7 @@ pub enum PluginStatus {
 
 /// Generic plugin trait
 pub trait Plugin {
-    fn on_action(&mut self, action: Action) -> Action {
+    fn on_action(&mut self, _state: &State, action: Action) -> Action {
         action
     }
     fn load(&mut self) {}
