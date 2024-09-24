@@ -27,5 +27,8 @@ impl State {
 
     pub fn set_theme(&mut self, id: ThemeID) {
         self.theme = id;
+        if let Ok(mut theme) = theming::THEME.write() {
+            *theme = self.get_theme();
+        }
     }
 }

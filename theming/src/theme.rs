@@ -59,7 +59,7 @@ impl Theme {
         let text = tokio::fs::read_to_string(path)
             .await
             .map_err(|e| e.to_string())?;
-        let theme = toml::from_str(&text).map_err(|e| e.to_string())?;
+        let theme: Theme = toml::from_str(&text).map_err(|e| e.to_string())?;
         Ok(theme)
     }
 }

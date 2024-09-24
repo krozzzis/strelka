@@ -304,6 +304,7 @@ impl App {
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         #[cfg(debug_assertions)]
         println!("Message: {message:?}");
+
         match message {
             AppMessage::None => {}
 

@@ -1,5 +1,3 @@
-use core::Color;
-
 use iced::{
     widget::{container, svg, text, MouseArea, Row, Space},
     Alignment, Element, Length, Padding,
