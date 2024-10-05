@@ -1,7 +1,6 @@
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
 };
 
 use tokio::{fs, io::AsyncWriteExt};
@@ -17,10 +16,6 @@ pub async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()
 
     file.flush().await?;
     Ok(())
-}
-
-pub async fn delay(secs: u64) {
-    tokio::time::sleep(Duration::new(secs, 0)).await
 }
 
 pub async fn open_file(path: impl Into<PathBuf>) -> Result<(PathBuf, String), ()> {

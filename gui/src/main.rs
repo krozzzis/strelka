@@ -6,9 +6,9 @@ use config::Config;
 use iced::{
     keyboard::{on_key_press, Key},
     widget::{
-        column, horizontal_space, row, stack,
+        row,
         text_editor::{self, Content},
-        vertical_space, Container,
+        Container,
     },
     Element, Length, Settings, Subscription, Task,
 };
@@ -16,7 +16,7 @@ use state::State;
 
 use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
-use crate::util::{delay, get_file_name, open_file, pick_file, save_file};
+use crate::util::{get_file_name, open_file, pick_file, save_file};
 
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
@@ -27,14 +27,12 @@ use theming::{
 };
 use widget::{
     file_explorer,
-    notificaton::notification_list,
     pane::{self, file_explorer::file_explorer_pane, pane_stack},
 };
 
 use core::{
     action::{Action, DocumentAction, FileAction, GenericAction, PaneAction},
     document::{DocumentHandler, DocumentId, DocumentStore},
-    notification::{Notification, NotificationList},
     pane::{Pane, PaneModel},
     smol_str::SmolStr,
     value::Value,
@@ -49,15 +47,12 @@ pub struct App {
     state: State,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
-    notifications: NotificationList,
     file_explorer: file_explorer::State,
 }
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     LoadPlugin(PluginId, bool),
-    SendNotification(Arc<Notification>),
-    RemoveNotification(usize),
     LoadTheme(ThemeID),
     AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
@@ -106,7 +101,6 @@ impl Default for App {
         let mut app = Self {
             state,
             plugin_host,
-            notifications: NotificationList::new(),
             hotkeys: HashMap::new(),
             file_explorer: file_explorer::State::default(),
         };
@@ -356,15 +350,6 @@ impl App {
                 }
             }
 
-            AppMessage::SendNotification(notificaton) => {
-                let id = self.notifications.add(notificaton);
-                return Task::perform(delay(5), move |_| AppMessage::RemoveNotification(id));
-            }
-
-            AppMessage::RemoveNotification(id) => {
-                self.notifications.remove(id);
-            }
-
             AppMessage::LoadPlugin(id, load) => {
                 if load {
                     self.plugin_host.load_plugin(&id);
@@ -466,17 +451,7 @@ impl App {
         );
         let grid = row(grid_elements);
 
-        let primary_screen = stack![
-            Container::new(grid),
-            row![
-                horizontal_space(),
-                column![
-                    vertical_space(),
-                    Container::new(notification_list(&self.notifications.to_vec()))
-                        .width(Length::Shrink)
-                ],
-            ],
-        ];
+        let primary_screen = Container::new(grid);
 
         primary_screen.into()
     }
