@@ -10,9 +10,8 @@ core = { path = "../core" }
 theming = { path = "../theming" }
 state = { path = "../state" }
 plugin = { path = "../plugin" }
-lazy_static = "1.5"
-tokio = { version = "1.9", features = ["fs"]}
+lazy_static = "^1.5"
+tokio = { version = "^1.40", features = ["fs"]}
 iced = { git = "https://github.com/iced-rs/iced.git", features = ["advanced", "canvas", "svg"], branch = "master" }
-iced_renderer = { git = "https://github.com/iced-rs/iced.git", features = ["wgpu", "tiny-skia"]}
 iced_aw = { git = "https://github.com/iced-rs/iced_aw.git", branch = "main" }
 log = "^0.4"
