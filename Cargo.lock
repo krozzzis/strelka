@@ -469,6 +469,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "borsh"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6362ed55def622cddc70a4746a68554d7b687713770de539e59a739b249f8ed"
+dependencies = [
+ "cfg_aliases 0.2.1",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -733,6 +742,7 @@ version = "0.1.0"
 dependencies = [
  "iced_core 0.14.0-dev (git+https://github.com/iced-rs/iced.git?branch=master)",
  "serde",
+ "smol_str 0.3.1",
 ]
 
 [[package]]
@@ -1788,7 +1798,7 @@ dependencies = [
  "once_cell",
  "palette",
  "rustc-hash 2.0.0",
- "smol_str",
+ "smol_str 0.2.2",
  "thiserror",
  "web-time",
 ]
@@ -1807,7 +1817,7 @@ dependencies = [
  "once_cell",
  "palette",
  "rustc-hash 2.0.0",
- "smol_str",
+ "smol_str 0.2.2",
  "thiserror",
  "web-time",
 ]
@@ -1825,7 +1835,7 @@ dependencies = [
  "once_cell",
  "palette",
  "rustc-hash 2.0.0",
- "smol_str",
+ "smol_str 0.2.2",
  "thiserror",
  "web-time",
 ]
@@ -3821,6 +3831,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "smol_str"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66eaf762c5af19db3108300515c8aa7a50efc90ff745f4c62288052ebf9fdd25"
+dependencies = [
+ "borsh",
+ "serde",
+]
+
+[[package]]
 name = "softbuffer"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3979,7 +3999,6 @@ dependencies = [
  "iced_winit 0.14.0-dev",
  "lazy_static",
  "serde",
- "smol_str",
  "tokio",
  "toml",
 ]
@@ -5112,7 +5131,7 @@ dependencies = [
  "rustix",
  "sctk-adwaita 0.9.1",
  "smithay-client-toolkit 0.18.1",
- "smol_str",
+ "smol_str 0.2.2",
  "tracing",
  "unicode-segmentation",
  "wasm-bindgen",
@@ -5164,7 +5183,7 @@ dependencies = [
  "rustix",
  "sctk-adwaita 0.10.1",
  "smithay-client-toolkit 0.19.2",
- "smol_str",
+ "smol_str 0.2.2",
  "tracing",
  "unicode-segmentation",
  "wasm-bindgen",

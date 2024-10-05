@@ -4,7 +4,6 @@ mod util;
 
 use config::Config;
 use iced::{
-    advanced::graphics::core::SmolStr,
     keyboard::{on_key_press, Key},
     widget::{
         column, horizontal_space, row, stack,
@@ -37,6 +36,7 @@ use core::{
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
     pane::{Pane, PaneModel},
+    smol_str::SmolStr,
     value::Value,
     HotKey, Modifiers,
 };
@@ -91,7 +91,7 @@ impl Default for App {
         }
 
         let mut config = Config::new();
-        config.insert("core", "theme", Value::String(String::from(DEFAULT_THEME)));
+        config.insert("core", "theme", Value::String(SmolStr::new(DEFAULT_THEME)));
 
         let state = State {
             documents: DocumentStore::new(),

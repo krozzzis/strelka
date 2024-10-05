@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
 use config::Config;
-use core::{document::DocumentStore, pane::PaneModel, value::Value};
-use iced::{advanced::graphics::core::SmolStr, widget::text_editor::Content};
+use core::{document::DocumentStore, pane::PaneModel, smol_str::SmolStr, value::Value};
+use iced::widget::text_editor::Content;
 use theming::{
     catalog::{Catalog, ThemeID},
     Theme,
@@ -32,8 +32,7 @@ impl State {
     }
 
     pub fn set_theme(&mut self, id: ThemeID) {
-        self.config
-            .insert("core", "theme", Value::String(id.to_string()));
+        self.config.insert("core", "theme", Value::String(id));
         if let Ok(mut theme) = theming::THEME.write() {
             *theme = self.get_theme();
         }

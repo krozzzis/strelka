@@ -1,5 +1,7 @@
 use std::str::FromStr;
 
+use smol_str::SmolStr;
+
 use crate::Color;
 
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
@@ -9,7 +11,7 @@ pub enum Value {
     Float(f64),
     Boolean(bool),
     Color(Color),
-    String(String),
+    String(SmolStr),
 }
 
 #[cfg(feature = "serde")]
@@ -46,7 +48,7 @@ impl<'de> serde::Deserialize<'de> for Value {
                 if let Ok(color) = Color::from_str(value) {
                     Ok(Value::Color(color))
                 } else {
-                    Ok(Value::String(value.to_string()))
+                    Ok(Value::String(SmolStr::new(value)))
                 }
             }
 
@@ -57,7 +59,7 @@ impl<'de> serde::Deserialize<'de> for Value {
                 if let Ok(color) = Color::from_str(&value) {
                     Ok(Value::Color(color))
                 } else {
-                    Ok(Value::String(value))
+                    Ok(Value::String(SmolStr::new(value)))
                 }
             }
         }

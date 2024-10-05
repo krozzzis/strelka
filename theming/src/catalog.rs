@@ -10,7 +10,7 @@ use futures_core::Stream;
 
 use crate::{metadata::ThemeMetadata, Theme};
 
-pub type ThemeID = smol_str::SmolStr;
+pub type ThemeID = core::smol_str::SmolStr;
 
 pub enum CatalogError {
     IDNotFound,

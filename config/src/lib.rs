@@ -1,11 +1,13 @@
 use core::value::Value;
 use std::collections::HashMap;
 
+use core::smol_str::SmolStr;
+
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Default, Clone)]
 pub struct Config {
     #[cfg_attr(feature = "serde", serde(flatten))]
-    namespaces: HashMap<String, HashMap<String, Value>>,
+    namespaces: HashMap<SmolStr, HashMap<SmolStr, Value>>,
 }
 
 impl Config {
@@ -15,8 +17,8 @@ impl Config {
 
     pub fn insert(
         &mut self,
-        namespace: impl Into<String>,
-        property: impl Into<String>,
+        namespace: impl Into<SmolStr>,
+        property: impl Into<SmolStr>,
         value: impl Into<Value>,
     ) {
         let namespace = namespace.into();
@@ -31,8 +33,8 @@ impl Config {
 
     pub fn remove_property(
         &mut self,
-        namespace: impl Into<String>,
-        property: impl Into<String>,
+        namespace: impl Into<SmolStr>,
+        property: impl Into<SmolStr>,
     ) -> Option<Value> {
         if let Some(namespace) = self.namespaces.get_mut(&namespace.into()) {
             namespace.remove(&property.into())
@@ -41,8 +43,12 @@ impl Config {
         }
     }
 
-    pub fn get(&self, namespace: impl Into<String>, property: impl Into<String>) -> Option<Value> {
-        let namespace: String = namespace.into();
+    pub fn get(
+        &self,
+        namespace: impl Into<SmolStr>,
+        property: impl Into<SmolStr>,
+    ) -> Option<Value> {
+        let namespace = namespace.into();
         if let Some(namespace) = self.namespaces.get(&namespace) {
             namespace.get(&property.into()).cloned()
         } else {
@@ -54,6 +60,8 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use core::{value::Value, Color};
+
+    use smol_str::SmolStr;
 
     use crate::Config;
 
@@ -76,7 +84,7 @@ mod tests {
         );
         assert_eq!(
             config.get("system", "name"),
-            Some(Value::String(String::from("Strelka")))
+            Some(Value::String(SmolStr::new("Strelka")))
         );
         assert_eq!(config.get("system", "debug"), Some(Value::Boolean(false)));
     }

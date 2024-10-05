@@ -9,3 +9,4 @@ pub mod value;
 
 pub use color::*;
 pub use hotkey::*;
+pub use smol_str;
