@@ -14,6 +14,8 @@ theming = { path = "../theming" }
 state = { path = "../state" }
 config = { path = "../config" }
 widget = { path = "../widget" }
+log = "^0.4"
+env_logger = "^0.11"
 
 [dependencies.tokio]
 version = "1.39.1"

@@ -307,7 +307,8 @@ impl App {
     }
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
-        log::info!("Handling message: {message:?}");
+        #[cfg(debug_assertions)]
+        println!("Message: {message:?}");
 
         match message {
             AppMessage::None => {}
@@ -519,8 +520,6 @@ impl App {
 }
 
 fn main() -> iced::Result {
-    env_logger::init();
-
     iced::application(App::title, App::update, App::view)
         .subscription(App::subscription)
         .theme(App::theme)

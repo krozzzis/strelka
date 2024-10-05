@@ -17,6 +17,7 @@ serde = { version = "1.0", features = ["derive"], optional = true }
 tokio = { version = "1.39", features = ["fs", "io-util"], optional = true }
 toml = { version = "0.8", optional = true }
 lazy_static = "1.5"
+log = "^0.4"
 
 [features]
 default = ["iced", "load"]

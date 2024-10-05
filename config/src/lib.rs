@@ -61,7 +61,7 @@ impl Config {
 mod tests {
     use core::{value::Value, Color};
 
-    use smol_str::SmolStr;
+    use core::smol_str::SmolStr;
 
     use crate::Config;
 

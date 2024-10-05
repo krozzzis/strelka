@@ -28,6 +28,9 @@ macro_rules! theme {
         theming::THEME
             .read()
             .map(|theme| theme.$($field).+)
-            .unwrap_or(theming::FALLBACK.$($field).+)
+            .unwrap_or_else(|_| {
+                log::warn!("Using fallback option");
+                theming::FALLBACK.$($field).+
+            })
     };
 }
