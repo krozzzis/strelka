@@ -12,6 +12,7 @@ core = { path = "../core" }
 plugin = { path = "../plugin" }
 theming = { path = "../theming" }
 state = { path = "../state" }
+config = { path = "../config" }
 widget = { path = "../widget" }
 
 [dependencies.tokio]

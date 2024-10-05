@@ -2,6 +2,7 @@
 
 mod util;
 
+use config::Config;
 use iced::{
     advanced::graphics::core::SmolStr,
     keyboard::{on_key_press, Key},
@@ -36,13 +37,15 @@ use core::{
     document::{DocumentHandler, DocumentId, DocumentStore},
     notification::{Notification, NotificationList},
     pane::{Pane, PaneModel},
+    value::Value,
     HotKey, Modifiers,
 };
 
 type HotKeyHandler = dyn Fn(&State) -> AppMessage;
 
+static DEFAULT_THEME: &str = "core.light";
+
 pub struct App {
-    default_theme: SmolStr,
     state: State,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
@@ -87,13 +90,14 @@ impl Default for App {
             panes.open(&id);
         }
 
-        let default_theme = SmolStr::from("core.light");
+        let mut config = Config::new();
+        config.insert("core", "theme", Value::String(String::from(DEFAULT_THEME)));
 
         let state = State {
             documents: DocumentStore::new(),
             panes,
-            theme: default_theme.clone(),
             themes: Catalog::new(),
+            config,
             working_directory: PathBuf::from("./content")
                 .canonicalize()
                 .unwrap_or_default(),
@@ -101,7 +105,6 @@ impl Default for App {
 
         let mut app = Self {
             state,
-            default_theme,
             plugin_host,
             notifications: NotificationList::new(),
             hotkeys: HashMap::new(),
@@ -191,9 +194,10 @@ impl App {
         });
 
         // Apply default theme
-        let default_theme = app.default_theme.clone();
-        let apply_default_theme =
-            Task::perform(async move { default_theme }, AppMessage::LoadTheme);
+        let apply_default_theme = Task::perform(
+            async move { SmolStr::new(DEFAULT_THEME) },
+            AppMessage::LoadTheme,
+        );
 
         tasks.push(read_themes.chain(apply_default_theme));
 

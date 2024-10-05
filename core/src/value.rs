@@ -2,8 +2,7 @@ use std::str::FromStr;
 
 use crate::Color;
 
-#[cfg(feature = "serde")]
-#[derive(serde::Serialize)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Integer(i64),

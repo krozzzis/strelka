@@ -1614,6 +1614,7 @@ dependencies = [
 name = "gui"
 version = "0.1.0"
 dependencies = [
+ "config",
  "core",
  "dirs 5.0.1",
  "iced 0.14.0-dev",
@@ -3864,6 +3865,7 @@ dependencies = [
 name = "state"
 version = "0.1.0"
 dependencies = [
+ "config",
  "core",
  "iced 0.14.0-dev",
  "theming",
