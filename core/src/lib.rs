@@ -4,6 +4,7 @@ pub mod color;
 pub mod document;
 pub mod hotkey;
 pub mod notification;
+pub mod value;
 pub mod pane;
 
 pub use color::*;

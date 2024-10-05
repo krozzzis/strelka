@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "gui", "theming", "widget", "plugin", "state"]
+members = ["core", "gui", "theming", "widget", "plugin", "state", "config"]
 
 [profile.release]
 strip = true

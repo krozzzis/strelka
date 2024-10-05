@@ -719,6 +719,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "config"
+version = "0.1.0"
+dependencies = [
+ "core",
+ "serde",
+ "toml",
+]
+
+[[package]]
 name = "core"
 version = "0.1.0"
 dependencies = [
