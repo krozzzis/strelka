@@ -7,11 +7,11 @@ authors = ["Nikita Shumov"]
 
 [dependencies]
 core = { path = "../core" }
-theming = { path = "../theming" }
+theming = { path = "../theming", features = ["tokio"] }
 state = { path = "../state" }
 plugin = { path = "../plugin" }
-lazy_static = "^1.5"
-tokio = { version = "^1.40", features = ["fs"]}
-iced = { git = "https://github.com/iced-rs/iced.git", features = ["advanced", "canvas", "svg"], branch = "master" }
+lazy_static = { workspace = true }
+tokio = { workspace = true }
+iced = { workspace = true }
 iced_aw = { git = "https://github.com/iced-rs/iced_aw.git", branch = "main" }
-log = "^0.4"
+log = { workspace = true }

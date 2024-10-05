@@ -6,18 +6,18 @@ license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
 [dependencies]
-core = {path = "../core", features = ["iced", "serde"]}
+core = { path = "../core", features = ["iced", "serde"] }
 iced_core = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
 iced_futures = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
 iced_widget = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
 iced_winit = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
 async-stream = { version = "^0.3", optional = true }
 futures-core = { version = "^0.3", optional = true }
-serde = { version = "^1", features = ["derive"], optional = true }
-tokio = { version = "^1.40", features = ["fs", "io-util"], optional = true }
-toml = { version = "^0.8", optional = true }
-lazy_static = "^1.5"
-log = "^0.4"
+serde = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
+toml = { workspace = true, optional = true }
+lazy_static = { workspace = true }
+log = { workspace = true }
 
 [features]
 default = ["iced", "load"]

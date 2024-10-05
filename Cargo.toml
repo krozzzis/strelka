@@ -6,3 +6,17 @@ members = ["core", "gui", "theming", "widget", "plugin", "state", "config"]
 strip = true
 lto = true
 
+[workspace.dependencies]
+log = "^0.4"
+env_logger = "^0.11"
+lazy_static = "^1.5"
+tokio = { version = "^1.40", features = ["fs", "io-util"] }
+serde = { version = "^1", features = ["derive"] }
+toml = { version = "^0.8" }
+iced = { git = "https://github.com/iced-rs/iced.git", features = [
+  "advanced",
+  "canvas",
+  "lazy",
+  "svg",
+  "tokio",
+], branch = "master" }

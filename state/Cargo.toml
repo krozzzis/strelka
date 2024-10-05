@@ -8,5 +8,5 @@ authors = ["Nikita Shumov"]
 [dependencies]
 core = { path = "../core" }
 config = { path = "../config" }
-iced = { git = "https://github.com/iced-rs/iced", branch = "master" }
+iced = { workspace = true }
 theming = { path = "../theming" }

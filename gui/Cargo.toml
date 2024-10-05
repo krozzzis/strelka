@@ -18,12 +18,10 @@ theming = { path = "../theming" }
 state = { path = "../state" }
 config = { path = "../config" }
 widget = { path = "../widget" }
-log = "^0.4"
-env_logger = "^0.11"
+log = { workspace = true }
+env_logger = { workspace = true }
+tokio = { workspace = true }
 
-[dependencies.tokio]
-version = "^1.40"
-features = ["fs", "io-util"]
 
 [dependencies.iced]
 git = "https://github.com/iced-rs/iced.git"
