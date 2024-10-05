@@ -5,6 +5,10 @@ edition = "2021"
 license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
+[[bin]]
+name = "strelka"
+path = "src/main.rs"
+
 [dependencies]
 rfd = "^0.15"
 dirs = "^5"

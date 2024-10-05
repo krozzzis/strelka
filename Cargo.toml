@@ -5,3 +5,4 @@ members = ["core", "gui", "theming", "widget", "plugin", "state", "config"]
 [profile.release]
 strip = true
 lto = true
+
