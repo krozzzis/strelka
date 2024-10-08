@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use smol_str::SmolStr;
 
@@ -11,6 +11,7 @@ pub enum Value {
     Float(f64),
     Boolean(bool),
     Color(Color),
+    Path(PathBuf),
     String(SmolStr),
 }
 

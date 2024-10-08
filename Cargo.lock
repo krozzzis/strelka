@@ -794,6 +794,7 @@ name = "config"
 version = "0.1.0"
 dependencies = [
  "core",
+ "dirs 5.0.1",
  "serde",
  "toml",
 ]
@@ -1711,7 +1712,6 @@ version = "0.1.0"
 dependencies = [
  "config",
  "core",
- "dirs 5.0.1",
  "env_logger",
  "iced 0.14.0-dev",
  "log",
@@ -3896,6 +3896,7 @@ dependencies = [
  "config",
  "core",
  "iced 0.14.0-dev",
+ "log",
  "theming",
 ]
 

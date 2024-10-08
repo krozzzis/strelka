@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 core = { path = "../core" }
+dirs = "^5"
 toml = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
 

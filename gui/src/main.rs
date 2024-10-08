@@ -2,7 +2,10 @@
 
 mod util;
 
-use config::Config;
+use config::{
+    workdir::{create_config_dir, create_workdir},
+    Config,
+};
 use iced::{
     keyboard::{on_key_press, Key},
     widget::{
@@ -14,7 +17,7 @@ use iced::{
 };
 use state::State;
 
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, str::FromStr, sync::Arc};
 
 use crate::util::{get_file_name, open_file, pick_file, save_file};
 
@@ -66,8 +69,8 @@ pub enum AppMessage {
     None,
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    fn new(config: Config) -> (Self, Task<AppMessage>) {
         let mut plugin_host = PluginHost::new();
         plugin_host.register_plugin(
             PluginInfo::new()
@@ -84,9 +87,6 @@ impl Default for App {
             let id = panes.add(Pane::NewDocument);
             panes.open(&id);
         }
-
-        let mut config = Config::new();
-        config.insert("core", "theme", Value::String(SmolStr::new(DEFAULT_THEME)));
 
         let state = State {
             documents: DocumentStore::new(),
@@ -165,13 +165,6 @@ impl Default for App {
             |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer))),
         );
 
-        app
-    }
-}
-
-impl App {
-    fn new() -> (Self, Task<AppMessage>) {
-        let app = Self::default();
         let mut tasks = Vec::new();
 
         for id in app.plugin_host.get_plugin_ids() {
@@ -187,18 +180,17 @@ impl App {
             })
         });
 
-        // Apply default theme
-        let apply_default_theme = Task::perform(
-            async move { SmolStr::new(DEFAULT_THEME) },
-            AppMessage::LoadTheme,
-        );
+        // Apply theme
+        let theme = if let Some(Value::String(id)) = app.state.config.get("system", "theme") {
+            id
+        } else {
+            SmolStr::new(DEFAULT_THEME)
+        };
+        let apply_theme = Task::perform(async move { theme }, AppMessage::LoadTheme);
+        tasks.push(read_themes.chain(apply_theme));
 
-        tasks.push(read_themes.chain(apply_default_theme));
-
-        if let Some(home) = dirs::home_dir() {
-            let mut workdir = home;
-            workdir.push("strelka");
-
+        if let Some(Value::String(workdir)) = app.state.config.get("system", "workdir") {
+            let workdir = PathBuf::from_str(&workdir).unwrap();
             let file_explorer_content = Task::done(AppMessage::FileExplorerAction(
                 file_explorer::Message::GetFolderContent(workdir.clone()),
             ));
@@ -496,6 +488,54 @@ impl App {
 fn main() -> iced::Result {
     env_logger::init();
 
+    let mut config = Config::new();
+
+    // Initializing workdir. Default is ~/strelka
+    let workdir_path = if let Ok(path) = create_workdir() {
+        path
+    } else {
+        panic!("Can't create workdir")
+    };
+
+    config.insert(
+        "system",
+        "workdir",
+        Value::String(SmolStr::new(workdir_path.to_str().unwrap())),
+    );
+
+    // Initializing config directory. Default is ~/strelka/.config
+    let config_dir_path = if let Ok(path) = create_config_dir(&workdir_path) {
+        path
+    } else {
+        panic!("Can't create config directory")
+    };
+
+    config.insert(
+        "system",
+        "config_dir",
+        Value::String(SmolStr::new(config_dir_path.to_str().unwrap())),
+    );
+
+    // Path to system config file
+    let system_config_path = {
+        let mut a = config_dir_path.clone();
+        a.push("system.toml");
+        a
+    };
+
+    // Default config which used when config from file doesn't loaded
+    let mut default_config = Config::new();
+    default_config.insert(
+        "system",
+        "theme",
+        Value::String(SmolStr::new(DEFAULT_THEME)),
+    );
+
+    // Loading system config from file or initializing it with default one
+    let system_config =
+        Config::load_or_create_default(&system_config_path, default_config).unwrap();
+    config.merge(system_config);
+
     iced::application(App::title, App::update, App::view)
         .subscription(App::subscription)
         .theme(App::theme)
@@ -504,5 +544,5 @@ fn main() -> iced::Result {
             ..Settings::default()
         })
         .centered()
-        .run_with(App::new)
+        .run_with(move || App::new(config))
 }
