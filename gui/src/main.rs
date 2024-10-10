@@ -13,11 +13,11 @@ use iced::{
         text_editor::{self, Content},
         Container,
     },
-    Element, Length, Settings, Subscription, Task,
+    Element, Settings, Subscription, Task,
 };
 use state::State;
 
-use std::{collections::HashMap, path::PathBuf, str::FromStr, sync::Arc};
+use std::{collections::HashMap, path::PathBuf, sync::Arc};
 
 use crate::util::{get_file_name, open_file, pick_file, save_file};
 
@@ -28,10 +28,7 @@ use theming::{
     metadata::ThemeMetadata,
     Theme,
 };
-use widget::{
-    file_explorer,
-    pane::{self, file_explorer::file_explorer_pane, pane_stack},
-};
+use widget::pane::{self, pane_stack};
 
 use core::{
     action::{Action, DocumentAction, FileAction, GenericAction, PaneAction},
@@ -50,7 +47,6 @@ pub struct App {
     state: State,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
-    file_explorer: file_explorer::State,
 }
 
 #[derive(Debug, Clone)]
@@ -64,7 +60,6 @@ pub enum AppMessage {
     SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
-    FileExplorerAction(file_explorer::Message),
     OnKeyPress(Key, iced::keyboard::Modifiers),
     None,
 }
@@ -102,7 +97,6 @@ impl App {
             state,
             plugin_host,
             hotkeys: HashMap::new(),
-            file_explorer: file_explorer::State::default(),
         };
 
         // Ctrl-o open file
@@ -121,15 +115,6 @@ impl App {
                 key: 'd',
             },
             |_: &State| AppMessage::LoadTheme("core.dark".into()),
-        );
-
-        // Ctrl-p toggle file explorer
-        app.add_hotkey(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'p',
-            },
-            |_: &State| AppMessage::FileExplorerAction(file_explorer::Message::Toggle),
         );
 
         // Ctrl-t open new document tab
@@ -188,22 +173,6 @@ impl App {
         };
         let apply_theme = Task::perform(async move { theme }, AppMessage::LoadTheme);
         tasks.push(read_themes.chain(apply_theme));
-
-        if let Some(Value::String(workdir)) = app.state.config.get("system", "workdir") {
-            let workdir = PathBuf::from_str(&workdir).unwrap();
-            let file_explorer_content = Task::done(AppMessage::FileExplorerAction(
-                file_explorer::Message::GetFolderContent(workdir.clone()),
-            ));
-
-            tasks.push(Task::perform(util::init_workdir(workdir.clone()), |_| {
-                AppMessage::None
-            }));
-            tasks.push(Task::done(AppMessage::OpenDirectory(workdir)).chain(file_explorer_content));
-        }
-
-        tasks.push(Task::done(AppMessage::FileExplorerAction(
-            file_explorer::Message::GetFolderContent(app.state.working_directory.clone()),
-        )));
 
         (app, Task::batch(tasks))
     }
@@ -310,20 +279,6 @@ impl App {
 
             AppMessage::GenericAction(action) => return self.perform_action(action),
 
-            AppMessage::FileExplorerAction(message) => match message {
-                file_explorer::Message::OpenFile(path) => {
-                    return Task::done(AppMessage::Action(Action::new(
-                        FileAction::OpenFileCurrentTab(path),
-                    )))
-                }
-
-                _ => {
-                    return self
-                        .file_explorer
-                        .perform(message, AppMessage::FileExplorerAction)
-                }
-            },
-
             AppMessage::AddTheme(id, theme, metadata) => {
                 self.state.themes.insert(id, *theme, metadata);
             }
@@ -391,12 +346,6 @@ impl App {
                     let path: PathBuf = path.canonicalize().unwrap_or_default();
 
                     self.state.working_directory.clone_from(&path);
-
-                    // Open directory in file explorer
-                    return self.file_explorer.perform(
-                        file_explorer::Message::SetDirectory(path),
-                        AppMessage::FileExplorerAction,
-                    );
                 }
             }
         }
@@ -404,17 +353,7 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let file_explorer = file_explorer_pane(&self.state, &self.file_explorer)
-            .map(AppMessage::FileExplorerAction);
-
         let mut grid_elements = Vec::new();
-        if self.file_explorer.visible {
-            grid_elements.push(
-                Container::new(file_explorer)
-                    .width(Length::Fixed(self.state.get_theme().file_explorer.width))
-                    .into(),
-            );
-        }
         grid_elements.push(
             pane_stack::pane_stack(&self.state).map(|msg| -> AppMessage {
                 match msg {

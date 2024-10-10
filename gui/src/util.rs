@@ -5,10 +5,6 @@ use std::{
 
 use tokio::{fs, io::AsyncWriteExt};
 
-pub async fn init_workdir(dir: PathBuf) {
-    let _ = fs::create_dir(dir).await;
-}
-
 pub async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()> {
     let mut file = fs::File::create(path).await?;
 
