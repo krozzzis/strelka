@@ -14,7 +14,6 @@ pub struct State {
     pub panes: PaneModel,
     pub themes: Catalog,
     pub config: Config,
-    pub working_directory: PathBuf,
 }
 
 impl State {

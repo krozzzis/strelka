@@ -88,9 +88,6 @@ impl App {
             panes,
             themes: Catalog::new(),
             config,
-            working_directory: PathBuf::from("./content")
-                .canonicalize()
-                .unwrap_or_default(),
         };
 
         let mut app = Self {
@@ -345,7 +342,11 @@ impl App {
                 if path.is_dir() {
                     let path: PathBuf = path.canonicalize().unwrap_or_default();
 
-                    self.state.working_directory.clone_from(&path);
+                    self.state.config.insert(
+                        "system",
+                        "workdir",
+                        Value::String(SmolStr::new(path.to_str().unwrap_or_default())),
+                    );
                 }
             }
         }

@@ -1,6 +1,9 @@
-use core::document::DocumentId;
+use core::{document::DocumentId, value::Value};
 use state::State;
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use iced::{
     border::Radius,
@@ -32,11 +35,20 @@ fn get_directories_between<'a>(base: &'a Path, target: &'a Path) -> Vec<String> 
 
 pub fn text_editor(id: DocumentId, state: &State) -> Element<'_, Message, Theme> {
     let title: Element<'_, Message, Theme> = if let Some(handler) = state.documents.get(&id) {
-        let mut folders = get_directories_between(
-            if handler.path.starts_with(&state.working_directory) {
-                &state.working_directory
+        let working_directory =
+            if let Some(Value::String(path)) = state.config.get("system", "workdir") {
+                PathBuf::from_str(&path).unwrap_or_default()
             } else {
-                Path::new("/")
+                PathBuf::new()
+            };
+
+        let mut folders = get_directories_between(
+            {
+                if handler.path.starts_with(&working_directory) {
+                    working_directory.as_path()
+                } else {
+                    Path::new("/")
+                }
             },
             &handler.path,
         );
