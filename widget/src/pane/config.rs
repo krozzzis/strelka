@@ -47,9 +47,11 @@ pub fn config_value<'a>(value: &Value) -> Element<'a, (), Theme> {
             text("False")
         }
         .into(),
-        Value::Color(color) => {
-            text(format!("rgba({} {} {} {})", color.r, color.g, color.b, color.a)).into()
-        }
+        Value::Color(color) => text(format!(
+            "rgba({} {} {} {})",
+            color.r, color.g, color.b, color.a
+        ))
+        .into(),
         Value::Path(_) => todo!(),
         Value::String(string) => text(format!("\"{}\"", string)).into(),
     };

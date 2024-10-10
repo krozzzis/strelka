@@ -1,5 +1,3 @@
-use core::Color;
-
 use iced_core::Border;
 use iced_widget::scrollable::{Catalog, Rail, Scroller, Status, Style, StyleFn};
 

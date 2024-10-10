@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use config::Config;
 use core::{document::DocumentStore, pane::PaneModel, smol_str::SmolStr, value::Value};
 use iced::widget::text_editor::Content;
