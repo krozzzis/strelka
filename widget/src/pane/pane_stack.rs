@@ -23,6 +23,8 @@ use crate::{
     Label,
 };
 
+use super::config::config_pane;
+
 lazy_static::lazy_static! {
     pub static ref BUFFER: Buffer = Buffer::new("Hello\nAboba");
     pub static ref FORMATTED: FormattedBuffer = FormattedBuffer::from_buffer(&BUFFER);
@@ -35,6 +37,7 @@ pub enum Message {
     NewPane(Pane),
     NewDocument(new_document::Message),
     TextEditor(DocumentId, text_editor::Message),
+    None,
 }
 
 pub fn pane_stack(state: &State) -> Element<'_, Message, Theme> {
@@ -53,6 +56,7 @@ pub fn pane_stack(state: &State) -> Element<'_, Message, Theme> {
                     .get(&id)
                     .map(|handler| filename(handler.path.clone()).unwrap_or_default().into()),
                 Pane::Buffer => Some("Buffer tab (EXPERIMENTAL)".into()),
+                Pane::Config => Some("Config viewer".into()),
             };
 
             Tab {
@@ -86,6 +90,7 @@ pub fn pane_stack(state: &State) -> Element<'_, Message, Theme> {
             Pane::Editor(id) => text_editor::text_editor(id, state)
                 .map(move |action| Message::TextEditor(id, action)),
             Pane::Buffer => background(buffer(&FORMATTED)).into(),
+            Pane::Config => config_pane(state).map(|_| Message::None),
         }
     } else {
         Space::new(Length::Fill, Length::Fill).into()

@@ -11,6 +11,7 @@ pub enum Pane {
     NewDocument,
     Editor(DocumentId),
     Buffer,
+    Config,
 }
 
 #[derive(Default, Debug)]

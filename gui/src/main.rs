@@ -147,6 +147,15 @@ impl App {
             |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer))),
         );
 
+        // Ctrl-, open config viewer pane
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: ',',
+            },
+            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Config))),
+        );
+
         let mut tasks = Vec::new();
 
         for id in app.plugin_host.get_plugin_ids() {
@@ -378,6 +387,8 @@ impl App {
                         id,
                         pane::text_editor::Message::EditorAction(action),
                     ) => AppMessage::TextEditorAction(action, id),
+
+                    pane_stack::Message::None => AppMessage::None,
                 }
             }),
         );
