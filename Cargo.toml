@@ -18,5 +18,8 @@ iced = { git = "https://github.com/iced-rs/iced.git", features = [
   "canvas",
   "lazy",
   "svg",
+  "image",
   "tokio",
+  "wgpu",
+  "tiny-skia",
 ], branch = "master" }

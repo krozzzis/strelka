@@ -42,6 +42,7 @@ use core::{
 type HotKeyHandler = dyn Fn(&State) -> AppMessage;
 
 static DEFAULT_THEME: &str = "core.light";
+static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
     state: State,
@@ -493,6 +494,10 @@ fn main() -> iced::Result {
         .settings(Settings {
             antialiasing: true,
             ..Settings::default()
+        })
+        .window(iced::window::Settings {
+            icon: iced::window::icon::from_file_data(APP_ICON, None).ok(),
+            ..Default::default()
         })
         .centered()
         .run_with(move || App::new(config))
