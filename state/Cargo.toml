@@ -8,6 +8,6 @@ authors = ["Nikita Shumov"]
 [dependencies]
 core = { path = "../core" }
 config = { path = "../config" }
-iced = { workspace = true }
 theming = { path = "../theming" }
 log = { workspace = true }
+iced = { workspace = true }

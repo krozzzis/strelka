@@ -1,5 +1,5 @@
-use iced_core::Border;
-use iced_widget::scrollable::{Catalog, Rail, Scroller, Status, Style, StyleFn};
+use iced::widget::scrollable::{Catalog, Rail, Scroller, Status, Style, StyleFn};
+use iced::Border;
 
 use crate::Theme;
 
@@ -38,8 +38,8 @@ fn default(theme: &Theme, _status: Status) -> Style {
     }
 }
 
-fn transparent_container(theme: &Theme) -> iced_widget::container::Style {
-    iced_widget::container::Style {
+fn transparent_container(theme: &Theme) -> iced::widget::container::Style {
+    iced::widget::container::Style {
         text_color: Some(theme.generic.text.into()),
         background: None,
         ..Default::default()

@@ -61,7 +61,7 @@ impl From<[f32; 4]> for Padding {
 }
 
 #[cfg(feature = "iced")]
-impl From<Padding> for iced_core::Padding {
+impl From<Padding> for iced::Padding {
     fn from(value: Padding) -> Self {
         Self {
             top: value.top,

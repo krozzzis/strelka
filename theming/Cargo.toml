@@ -7,10 +7,7 @@ authors = ["Nikita Shumov"]
 
 [dependencies]
 core = { path = "../core", features = ["iced", "serde"] }
-iced_core = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
-iced_futures = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
-iced_widget = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
-iced_winit = { git = "https://github.com/iced-rs/iced.git", branch = "master", optional = true }
+iced = { workspace = true, optional = true }
 async-stream = { version = "^0.3", optional = true }
 futures-core = { version = "^0.3", optional = true }
 serde = { workspace = true, optional = true }
@@ -21,7 +18,7 @@ log = { workspace = true }
 
 [features]
 default = ["iced", "load"]
-iced = ["dep:iced_core", "dep:iced_widget", "dep:iced_winit"]
+iced = ["dep:iced"]
 load = ["serde", "async", "toml"]
 serde = ["dep:serde"]
 tokio = ["dep:tokio"]

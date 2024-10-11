@@ -1,4 +1,4 @@
-use iced_widget::svg::{Catalog, Status, Style, StyleFn};
+use iced::widget::svg::{Catalog, Status, Style, StyleFn};
 
 use crate::Theme;
 

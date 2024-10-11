@@ -1,4 +1,4 @@
-use iced_widget::button::{Catalog, Status, Style, StyleFn};
+use iced::widget::button::{Catalog, Status, Style, StyleFn};
 
 use crate::Theme;
 

@@ -17,12 +17,7 @@ theming = { path = "../theming" }
 state = { path = "../state" }
 config = { path = "../config" }
 widget = { path = "../widget" }
+iced = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
 tokio = { workspace = true }
-
-
-[dependencies.iced]
-git = "https://github.com/iced-rs/iced.git"
-branch = "master"
-features = ["lazy", "advanced", "svg", "tokio"]

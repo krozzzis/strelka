@@ -53,7 +53,7 @@ impl From<f32> for Radius {
 }
 
 #[cfg(feature = "iced")]
-impl From<Radius> for iced_core::border::Radius {
+impl From<Radius> for iced::border::Radius {
     fn from(value: Radius) -> Self {
         Self {
             top_left: value.top_left,

@@ -7,7 +7,7 @@ use crate::styles::{
 };
 
 #[cfg(feature = "iced")]
-use iced_winit::program::{Appearance, DefaultStyle};
+use iced::application::{Appearance, DefaultStyle};
 
 #[cfg(feature = "load")]
 use serde::{Deserialize, Serialize};

@@ -1,5 +1,5 @@
-use iced_core::{Border, Color};
-use iced_widget::text_editor::{Catalog, Status, Style, StyleFn};
+use iced::widget::text_editor::{Catalog, Status, Style, StyleFn};
+use iced::{Border, Color};
 
 use crate::Theme;
 

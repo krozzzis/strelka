@@ -13,5 +13,5 @@ plugin = { path = "../plugin" }
 lazy_static = { workspace = true }
 tokio = { workspace = true }
 iced = { workspace = true }
-iced_aw = { git = "https://github.com/iced-rs/iced_aw.git", branch = "main" }
+iced_aw = { workspace = true }
 log = { workspace = true }

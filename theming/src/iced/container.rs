@@ -1,4 +1,4 @@
-use iced_widget::container::{Catalog, Style, StyleFn};
+use iced::widget::container::{Catalog, Style, StyleFn};
 
 use crate::Theme;
 
