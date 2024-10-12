@@ -3,6 +3,7 @@ pub mod catalog;
 mod font;
 #[cfg(feature = "iced")]
 pub mod iced;
+pub mod index;
 mod margin;
 pub mod metadata;
 mod padding;
