@@ -85,6 +85,28 @@ impl Catalog {
     }
 }
 
+pub async fn load_theme(path: impl AsRef<Path>) -> Result<(Theme, ThemeMetadata<'static>), String> {
+    let path: &Path = path.as_ref();
+    if path.is_dir() {
+        let metadata_path = {
+            let mut path = path.to_owned();
+            path.push("metadata.toml");
+            path
+        };
+        let theme_path = {
+            let mut path = path.to_owned();
+            path.push("theme.toml");
+            path
+        };
+        if let Ok(metadata) = ThemeMetadata::from_file(&metadata_path).await {
+            if let Ok(theme) = Theme::from_file(&theme_path).await {
+                return Ok((theme, metadata));
+            }
+        }
+    }
+    Err(String::new())
+}
+
 pub async fn get_themes(
     dir: impl AsRef<Path>,
 ) -> impl Stream<Item = (Theme, ThemeMetadata<'static>)> {

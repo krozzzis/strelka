@@ -24,7 +24,7 @@ use crate::util::{get_file_name, open_file, pick_file, save_file};
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
 use theming::{
-    catalog::{get_themes, Catalog, ThemeID},
+    catalog::{load_theme, Catalog, ThemeID},
     metadata::ThemeMetadata,
     Theme,
 };
@@ -164,12 +164,13 @@ impl App {
             tasks.push(task);
         }
 
-        // Read themes from directory to stream
-        let read_themes = Task::future(get_themes("./themes")).then(|stream| {
-            // Add each theme from stream
-            Task::run(stream, |(theme, metadata)| {
-                AppMessage::AddTheme(metadata.id.to_string().into(), Box::new(theme), metadata)
-            })
+        // Load theme
+        let load_theme = Task::perform(load_theme("themes/light"), |result| {
+            if let Ok((theme, meta)) = result {
+                AppMessage::AddTheme(meta.id.to_string().into(), Box::new(theme), meta)
+            } else {
+                AppMessage::None
+            }
         });
 
         // Apply theme
@@ -179,7 +180,7 @@ impl App {
             SmolStr::new(DEFAULT_THEME)
         };
         let apply_theme = Task::perform(async move { theme }, AppMessage::LoadTheme);
-        tasks.push(read_themes.chain(apply_theme));
+        tasks.push(load_theme.chain(apply_theme));
 
         (app, Task::batch(tasks))
     }
