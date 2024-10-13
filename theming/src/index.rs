@@ -31,7 +31,7 @@ mod test {
     use core::smol_str::SmolStr;
     use std::{borrow::Cow, path::Path};
 
-    use crate::{catalog::ThemeID, metadata::ThemeMetadata};
+    use crate::metadata::ThemeMetadata;
 
     use super::ThemeIndex;
 
@@ -109,7 +109,7 @@ mod test {
             },
         );
 
-        let mut paths: Vec<_> = index.paths().collect();
+        let paths: Vec<_> = index.paths().collect();
 
         assert_eq!(paths.as_slice(), []);
     }
