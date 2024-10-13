@@ -1,4 +1,4 @@
-use std::{borrow::Cow, path::PathBuf};
+use std::{borrow::Cow, path::Path};
 
 use crate::styles::{
     button::Button, context_menu::ContextMenu, editor::Editor, file_explorer::FileExplorer,
@@ -56,7 +56,7 @@ pub struct Theme {
 
 impl Theme {
     #[cfg(feature = "load")]
-    pub async fn from_file(path: &PathBuf) -> Result<Theme, String> {
+    pub async fn from_file(path: impl AsRef<Path>) -> Result<Theme, String> {
         let text = tokio::fs::read_to_string(path)
             .await
             .map_err(|e| e.to_string())?;

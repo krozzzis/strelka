@@ -23,11 +23,7 @@ use crate::util::{get_file_name, open_file, pick_file, save_file};
 
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
-use theming::{
-    catalog::{load_theme, Catalog, ThemeID},
-    metadata::ThemeMetadata,
-    Theme,
-};
+use theming::{catalog::Catalog, Theme};
 use widget::pane::{self, pane_stack};
 
 use core::{
@@ -53,8 +49,6 @@ pub struct App {
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     LoadPlugin(PluginId, bool),
-    LoadTheme(ThemeID),
-    AddTheme(ThemeID, Box<Theme>, ThemeMetadata<'static>),
     OpenedFile(Result<(PathBuf, String), ()>),
     GenericAction(GenericAction),
     Action(Action),
@@ -106,15 +100,6 @@ impl App {
             |_: &State| AppMessage::Action(Action::new(FileAction::PickFile)),
         );
 
-        // Ctrl-d enable dark mode
-        app.add_hotkey(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'd',
-            },
-            |_: &State| AppMessage::LoadTheme("core.dark".into()),
-        );
-
         // Ctrl-t open new document tab
         app.add_hotkey(
             HotKey {
@@ -164,23 +149,14 @@ impl App {
             tasks.push(task);
         }
 
-        // Load theme
-        let load_theme = Task::perform(load_theme("themes/light"), |result| {
-            if let Ok((theme, meta)) = result {
-                AppMessage::AddTheme(meta.id.to_string().into(), Box::new(theme), meta)
-            } else {
-                AppMessage::None
-            }
-        });
-
         // Apply theme
-        let theme = if let Some(Value::String(id)) = app.state.config.get("system", "theme") {
-            id
-        } else {
-            SmolStr::new(DEFAULT_THEME)
-        };
-        let apply_theme = Task::perform(async move { theme }, AppMessage::LoadTheme);
-        tasks.push(load_theme.chain(apply_theme));
+        // let theme = if let Some(Value::String(id)) = app.state.config.get("system", "theme") {
+        //     id
+        // } else {
+        //     SmolStr::new(DEFAULT_THEME)
+        // };
+        // let apply_theme = Task::perform(async move { theme }, AppMessage::LoadTheme);
+        // tasks.push(apply_theme);
 
         (app, Task::batch(tasks))
     }
@@ -265,6 +241,10 @@ impl App {
                     self.state.documents.remove(&id);
                 }
             },
+            GenericAction::Theme(action) => match action {
+                core::action::ThemeAction::MakeIndex => todo!(),
+                core::action::ThemeAction::SetTheme(_) => todo!(),
+            },
         }
         Task::none()
     }
@@ -286,12 +266,6 @@ impl App {
             }
 
             AppMessage::GenericAction(action) => return self.perform_action(action),
-
-            AppMessage::AddTheme(id, theme, metadata) => {
-                self.state.themes.insert(id, *theme, metadata);
-            }
-
-            AppMessage::LoadTheme(id) => self.state.set_theme(id),
 
             AppMessage::SavedFile(id) => {
                 if let Some(handler) = self.state.documents.get_mut(&id) {
@@ -402,7 +376,7 @@ impl App {
     }
 
     fn theme(&self) -> Theme {
-        self.state.get_theme()
+        (*self.state.get_theme()).clone()
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {

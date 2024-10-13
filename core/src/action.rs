@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 use crate::{
     document::{DocumentHandler, DocumentId},
     pane::{Pane, PaneId},
+    ThemeID,
 };
 
 #[derive(Debug, Clone)]
@@ -30,10 +31,17 @@ pub enum DocumentAction {
 }
 
 #[derive(Debug, Clone)]
+pub enum ThemeAction {
+    MakeIndex,
+    SetTheme(ThemeID),
+}
+
+#[derive(Debug, Clone)]
 pub enum GenericAction {
     File(FileAction),
     Pane(PaneAction),
     Document(DocumentAction),
+    Theme(ThemeAction),
 }
 
 impl From<FileAction> for GenericAction {

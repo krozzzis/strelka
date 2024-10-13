@@ -1,6 +1,7 @@
+use core::ThemeID;
 use std::{collections::HashMap, path::Path};
 
-use crate::{catalog::ThemeID, metadata::ThemeMetadata};
+use crate::metadata::ThemeMetadata;
 
 /// Represents an index of themes, storing metadata for each theme.
 #[derive(Debug, Default)]
@@ -19,6 +20,18 @@ impl ThemeIndex {
     /// Adds a theme to the index.
     pub fn add(&mut self, id: impl Into<ThemeID>, metadata: ThemeMetadata<'static>) {
         self.metadata.insert(id.into(), metadata);
+    }
+
+    pub fn get_path<'a>(&mut self, id: impl Into<&'a ThemeID>) -> Option<&Path> {
+        if let Some(meta) = self.metadata.get(id.into()) {
+            if let Some(path) = &meta.path {
+                Some(path.as_ref())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     /// Returns an iterator over theme IDs and their corresponding paths.
