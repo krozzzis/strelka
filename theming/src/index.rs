@@ -24,6 +24,10 @@ impl ThemeIndex {
             .map(|(id, meta)| (id, meta.path.as_ref()))
             .filter_map(|(id, path)| path.map(|path| (id, path.as_ref())))
     }
+
+    pub fn ids(&self) -> impl Iterator<Item = &ThemeID> {
+        self.metadata.keys()
+    }
 }
 
 #[cfg(test)]
@@ -112,5 +116,49 @@ mod test {
         let paths: Vec<_> = index.paths().collect();
 
         assert_eq!(paths.as_slice(), []);
+    }
+
+    #[test]
+    fn ids() {
+        let mut index = ThemeIndex::new();
+
+        index.add(
+            "one",
+            ThemeMetadata {
+                id: Cow::Borrowed("one"),
+                name: Cow::Borrowed("One"),
+                path: Some(Cow::Borrowed(Path::new("./one/"))),
+            },
+        );
+
+        index.add(
+            "two",
+            ThemeMetadata {
+                id: Cow::Borrowed("two"),
+                name: Cow::Borrowed("Two"),
+                path: None,
+            },
+        );
+
+        index.add(
+            "three",
+            ThemeMetadata {
+                id: Cow::Borrowed("three"),
+                name: Cow::Borrowed("Three"),
+                path: Some(Cow::Borrowed(Path::new("./three/"))),
+            },
+        );
+
+        let mut ids: Vec<_> = index.ids().collect();
+        ids.sort();
+
+        assert_eq!(
+            ids.as_slice(),
+            [
+                &SmolStr::new("one"),
+                &SmolStr::new("three"),
+                &SmolStr::new("two"),
+            ]
+        );
     }
 }
