@@ -2,22 +2,26 @@ use std::{collections::HashMap, path::Path};
 
 use crate::{catalog::ThemeID, metadata::ThemeMetadata};
 
+/// Represents an index of themes, storing metadata for each theme.
 #[derive(Debug, Default)]
 pub struct ThemeIndex {
     metadata: HashMap<ThemeID, ThemeMetadata<'static>>,
 }
 
 impl ThemeIndex {
+    /// Creates a new, empty `ThemeIndex`.
     pub fn new() -> Self {
         Self {
             metadata: HashMap::new(),
         }
     }
 
+    /// Adds a theme to the index.
     pub fn add(&mut self, id: impl Into<ThemeID>, metadata: ThemeMetadata<'static>) {
         self.metadata.insert(id.into(), metadata);
     }
 
+    /// Returns an iterator over theme IDs and their corresponding paths.
     pub fn paths(&self) -> impl Iterator<Item = (&ThemeID, &Path)> {
         self.metadata
             .iter()
@@ -25,17 +29,19 @@ impl ThemeIndex {
             .filter_map(|(id, path)| path.map(|path| (id, path.as_ref())))
     }
 
+    /// Returns an iterator over all theme IDs in the index.
     pub fn ids(&self) -> impl Iterator<Item = &ThemeID> {
         self.metadata.keys()
     }
 
+    /// Loads themes from a directory, parsing metadata for each theme.
     pub async fn load_from_directory(path: impl AsRef<Path>) -> Result<Self, std::io::Error> {
         let path = path.as_ref();
         if path.is_dir() {
             let mut dirs = tokio::fs::read_dir(path).await?;
             let mut index = ThemeIndex::new();
 
-            // Iterate over directories at given path
+            // Process each subdirectory
             while let Ok(Some(dir_entry)) = dirs.next_entry().await {
                 if dir_entry.file_type().await?.is_dir() {
                     let metadata_file_path = {
@@ -44,7 +50,7 @@ impl ThemeIndex {
                         path
                     };
 
-                    // Load metadata from file
+                    // Parse metadata from TOML file
                     let metadata_content = tokio::fs::read_to_string(metadata_file_path).await?;
                     let metadata: ThemeMetadata =
                         toml::from_str(&metadata_content).map_err(|e| {
