@@ -28,6 +28,41 @@ impl ThemeIndex {
     pub fn ids(&self) -> impl Iterator<Item = &ThemeID> {
         self.metadata.keys()
     }
+
+    pub async fn load_from_directory(path: impl AsRef<Path>) -> Result<Self, std::io::Error> {
+        let path = path.as_ref();
+        if path.is_dir() {
+            let mut dirs = tokio::fs::read_dir(path).await?;
+            let mut index = ThemeIndex::new();
+
+            // Iterate over directories at given path
+            while let Ok(Some(dir_entry)) = dirs.next_entry().await {
+                if dir_entry.file_type().await?.is_dir() {
+                    let metadata_file_path = {
+                        let mut path = dir_entry.path();
+                        path.push("metadata.toml");
+                        path
+                    };
+
+                    // Load metadata from file
+                    let metadata_content = tokio::fs::read_to_string(metadata_file_path).await?;
+                    let metadata: ThemeMetadata =
+                        toml::from_str(&metadata_content).map_err(|e| {
+                            std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
+                        })?;
+
+                    index.add(metadata.id.clone(), metadata);
+                }
+            }
+
+            Ok(index)
+        } else {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "Given path is not a directory",
+            ))
+        }
+    }
 }
 
 #[cfg(test)]
