@@ -16,7 +16,7 @@ use iced::{
     },
     Element, Settings, Subscription, Task,
 };
-use state::{ActionBrocker, DocumentActor, State};
+use state::{ActionBrocker, DocumentActor, FileActor, PaneActor, State};
 
 use std::{collections::HashMap, path::PathBuf};
 
@@ -87,6 +87,8 @@ impl App {
         };
 
         let (document_tx, document_rx) = bounded(10);
+        let (file_tx, file_rx) = bounded(10);
+        let (pane_tx, pane_rx) = bounded(10);
         let (brocker_tx, brocker_rx) = bounded(10);
 
         let mut app = Self {
@@ -111,7 +113,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            |_: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::NewDocument))),
+            |_: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::NewDocument, None))),
         );
 
         // Ctrl-w close open tab
@@ -135,7 +137,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer))),
+            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer, None))),
         );
 
         // Ctrl-, open config viewer pane
@@ -144,21 +146,21 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: ',',
             },
-            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Config))),
+            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Config, None))),
         );
 
         let mut tasks = Vec::new();
 
-        let mut brocker = ActionBrocker::new(brocker_rx).document(document_tx);
-        let mut document_actor = DocumentActor::new(document_rx, brocker_tx);
+        let mut brocker = ActionBrocker::new(brocker_rx).document_actor(document_tx.clone());
+        let mut document_actor = DocumentActor::new(document_rx, brocker_tx.clone());
+        let mut pane_actor = PaneActor::new(pane_rx, brocker_tx.clone());
+        let mut file_actor = FileActor::new(file_rx, brocker_tx.clone());
 
-        tokio::spawn(async move {
-            brocker.run().await
-        });
+        tokio::spawn(async move { brocker.run().await });
 
-        tokio::spawn(async move {
-            document_actor.run().await
-        });
+        tokio::spawn(async move { document_actor.run().await });
+        tokio::spawn(async move { pane_actor.run().await });
+        tokio::spawn(async move { file_actor.run().await });
 
         for id in app.plugin_host.get_plugin_ids() {
             let task = Task::done(AppMessage::LoadPlugin(id.clone(), true));
@@ -353,7 +355,7 @@ impl App {
                     }
 
                     pane_stack::Message::NewPane(pane) => {
-                        AppMessage::Action(Action::new(PaneAction::Add(pane)))
+                        AppMessage::Action(Action::new(PaneAction::Add(pane, None)))
                     }
 
                     pane_stack::Message::OpenPane(id) => {

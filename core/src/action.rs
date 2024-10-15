@@ -12,26 +12,23 @@ use crate::{
 pub enum PaneAction {
     Close(PaneId),
     Open(PaneId),
-    Add(Pane),
+    Add(Pane, Option<Sender<PaneId>>),
     Replace(PaneId, Pane),
+    GetOpen(Sender<Option<Pane>>),
+    GetOpenId(Sender<Option<PaneId>>),
 }
 
 #[derive(Debug, Clone)]
 pub enum FileAction {
-    PickFile(Sender<FileActionResponse>),
+    PickFile,
     OpenFileCurrentTab(PathBuf),
     OpenFileForceCurrentTab(PathBuf),
     OpenFileNewTab(PathBuf),
 }
 
 #[derive(Debug, Clone)]
-pub enum FileActionResponse {
-    OpenedFile(PathBuf, String),
-}
-
-#[derive(Debug, Clone)]
 pub enum DocumentAction {
-    Add(Arc<DocumentHandler<String>>, Sender<DocumentActionResponse>),
+    Add(Arc<DocumentHandler<String>>, Option<Sender<DocumentId>>),
     Open(DocumentId),
     Save(DocumentId),
     Remove(DocumentId),
