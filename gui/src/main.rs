@@ -6,7 +6,6 @@ use config::{
     workdir::{create_config_dir, create_workdir},
     Config,
 };
-use crossbeam::channel::{bounded, Receiver, Sender};
 use iced::{
     futures::{SinkExt, Stream},
     keyboard::{on_key_press, Key},
@@ -22,6 +21,7 @@ use log::{debug, info};
 use state::{
     ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor, State,
 };
+use tokio::sync::mpsc::{channel, Sender};
 
 use std::{collections::HashMap, path::PathBuf};
 
@@ -49,8 +49,7 @@ static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 pub struct App {
     state: State,
     brocker_tx: Sender<ActionWrapper>,
-    completition_tx: Sender<ActionResult>,
-    completition_rx: Receiver<ActionResult>,
+    completition_tx: tokio::sync::broadcast::Sender<ActionResult>,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
 }
@@ -84,11 +83,11 @@ impl App {
 
         // Actors
 
-        let (document_tx, document_rx) = bounded(10);
-        let (file_tx, file_rx) = bounded(10);
-        let (pane_tx, pane_rx) = bounded(10);
-        let (brocker_tx, brocker_rx) = bounded(10);
-        let (completition_tx, completition_rx) = bounded(10);
+        let (document_tx, document_rx) = channel(10);
+        let (file_tx, file_rx) = channel(10);
+        let (pane_tx, pane_rx) = channel(10);
+        let (brocker_tx, brocker_rx) = channel(10);
+        let (completition_tx, _) = tokio::sync::broadcast::channel(10);
 
         let mut document_actor = DocumentActor::new(document_rx, brocker_tx.clone());
         let mut pane_actor = PaneActor::new(pane_rx, brocker_tx.clone());
@@ -122,7 +121,6 @@ impl App {
             state,
             brocker_tx,
             completition_tx,
-            completition_rx,
             plugin_host,
             hotkeys: HashMap::new(),
         };
@@ -210,8 +208,13 @@ impl App {
 
     fn perform_action(&mut self, action: GenericAction) -> Task<AppMessage> {
         let wrapper = ActionWrapper::new(action).notify(self.completition_tx.clone());
-        let _ = self.brocker_tx.send(wrapper);
-        Task::none()
+        let brocker_tx = self.brocker_tx.clone();
+        Task::perform(
+            async move {
+                let _ = brocker_tx.send(wrapper).await;
+            },
+            |_| AppMessage::None,
+        )
     }
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -342,18 +345,20 @@ impl App {
     fn subscription(&self) -> Subscription<AppMessage> {
         info!("Creating subscriptions");
         let completition_listener =
-            Subscription::run_with_id(1, App::complition_stream(self.completition_rx.clone()));
+            Subscription::run_with_id(1, App::complition_stream(self.completition_tx.subscribe()));
         let key_press_listener =
             on_key_press(|key, modifiers| Some(AppMessage::OnKeyPress(key, modifiers)));
 
         Subscription::batch([completition_listener, key_press_listener])
     }
 
-    fn complition_stream(rx: Receiver<ActionResult>) -> impl Stream<Item = AppMessage> {
+    fn complition_stream(
+        mut rx: tokio::sync::broadcast::Receiver<ActionResult>,
+    ) -> impl Stream<Item = AppMessage> {
         info!("Completition listener started");
         stream::channel(100, |mut output| async move {
             info!("Completition listener thread");
-            while let Ok(_result) = rx.recv() {
+            while let Ok(_result) = rx.recv().await {
                 println!("Receive complete notificaton");
                 let _ = output.send(AppMessage::None).await;
             }

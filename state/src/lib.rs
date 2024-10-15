@@ -10,7 +10,6 @@ use core::{
     value::Value,
     ThemeID,
 };
-use crossbeam::channel::{bounded, Receiver, Sender};
 use iced::widget::text_editor::Content;
 use log::info;
 use std::{
@@ -18,6 +17,7 @@ use std::{
     sync::Arc,
 };
 use theming::{catalog::Catalog, index::ThemeIndex, Theme};
+use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct State {
     pub documents: DocumentStore<Content>,
@@ -83,23 +83,23 @@ impl ActionBrocker {
 
     pub async fn run(&mut self) {
         info!("Started Brocker's thread");
-        while let Ok(wrapper) = self.receiver.recv() {
+        while let Some(wrapper) = self.receiver.recv().await {
             info!("Brocker. Processing: {wrapper:?}");
             let action = wrapper.action();
             match action {
                 GenericAction::File(action) => {
                     if let Some(tx) = &self.file_sender {
-                        let _ = tx.send(action.clone());
+                        let _ = tx.send(action.clone()).await;
                     }
                 }
                 GenericAction::Pane(action) => {
                     if let Some(tx) = &self.pane_sender {
-                        let _ = tx.send(action.clone());
+                        let _ = tx.send(action.clone()).await;
                     }
                 }
                 GenericAction::Document(action) => {
                     if let Some(tx) = &self.document_sender {
-                        let _ = tx.send(action.clone());
+                        let _ = tx.send(action.clone()).await;
                     }
                 }
                 GenericAction::Theme(_) => todo!(),
@@ -126,7 +126,7 @@ impl DocumentActor {
 
     pub async fn run(&mut self) {
         info!("Started DocumentActor's thread");
-        while let Ok(action) = self.receiver.recv() {
+        while let Some(action) = self.receiver.recv().await {
             info!("Processing: {action:?}");
             match action {
                 DocumentAction::Add(handler, tx) => {
@@ -145,7 +145,7 @@ impl DocumentActor {
                 DocumentAction::Open(id) => {
                     let pane = Pane::Editor(id);
                     let message = GenericAction::Pane(PaneAction::Add(pane, None));
-                    let _ = self.brocker_sender.send(ActionWrapper::new(message));
+                    let _ = self.brocker_sender.send(ActionWrapper::new(message)).await;
                 }
                 DocumentAction::Save(_id) => {
                     todo!()
@@ -173,7 +173,7 @@ impl FileActor {
 
     pub async fn run(&mut self) {
         info!("Started FileActor's thread");
-        while let Ok(action) = self.receiver.recv() {
+        while let Some(action) = self.receiver.recv().await {
             info!("Processing: {action:?}");
             match action {
                 FileAction::PickFile => {
@@ -185,44 +185,56 @@ impl FileActor {
                             changed: false,
                         };
 
-                        let (tx, rx) = bounded(1);
-                        let _ =
-                            self.brocker_sender
-                                .send(ActionWrapper::new(GenericAction::Document(
-                                    DocumentAction::Add(Arc::new(handler), Some(tx)),
-                                )));
+                        let (tx, mut rx) = channel(1);
+                        let _ = self
+                            .brocker_sender
+                            .send(ActionWrapper::new(GenericAction::Document(
+                                DocumentAction::Add(Arc::new(handler), Some(tx)),
+                            )))
+                            .await;
 
-                        if let Ok(doc_id) = rx.recv() {
+                        if let Some(doc_id) = rx.recv().await {
                             let pane = Pane::Editor(doc_id);
 
                             // If opened pane is NewDocument, replace it with Editor pane
                             // otherwise add new one with Editor
-                            let (tx, rx) = bounded(1);
-                            let _ =
-                                self.brocker_sender
+                            let (tx, mut rx) = channel(1);
+                            let _ = self
+                                .brocker_sender
+                                .send(ActionWrapper::new(GenericAction::Pane(
+                                    PaneAction::GetOpen(tx),
+                                )))
+                                .await;
+                            if let Some(Some(Pane::NewDocument)) = rx.recv().await {
+                                let (tx, mut rx) = channel(1);
+                                let _ = self
+                                    .brocker_sender
                                     .send(ActionWrapper::new(GenericAction::Pane(
-                                        PaneAction::GetOpen(tx),
-                                    )));
-                            if let Ok(Some(Pane::NewDocument)) = rx.recv() {
-                                let (tx, rx) = bounded(1);
-                                let _ = self.brocker_sender.send(ActionWrapper::new(
-                                    GenericAction::Pane(PaneAction::GetOpenId(tx)),
-                                ));
+                                        PaneAction::GetOpenId(tx),
+                                    )))
+                                    .await;
 
-                                if let Ok(Some(opened_id)) = rx.recv() {
+                                if let Some(Some(opened_id)) = rx.recv().await {
                                     let message =
                                         GenericAction::Pane(PaneAction::Replace(opened_id, pane));
-                                    let _ = self.brocker_sender.send(ActionWrapper::new(message));
+                                    let _ =
+                                        self.brocker_sender.send(ActionWrapper::new(message)).await;
                                 }
                             } else {
-                                let (tx, rx) = bounded(1);
-                                let _ = self.brocker_sender.send(ActionWrapper::new(
-                                    GenericAction::Pane(PaneAction::Add(pane, Some(tx))),
-                                ));
-                                if let Ok(pane_id) = rx.recv() {
-                                    let _ = self.brocker_sender.send(ActionWrapper::new(
-                                        GenericAction::Pane(PaneAction::Open(pane_id)),
-                                    ));
+                                let (tx, mut rx) = channel(1);
+                                let _ =
+                                    self.brocker_sender
+                                        .send(ActionWrapper::new(GenericAction::Pane(
+                                            PaneAction::Add(pane, Some(tx)),
+                                        )))
+                                        .await;
+                                if let Some(pane_id) = rx.recv().await {
+                                    let _ = self
+                                        .brocker_sender
+                                        .send(ActionWrapper::new(GenericAction::Pane(
+                                            PaneAction::Open(pane_id),
+                                        )))
+                                        .await;
                                 }
                             }
                         }
@@ -259,7 +271,7 @@ impl PaneActor {
 
     pub async fn run(&mut self) {
         info!("Started PaneActors's thread");
-        while let Ok(action) = self.receiver.recv() {
+        while let Some(action) = self.receiver.recv().await {
             info!("Processing: {action:?}");
             match action {
                 PaneAction::Close(id) => {
@@ -282,7 +294,7 @@ impl PaneActor {
                     let id = self.panes.add(pane);
                     self.panes.open(&id);
                     if let Some(tx) = tx {
-                        let _ = tx.send(id);
+                        let _ = tx.send(id).await;
                     }
                 }
                 PaneAction::Replace(id, pane) => {

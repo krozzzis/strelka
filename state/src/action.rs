@@ -1,6 +1,6 @@
 use core::action::GenericAction;
 
-use crossbeam::channel::Sender;
+use tokio::sync::broadcast::Sender;
 
 #[derive(Debug)]
 pub struct ActionWrapper {

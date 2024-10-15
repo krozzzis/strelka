@@ -769,6 +769,7 @@ dependencies = [
  "iced_core",
  "serde",
  "smol_str 0.3.1",
+ "tokio",
 ]
 
 [[package]]

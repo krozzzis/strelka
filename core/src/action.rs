@@ -1,6 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
-use crossbeam::channel::Sender;
+use tokio::sync::mpsc::Sender;
 
 use crate::{
     document::{DocumentHandler, DocumentId},
