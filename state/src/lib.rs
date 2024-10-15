@@ -78,6 +78,7 @@ impl ActionBrocker {
     }
 
     pub async fn run(&mut self) {
+        info!("Started Brocker's thread");
         while let Ok(action) = self.receiver.recv() {
             info!("Brocker. Processing: {action:?}");
             match action {
@@ -118,7 +119,9 @@ impl DocumentActor {
     }
 
     pub async fn run(&mut self) {
+        info!("Started DocumentActor's thread");
         while let Ok(action) = self.receiver.recv() {
+            info!("Processing: {action:?}");
             match action {
                 DocumentAction::Add(handler, tx) => {
                     let content = Content::with_text(&handler.text_content);
@@ -163,7 +166,9 @@ impl FileActor {
     }
 
     pub async fn run(&mut self) {
+        info!("Started FileActor's thread");
         while let Ok(action) = self.receiver.recv() {
+            info!("Processing: {action:?}");
             match action {
                 FileAction::PickFile => {
                     if let Ok((path, content)) = pick_file(None).await {
@@ -188,7 +193,8 @@ impl FileActor {
                             // If opened pane is NewDocument, replace it with Editor pane
                             // otherwise add new one with Editor
                             let (tx, rx) = bounded(1);
-                            self.brocker_sender
+                            let _ = self
+                                .brocker_sender
                                 .send(GenericAction::Pane(PaneAction::GetOpen(tx)));
                             if let Ok(Some(Pane::NewDocument)) = rx.recv() {
                                 let (tx, rx) = bounded(1);
@@ -245,7 +251,9 @@ impl PaneActor {
     }
 
     pub async fn run(&mut self) {
+        info!("Started PaneActors's thread");
         while let Ok(action) = self.receiver.recv() {
+            info!("Processing: {action:?}");
             match action {
                 PaneAction::Close(id) => {
                     let pane = self.panes.remove(&id);
@@ -267,7 +275,7 @@ impl PaneActor {
                     let id = self.panes.add(pane);
                     self.panes.open(&id);
                     if let Some(tx) = tx {
-                        tx.send(id);
+                        let _ = tx.send(id);
                     }
                 }
                 PaneAction::Replace(id, pane) => {
@@ -275,11 +283,11 @@ impl PaneActor {
                 }
                 PaneAction::GetOpen(tx) => {
                     let opened = self.panes.get_open().cloned();
-                    tx.send(opened);
+                    let _ = tx.send(opened);
                 }
                 PaneAction::GetOpenId(tx) => {
                     let opened_id = self.panes.get_open_id().cloned();
-                    tx.send(opened_id);
+                    let _ = tx.send(opened_id);
                 }
             }
         }

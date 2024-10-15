@@ -16,11 +16,12 @@ use iced::{
     },
     Element, Settings, Subscription, Task,
 };
+use log::{debug, info};
 use state::{ActionBrocker, DocumentActor, FileActor, PaneActor, State};
 
 use std::{collections::HashMap, path::PathBuf};
 
-use crate::util::{get_file_name, open_file, pick_file};
+use crate::util::get_file_name;
 
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
@@ -28,7 +29,7 @@ use theming::{catalog::Catalog, Theme};
 use widget::pane::{self, pane_stack};
 
 use core::{
-    action::{Action, DocumentAction, FileAction, GenericAction, PaneAction},
+    action::{Action, FileAction, GenericAction, PaneAction},
     document::{DocumentHandler, DocumentId, DocumentStore},
     pane::{Pane, PaneModel},
     smol_str::SmolStr,
@@ -151,10 +152,14 @@ impl App {
 
         let mut tasks = Vec::new();
 
-        let mut brocker = ActionBrocker::new(brocker_rx).document_actor(document_tx.clone());
         let mut document_actor = DocumentActor::new(document_rx, brocker_tx.clone());
         let mut pane_actor = PaneActor::new(pane_rx, brocker_tx.clone());
         let mut file_actor = FileActor::new(file_rx, brocker_tx.clone());
+
+        let mut brocker = ActionBrocker::new(brocker_rx)
+            .document_actor(document_tx.clone())
+            .file_actor(file_tx.clone())
+            .pane_actor(pane_tx.clone());
 
         tokio::spawn(async move { brocker.run().await });
 
@@ -176,6 +181,7 @@ impl App {
         // let apply_theme = Task::perform(async move { theme }, AppMessage::LoadTheme);
         // tasks.push(apply_theme);
 
+        info!("App constructor done");
         (app, Task::batch(tasks))
     }
 
@@ -183,7 +189,7 @@ impl App {
     where
         F: Fn(&State) -> AppMessage + 'static,
     {
-        log::info!("Added hotkey {hotkey:?}");
+        info!("Added hotkey {hotkey:?}");
         self.hotkeys.insert(hotkey, Box::new(func));
     }
 
@@ -193,82 +199,17 @@ impl App {
 
     fn perform_action(&mut self, action: GenericAction) -> Task<AppMessage> {
         let _ = self.brocker_tx.send(action);
-        // match action {
-        //     GenericAction::File(action) => match action {
-        //         FileAction::PickFile => {
-        //             return Task::perform(pick_file(None), AppMessage::OpenedFile)
-        //         }
-        //         FileAction::OpenFileCurrentTab(path) => {
-        //             return Task::perform(open_file(path), AppMessage::OpenedFile)
-        //         }
-        //         FileAction::OpenFileForceCurrentTab(path) => {
-        //             return Task::perform(open_file(path), AppMessage::OpenedFile)
-        //         }
-        //         FileAction::OpenFileNewTab(path) => {
-        //             return Task::perform(open_file(path), AppMessage::OpenedFile)
-        //         }
-        //     },
-        //     GenericAction::Pane(action) => match action {
-        //         PaneAction::Close(id) => {
-        //             let pane = self.state.panes.remove(&id);
-        //
-        //             // Close document if Editor pane was closed
-        //             if let Some(Pane::Editor(doc_id)) = pane {
-        //                 self.state.documents.remove(&doc_id);
-        //             }
-        //
-        //             // If there no panes left, create a NewDocument one
-        //             if self.state.panes.count() == 0 {
-        //                 let id = self.state.panes.add(Pane::NewDocument);
-        //                 self.state.panes.open(&id);
-        //             }
-        //         }
-        //         PaneAction::Open(id) => self.state.panes.open(&id),
-        //         PaneAction::Add(pane) => {
-        //             let id = self.state.panes.add(pane);
-        //             self.state.panes.open(&id);
-        //         }
-        //         PaneAction::Replace(id, pane) => {
-        //             self.state.panes.replace(&id, pane);
-        //         }
-        //     },
-        //     GenericAction::Document(action) => match action {
-        //         DocumentAction::Add(handler) => {
-        //             let content = Content::with_text(&handler.text_content);
-        //             let handler = DocumentHandler {
-        //                 text_content: content,
-        //                 path: handler.path.clone(),
-        //                 filename: handler.filename.clone(),
-        //                 changed: handler.changed,
-        //             };
-        //             self.state.documents.add(handler);
-        //         }
-        //         DocumentAction::Open(id) => {
-        //             let pane = Pane::Editor(id);
-        //             return Task::done(AppMessage::Action(Action::new(PaneAction::Add(pane))));
-        //         }
-        //         DocumentAction::Save(_id) => {
-        //             todo!()
-        //         }
-        //         DocumentAction::Remove(id) => {
-        //             self.state.documents.remove(&id);
-        //         }
-        //     },
-        //     GenericAction::Theme(action) => match action {
-        //         core::action::ThemeAction::MakeIndex => todo!(),
-        //         core::action::ThemeAction::SetTheme(_) => todo!(),
-        //     },
-        // }
         Task::none()
     }
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
-        log::info!("Handling message: {message:?}");
+        info!("Handling message: {message:?}");
 
         match message {
             AppMessage::None => {}
 
             AppMessage::Action(action) => {
+                info!("Processing action in update");
                 let action = self.plugin_host.process_action(&self.state, action);
                 let mut tasks = Vec::new();
                 for generic in action.iter() {
@@ -410,6 +351,8 @@ impl App {
                 key: c.chars().next().unwrap_or_default(),
                 modifiers: modifier,
             };
+
+            debug!("Pressed {hotkey:?}");
 
             if let Some(func) = self.hotkeys.get(&hotkey) {
                 return Some(func(&self.state));

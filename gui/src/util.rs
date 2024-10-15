@@ -1,32 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    sync::Arc,
-};
-
-use tokio::{fs, io::AsyncWriteExt};
-
-pub async fn open_file(path: impl Into<PathBuf>) -> Result<(PathBuf, String), ()> {
-    let path = path.into();
-    let content = fs::read_to_string(&path).await.map_err(|_| ())?;
-    Ok((path, content))
-}
-
-pub async fn pick_file(directory: Option<PathBuf>) -> Result<(PathBuf, String), ()> {
-    let handler = if let Some(dir) = directory {
-        rfd::AsyncFileDialog::new().set_directory(dir)
-    } else {
-        rfd::AsyncFileDialog::new()
-    }
-    .pick_file()
-    .await;
-
-    if let Some(path) = handler {
-        let content = open_file(path.path()).await.map_err(|_| ())?;
-        Ok(content)
-    } else {
-        Err(())
-    }
-}
+use std::path::Path;
 
 pub fn get_file_name(path: &Path) -> String {
     path.file_name()
