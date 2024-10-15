@@ -6,9 +6,11 @@ use config::{
     workdir::{create_config_dir, create_workdir},
     Config,
 };
-use crossbeam::channel::{bounded, Sender};
+use crossbeam::channel::{bounded, Receiver, Sender};
 use iced::{
+    futures::{SinkExt, Stream},
     keyboard::{on_key_press, Key},
+    stream,
     widget::{
         row,
         text_editor::{self, Content},
@@ -48,6 +50,7 @@ pub struct App {
     state: State,
     brocker_tx: Sender<ActionWrapper>,
     completition_tx: Sender<ActionResult>,
+    completition_rx: Receiver<ActionResult>,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
 }
@@ -119,6 +122,7 @@ impl App {
             state,
             brocker_tx,
             completition_tx,
+            completition_rx,
             plugin_host,
             hotkeys: HashMap::new(),
         };
@@ -336,8 +340,24 @@ impl App {
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {
-        println!("subscription");
-        on_key_press(|key, modifiers| Some(AppMessage::OnKeyPress(key, modifiers)))
+        info!("Creating subscriptions");
+        let completition_listener =
+            Subscription::run_with_id(1, App::complition_stream(self.completition_rx.clone()));
+        let key_press_listener =
+            on_key_press(|key, modifiers| Some(AppMessage::OnKeyPress(key, modifiers)));
+
+        Subscription::batch([completition_listener, key_press_listener])
+    }
+
+    fn complition_stream(rx: Receiver<ActionResult>) -> impl Stream<Item = AppMessage> {
+        info!("Completition listener started");
+        stream::channel(100, |mut output| async move {
+            info!("Completition listener thread");
+            while let Ok(_result) = rx.recv() {
+                println!("Receive complete notificaton");
+                let _ = output.send(AppMessage::None).await;
+            }
+        })
     }
 
     fn on_key_press(
@@ -345,6 +365,7 @@ impl App {
         key: Key,
         modifiers: iced::keyboard::Modifiers,
     ) -> Option<AppMessage> {
+        info!("Key press listener started");
         if let Key::Character(c) = key {
             let modifier = if modifiers.control() && modifiers.alt() {
                 Modifiers::CtrlAlt
