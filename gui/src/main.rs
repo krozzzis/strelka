@@ -17,7 +17,9 @@ use iced::{
     Element, Settings, Subscription, Task,
 };
 use log::{debug, info};
-use state::{ActionBrocker, DocumentActor, FileActor, PaneActor, State};
+use state::{
+    ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor, State,
+};
 
 use std::{collections::HashMap, path::PathBuf};
 
@@ -44,7 +46,8 @@ static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
     state: State,
-    brocker_tx: Sender<GenericAction>,
+    brocker_tx: Sender<ActionWrapper>,
+    completition_tx: Sender<ActionResult>,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
 }
@@ -74,6 +77,31 @@ impl App {
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
 
+        let mut tasks = Vec::new();
+
+        // Actors
+
+        let (document_tx, document_rx) = bounded(10);
+        let (file_tx, file_rx) = bounded(10);
+        let (pane_tx, pane_rx) = bounded(10);
+        let (brocker_tx, brocker_rx) = bounded(10);
+        let (completition_tx, completition_rx) = bounded(10);
+
+        let mut document_actor = DocumentActor::new(document_rx, brocker_tx.clone());
+        let mut pane_actor = PaneActor::new(pane_rx, brocker_tx.clone());
+        let mut file_actor = FileActor::new(file_rx, brocker_tx.clone());
+
+        let mut brocker = ActionBrocker::new(brocker_rx)
+            .document_actor(document_tx.clone())
+            .file_actor(file_tx.clone())
+            .pane_actor(pane_tx.clone());
+
+        tokio::spawn(async move { brocker.run().await });
+
+        tokio::spawn(async move { document_actor.run().await });
+        tokio::spawn(async move { pane_actor.run().await });
+        tokio::spawn(async move { file_actor.run().await });
+
         let mut panes = PaneModel::new();
         {
             let id = panes.add(Pane::NewDocument);
@@ -87,14 +115,10 @@ impl App {
             config,
         };
 
-        let (document_tx, document_rx) = bounded(10);
-        let (file_tx, file_rx) = bounded(10);
-        let (pane_tx, pane_rx) = bounded(10);
-        let (brocker_tx, brocker_rx) = bounded(10);
-
         let mut app = Self {
             state,
-            brocker_tx: brocker_tx.clone(),
+            brocker_tx,
+            completition_tx,
             plugin_host,
             hotkeys: HashMap::new(),
         };
@@ -150,23 +174,6 @@ impl App {
             |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Config, None))),
         );
 
-        let mut tasks = Vec::new();
-
-        let mut document_actor = DocumentActor::new(document_rx, brocker_tx.clone());
-        let mut pane_actor = PaneActor::new(pane_rx, brocker_tx.clone());
-        let mut file_actor = FileActor::new(file_rx, brocker_tx.clone());
-
-        let mut brocker = ActionBrocker::new(brocker_rx)
-            .document_actor(document_tx.clone())
-            .file_actor(file_tx.clone())
-            .pane_actor(pane_tx.clone());
-
-        tokio::spawn(async move { brocker.run().await });
-
-        tokio::spawn(async move { document_actor.run().await });
-        tokio::spawn(async move { pane_actor.run().await });
-        tokio::spawn(async move { file_actor.run().await });
-
         for id in app.plugin_host.get_plugin_ids() {
             let task = Task::done(AppMessage::LoadPlugin(id.clone(), true));
             tasks.push(task);
@@ -198,7 +205,8 @@ impl App {
     }
 
     fn perform_action(&mut self, action: GenericAction) -> Task<AppMessage> {
-        let _ = self.brocker_tx.send(action);
+        let wrapper = ActionWrapper::new(action).notify(self.completition_tx.clone());
+        let _ = self.brocker_tx.send(wrapper);
         Task::none()
     }
 
@@ -328,6 +336,7 @@ impl App {
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {
+        println!("subscription");
         on_key_press(|key, modifiers| Some(AppMessage::OnKeyPress(key, modifiers)))
     }
 

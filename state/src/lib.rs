@@ -1,3 +1,7 @@
+mod action;
+
+pub use action::{ActionResult, ActionWrapper};
+
 use config::Config;
 use core::{
     action::{DocumentAction, FileAction, GenericAction, PaneAction},
@@ -46,14 +50,14 @@ impl State {
 }
 
 pub struct ActionBrocker {
-    receiver: Receiver<GenericAction>,
+    receiver: Receiver<ActionWrapper>,
     document_sender: Option<Sender<DocumentAction>>,
     file_sender: Option<Sender<FileAction>>,
     pane_sender: Option<Sender<PaneAction>>,
 }
 
 impl ActionBrocker {
-    pub fn new(rx: Receiver<GenericAction>) -> Self {
+    pub fn new(rx: Receiver<ActionWrapper>) -> Self {
         Self {
             receiver: rx,
             document_sender: None,
@@ -79,26 +83,28 @@ impl ActionBrocker {
 
     pub async fn run(&mut self) {
         info!("Started Brocker's thread");
-        while let Ok(action) = self.receiver.recv() {
-            info!("Brocker. Processing: {action:?}");
+        while let Ok(wrapper) = self.receiver.recv() {
+            info!("Brocker. Processing: {wrapper:?}");
+            let action = wrapper.action();
             match action {
                 GenericAction::File(action) => {
                     if let Some(tx) = &self.file_sender {
-                        let _ = tx.send(action);
+                        let _ = tx.send(action.clone());
                     }
                 }
                 GenericAction::Pane(action) => {
                     if let Some(tx) = &self.pane_sender {
-                        let _ = tx.send(action);
+                        let _ = tx.send(action.clone());
                     }
                 }
                 GenericAction::Document(action) => {
                     if let Some(tx) = &self.document_sender {
-                        let _ = tx.send(action);
+                        let _ = tx.send(action.clone());
                     }
                 }
                 GenericAction::Theme(_) => todo!(),
             }
+            wrapper.try_notify_complete(ActionResult::Success);
         }
     }
 }
@@ -106,11 +112,11 @@ impl ActionBrocker {
 pub struct DocumentActor {
     documents: DocumentStore<Content>,
     receiver: Receiver<DocumentAction>,
-    brocker_sender: Sender<GenericAction>,
+    brocker_sender: Sender<ActionWrapper>,
 }
 
 impl DocumentActor {
-    pub fn new(rx: Receiver<DocumentAction>, brocker_tx: Sender<GenericAction>) -> Self {
+    pub fn new(rx: Receiver<DocumentAction>, brocker_tx: Sender<ActionWrapper>) -> Self {
         Self {
             documents: DocumentStore::new(),
             receiver: rx,
@@ -139,7 +145,7 @@ impl DocumentActor {
                 DocumentAction::Open(id) => {
                     let pane = Pane::Editor(id);
                     let message = GenericAction::Pane(PaneAction::Add(pane, None));
-                    let _ = self.brocker_sender.send(message);
+                    let _ = self.brocker_sender.send(ActionWrapper::new(message));
                 }
                 DocumentAction::Save(_id) => {
                     todo!()
@@ -154,11 +160,11 @@ impl DocumentActor {
 
 pub struct FileActor {
     receiver: Receiver<FileAction>,
-    brocker_sender: Sender<GenericAction>,
+    brocker_sender: Sender<ActionWrapper>,
 }
 
 impl FileActor {
-    pub fn new(rx: Receiver<FileAction>, brocker_tx: Sender<GenericAction>) -> Self {
+    pub fn new(rx: Receiver<FileAction>, brocker_tx: Sender<ActionWrapper>) -> Self {
         Self {
             receiver: rx,
             brocker_sender: brocker_tx,
@@ -182,9 +188,8 @@ impl FileActor {
                         let (tx, rx) = bounded(1);
                         let _ =
                             self.brocker_sender
-                                .send(GenericAction::Document(DocumentAction::Add(
-                                    Arc::new(handler),
-                                    Some(tx),
+                                .send(ActionWrapper::new(GenericAction::Document(
+                                    DocumentAction::Add(Arc::new(handler), Some(tx)),
                                 )));
 
                         if let Ok(doc_id) = rx.recv() {
@@ -193,29 +198,31 @@ impl FileActor {
                             // If opened pane is NewDocument, replace it with Editor pane
                             // otherwise add new one with Editor
                             let (tx, rx) = bounded(1);
-                            let _ = self
-                                .brocker_sender
-                                .send(GenericAction::Pane(PaneAction::GetOpen(tx)));
+                            let _ =
+                                self.brocker_sender
+                                    .send(ActionWrapper::new(GenericAction::Pane(
+                                        PaneAction::GetOpen(tx),
+                                    )));
                             if let Ok(Some(Pane::NewDocument)) = rx.recv() {
                                 let (tx, rx) = bounded(1);
-                                let _ = self
-                                    .brocker_sender
-                                    .send(GenericAction::Pane(PaneAction::GetOpenId(tx)));
+                                let _ = self.brocker_sender.send(ActionWrapper::new(
+                                    GenericAction::Pane(PaneAction::GetOpenId(tx)),
+                                ));
 
                                 if let Ok(Some(opened_id)) = rx.recv() {
                                     let message =
                                         GenericAction::Pane(PaneAction::Replace(opened_id, pane));
-                                    let _ = self.brocker_sender.send(message);
+                                    let _ = self.brocker_sender.send(ActionWrapper::new(message));
                                 }
                             } else {
                                 let (tx, rx) = bounded(1);
-                                let _ = self
-                                    .brocker_sender
-                                    .send(GenericAction::Pane(PaneAction::Add(pane, Some(tx))));
+                                let _ = self.brocker_sender.send(ActionWrapper::new(
+                                    GenericAction::Pane(PaneAction::Add(pane, Some(tx))),
+                                ));
                                 if let Ok(pane_id) = rx.recv() {
-                                    let _ = self
-                                        .brocker_sender
-                                        .send(GenericAction::Pane(PaneAction::Open(pane_id)));
+                                    let _ = self.brocker_sender.send(ActionWrapper::new(
+                                        GenericAction::Pane(PaneAction::Open(pane_id)),
+                                    ));
                                 }
                             }
                         }
@@ -238,11 +245,11 @@ impl FileActor {
 pub struct PaneActor {
     panes: PaneModel,
     receiver: Receiver<PaneAction>,
-    brocker_sender: Sender<GenericAction>,
+    brocker_sender: Sender<ActionWrapper>,
 }
 
 impl PaneActor {
-    pub fn new(rx: Receiver<PaneAction>, brocker_tx: Sender<GenericAction>) -> Self {
+    pub fn new(rx: Receiver<PaneAction>, brocker_tx: Sender<ActionWrapper>) -> Self {
         Self {
             panes: PaneModel::new(),
             receiver: rx,
@@ -261,7 +268,7 @@ impl PaneActor {
                     // Close document if Editor pane was closed
                     if let Some(Pane::Editor(doc_id)) = pane {
                         let message = GenericAction::Document(DocumentAction::Remove(doc_id));
-                        let _ = self.brocker_sender.send(message);
+                        let _ = self.brocker_sender.send(ActionWrapper::new(message));
                     }
 
                     // If there no panes left, create a NewDocument one
