@@ -6,6 +6,7 @@ use config::{
     workdir::{create_config_dir, create_workdir},
     Config,
 };
+use crossbeam::channel::{bounded, Sender};
 use iced::{
     keyboard::{on_key_press, Key},
     widget::{
@@ -15,11 +16,11 @@ use iced::{
     },
     Element, Settings, Subscription, Task,
 };
-use state::State;
+use state::{ActionBrocker, DocumentActor, State};
 
-use std::{collections::HashMap, path::PathBuf, sync::Arc};
+use std::{collections::HashMap, path::PathBuf};
 
-use crate::util::{get_file_name, open_file, pick_file, save_file};
+use crate::util::{get_file_name, open_file, pick_file};
 
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
@@ -42,6 +43,7 @@ static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
     state: State,
+    brocker_tx: Sender<GenericAction>,
     plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
 }
@@ -52,7 +54,6 @@ pub enum AppMessage {
     OpenedFile(Result<(PathBuf, String), ()>),
     GenericAction(GenericAction),
     Action(Action),
-    SavedFile(DocumentId),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
     OnKeyPress(Key, iced::keyboard::Modifiers),
@@ -85,8 +86,12 @@ impl App {
             config,
         };
 
+        let (document_tx, document_rx) = bounded(10);
+        let (brocker_tx, brocker_rx) = bounded(10);
+
         let mut app = Self {
             state,
+            brocker_tx: brocker_tx.clone(),
             plugin_host,
             hotkeys: HashMap::new(),
         };
@@ -144,6 +149,17 @@ impl App {
 
         let mut tasks = Vec::new();
 
+        let mut brocker = ActionBrocker::new(brocker_rx).document(document_tx);
+        let mut document_actor = DocumentActor::new(document_rx, brocker_tx);
+
+        tokio::spawn(async move {
+            brocker.run().await
+        });
+
+        tokio::spawn(async move {
+            document_actor.run().await
+        });
+
         for id in app.plugin_host.get_plugin_ids() {
             let task = Task::done(AppMessage::LoadPlugin(id.clone(), true));
             tasks.push(task);
@@ -174,78 +190,73 @@ impl App {
     }
 
     fn perform_action(&mut self, action: GenericAction) -> Task<AppMessage> {
-        match action {
-            GenericAction::File(action) => match action {
-                FileAction::PickFile => {
-                    return Task::perform(pick_file(None), AppMessage::OpenedFile)
-                }
-                FileAction::OpenFileCurrentTab(path) => {
-                    return Task::perform(open_file(path), AppMessage::OpenedFile)
-                }
-                FileAction::OpenFileForceCurrentTab(path) => {
-                    return Task::perform(open_file(path), AppMessage::OpenedFile)
-                }
-                FileAction::OpenFileNewTab(path) => {
-                    return Task::perform(open_file(path), AppMessage::OpenedFile)
-                }
-            },
-            GenericAction::Pane(action) => match action {
-                PaneAction::Close(id) => {
-                    let pane = self.state.panes.remove(&id);
-
-                    // Close document if Editor pane was closed
-                    if let Some(Pane::Editor(doc_id)) = pane {
-                        self.state.documents.remove(&doc_id);
-                    }
-
-                    // If there no panes left, create a NewDocument one
-                    if self.state.panes.count() == 0 {
-                        let id = self.state.panes.add(Pane::NewDocument);
-                        self.state.panes.open(&id);
-                    }
-                }
-                PaneAction::Open(id) => self.state.panes.open(&id),
-                PaneAction::Add(pane) => {
-                    let id = self.state.panes.add(pane);
-                    self.state.panes.open(&id);
-                }
-                PaneAction::Replace(id, pane) => {
-                    self.state.panes.replace(&id, pane);
-                }
-            },
-            GenericAction::Document(action) => match action {
-                DocumentAction::Add(handler) => {
-                    let content = Content::with_text(&handler.text_content);
-                    let handler = DocumentHandler {
-                        text_content: content,
-                        path: handler.path.clone(),
-                        filename: handler.filename.clone(),
-                        changed: handler.changed,
-                    };
-                    self.state.documents.add(handler);
-                }
-                DocumentAction::Open(id) => {
-                    let pane = Pane::Editor(id);
-                    return Task::done(AppMessage::Action(Action::new(PaneAction::Add(pane))));
-                }
-                DocumentAction::Save(id) => {
-                    if let Some(handler) = self.state.documents.get(&id) {
-                        let message = AppMessage::SavedFile(id);
-                        return Task::perform(
-                            save_file(handler.path.clone(), Arc::new(handler.text_content.text())),
-                            move |_| message.clone(),
-                        );
-                    }
-                }
-                DocumentAction::Remove(id) => {
-                    self.state.documents.remove(&id);
-                }
-            },
-            GenericAction::Theme(action) => match action {
-                core::action::ThemeAction::MakeIndex => todo!(),
-                core::action::ThemeAction::SetTheme(_) => todo!(),
-            },
-        }
+        let _ = self.brocker_tx.send(action);
+        // match action {
+        //     GenericAction::File(action) => match action {
+        //         FileAction::PickFile => {
+        //             return Task::perform(pick_file(None), AppMessage::OpenedFile)
+        //         }
+        //         FileAction::OpenFileCurrentTab(path) => {
+        //             return Task::perform(open_file(path), AppMessage::OpenedFile)
+        //         }
+        //         FileAction::OpenFileForceCurrentTab(path) => {
+        //             return Task::perform(open_file(path), AppMessage::OpenedFile)
+        //         }
+        //         FileAction::OpenFileNewTab(path) => {
+        //             return Task::perform(open_file(path), AppMessage::OpenedFile)
+        //         }
+        //     },
+        //     GenericAction::Pane(action) => match action {
+        //         PaneAction::Close(id) => {
+        //             let pane = self.state.panes.remove(&id);
+        //
+        //             // Close document if Editor pane was closed
+        //             if let Some(Pane::Editor(doc_id)) = pane {
+        //                 self.state.documents.remove(&doc_id);
+        //             }
+        //
+        //             // If there no panes left, create a NewDocument one
+        //             if self.state.panes.count() == 0 {
+        //                 let id = self.state.panes.add(Pane::NewDocument);
+        //                 self.state.panes.open(&id);
+        //             }
+        //         }
+        //         PaneAction::Open(id) => self.state.panes.open(&id),
+        //         PaneAction::Add(pane) => {
+        //             let id = self.state.panes.add(pane);
+        //             self.state.panes.open(&id);
+        //         }
+        //         PaneAction::Replace(id, pane) => {
+        //             self.state.panes.replace(&id, pane);
+        //         }
+        //     },
+        //     GenericAction::Document(action) => match action {
+        //         DocumentAction::Add(handler) => {
+        //             let content = Content::with_text(&handler.text_content);
+        //             let handler = DocumentHandler {
+        //                 text_content: content,
+        //                 path: handler.path.clone(),
+        //                 filename: handler.filename.clone(),
+        //                 changed: handler.changed,
+        //             };
+        //             self.state.documents.add(handler);
+        //         }
+        //         DocumentAction::Open(id) => {
+        //             let pane = Pane::Editor(id);
+        //             return Task::done(AppMessage::Action(Action::new(PaneAction::Add(pane))));
+        //         }
+        //         DocumentAction::Save(_id) => {
+        //             todo!()
+        //         }
+        //         DocumentAction::Remove(id) => {
+        //             self.state.documents.remove(&id);
+        //         }
+        //     },
+        //     GenericAction::Theme(action) => match action {
+        //         core::action::ThemeAction::MakeIndex => todo!(),
+        //         core::action::ThemeAction::SetTheme(_) => todo!(),
+        //     },
+        // }
         Task::none()
     }
 
@@ -266,12 +277,6 @@ impl App {
             }
 
             AppMessage::GenericAction(action) => return self.perform_action(action),
-
-            AppMessage::SavedFile(id) => {
-                if let Some(handler) = self.state.documents.get_mut(&id) {
-                    handler.changed = false;
-                }
-            }
 
             AppMessage::OnKeyPress(key, modifiers) => {
                 if let Some(message) = self.on_key_press(key, modifiers) {

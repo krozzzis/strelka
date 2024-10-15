@@ -5,15 +5,6 @@ use std::{
 
 use tokio::{fs, io::AsyncWriteExt};
 
-pub async fn save_file(path: PathBuf, text: Arc<String>) -> tokio::io::Result<()> {
-    let mut file = fs::File::create(path).await?;
-
-    file.write_all(text.as_bytes()).await?;
-
-    file.flush().await?;
-    Ok(())
-}
-
 pub async fn open_file(path: impl Into<PathBuf>) -> Result<(PathBuf, String), ()> {
     let path = path.into();
     let content = fs::read_to_string(&path).await.map_err(|_| ())?;

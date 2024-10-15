@@ -10,6 +10,7 @@ lto = true
 log = "^0.4"
 env_logger = "^0.11"
 lazy_static = "^1.5"
+crossbeam = { version = "^0.8" }
 tokio = { version = "^1.40", features = ["fs", "io-util"] }
 serde = { version = "^1", features = ["derive"] }
 toml = { version = "^0.8" }

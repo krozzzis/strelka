@@ -1,5 +1,7 @@
 use std::{path::PathBuf, sync::Arc};
 
+use crossbeam::channel::Sender;
+
 use crate::{
     document::{DocumentHandler, DocumentId},
     pane::{Pane, PaneId},
@@ -16,18 +18,28 @@ pub enum PaneAction {
 
 #[derive(Debug, Clone)]
 pub enum FileAction {
-    PickFile,
+    PickFile(Sender<FileActionResponse>),
     OpenFileCurrentTab(PathBuf),
     OpenFileForceCurrentTab(PathBuf),
     OpenFileNewTab(PathBuf),
 }
 
 #[derive(Debug, Clone)]
+pub enum FileActionResponse {
+    OpenedFile(PathBuf, String),
+}
+
+#[derive(Debug, Clone)]
 pub enum DocumentAction {
-    Add(Arc<DocumentHandler<String>>),
+    Add(Arc<DocumentHandler<String>>, Sender<DocumentActionResponse>),
     Open(DocumentId),
     Save(DocumentId),
     Remove(DocumentId),
+}
+
+#[derive(Debug, Clone)]
+pub enum DocumentActionResponse {
+    DocumentAdded(DocumentId),
 }
 
 #[derive(Debug, Clone)]

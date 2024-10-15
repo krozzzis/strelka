@@ -6,6 +6,9 @@ license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
 [dependencies]
+rfd = "^0.15"
+crossbeam = { workspace = true }
+tokio = { workspace = true }
 core = { path = "../core" }
 config = { path = "../config" }
 theming = { path = "../theming" }
