@@ -4,8 +4,8 @@ use tokio::sync::broadcast::Sender;
 
 #[derive(Debug)]
 pub struct ActionWrapper {
-    action: GenericAction,
-    completition_tx: Option<Sender<ActionResult>>,
+    pub action: GenericAction,
+    pub completition_tx: Option<Sender<ActionResult>>,
 }
 
 impl ActionWrapper {

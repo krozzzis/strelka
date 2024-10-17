@@ -17,7 +17,10 @@ use std::{
     sync::Arc,
 };
 use theming::{catalog::Catalog, index::ThemeIndex, Theme};
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::{
+    broadcast,
+    mpsc::{channel, Receiver, Sender},
+};
 
 pub struct State {
     pub documents: DocumentStore<Content>,
@@ -51,7 +54,7 @@ impl State {
 
 pub struct ActionBrocker {
     receiver: Receiver<ActionWrapper>,
-    document_sender: Option<Sender<DocumentAction>>,
+    document_sender: Option<Sender<ActionWrapper>>,
     file_sender: Option<Sender<FileAction>>,
     pane_sender: Option<Sender<PaneAction>>,
 }
@@ -66,7 +69,7 @@ impl ActionBrocker {
         }
     }
 
-    pub fn document_actor(mut self, document_tx: Sender<DocumentAction>) -> Self {
+    pub fn document_actor(mut self, document_tx: Sender<ActionWrapper>) -> Self {
         self.document_sender = Some(document_tx);
         self
     }
@@ -85,8 +88,7 @@ impl ActionBrocker {
         info!("Started Brocker's thread");
         while let Some(wrapper) = self.receiver.recv().await {
             info!("Brocker. Processing: {wrapper:?}");
-            let action = wrapper.action();
-            match action {
+            match wrapper.action() {
                 GenericAction::File(action) => {
                     if let Some(tx) = &self.file_sender {
                         let _ = tx.send(action.clone()).await;
@@ -99,24 +101,32 @@ impl ActionBrocker {
                 }
                 GenericAction::Document(action) => {
                     if let Some(tx) = &self.document_sender {
-                        let _ = tx.send(action.clone()).await;
+                        let (complete_tx, mut complete_rx) = broadcast::channel(1);
+                        let message = ActionWrapper::new(GenericAction::Document(action.clone()))
+                            .notify(complete_tx);
+                        let _ = tx.send(message).await;
+
+                        // ActionResult throwing
+                        while let Ok(result) = complete_rx.recv().await {
+                            info!("Brocker. Received success from DocumentActor");
+                            wrapper.try_notify_complete(result);
+                        }
                     }
                 }
                 GenericAction::Theme(_) => todo!(),
             }
-            wrapper.try_notify_complete(ActionResult::Success);
         }
     }
 }
 
 pub struct DocumentActor {
     documents: DocumentStore<Content>,
-    receiver: Receiver<DocumentAction>,
+    receiver: Receiver<ActionWrapper>,
     brocker_sender: Sender<ActionWrapper>,
 }
 
 impl DocumentActor {
-    pub fn new(rx: Receiver<DocumentAction>, brocker_tx: Sender<ActionWrapper>) -> Self {
+    pub fn new(rx: Receiver<ActionWrapper>, brocker_tx: Sender<ActionWrapper>) -> Self {
         Self {
             documents: DocumentStore::new(),
             receiver: rx,
@@ -126,8 +136,14 @@ impl DocumentActor {
 
     pub async fn run(&mut self) {
         info!("Started DocumentActor's thread");
-        while let Some(action) = self.receiver.recv().await {
-            info!("Processing: {action:?}");
+        while let Some(wrapper) = self.receiver.recv().await {
+            info!("DocumentActor. Processing: {wrapper:?}");
+            let action = if let GenericAction::Document(action) = wrapper.action() {
+                action
+            } else {
+                info!("DocumentActor. Dropping processing action because incorrect type");
+                continue;
+            };
             match action {
                 DocumentAction::Add(handler, tx) => {
                     let content = Content::with_text(&handler.text_content);
@@ -139,19 +155,24 @@ impl DocumentActor {
                     };
                     let doc_id = self.documents.add(handler);
                     if let Some(tx) = tx {
-                        let _ = tx.send(doc_id);
+                        let _ = tx.send(doc_id).await;
                     }
+
+                    info!("DocumentActor. Sending sucess");
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
                 DocumentAction::Open(id) => {
-                    let pane = Pane::Editor(id);
+                    let pane = Pane::Editor(*id);
                     let message = GenericAction::Pane(PaneAction::Add(pane, None));
                     let _ = self.brocker_sender.send(ActionWrapper::new(message)).await;
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
                 DocumentAction::Save(_id) => {
                     todo!()
                 }
                 DocumentAction::Remove(id) => {
-                    self.documents.remove(&id);
+                    self.documents.remove(id);
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
             }
         }
@@ -280,7 +301,7 @@ impl PaneActor {
                     // Close document if Editor pane was closed
                     if let Some(Pane::Editor(doc_id)) = pane {
                         let message = GenericAction::Document(DocumentAction::Remove(doc_id));
-                        let _ = self.brocker_sender.send(ActionWrapper::new(message));
+                        let _ = self.brocker_sender.send(ActionWrapper::new(message)).await;
                     }
 
                     // If there no panes left, create a NewDocument one
@@ -302,11 +323,11 @@ impl PaneActor {
                 }
                 PaneAction::GetOpen(tx) => {
                     let opened = self.panes.get_open().cloned();
-                    let _ = tx.send(opened);
+                    let _ = tx.send(opened).await;
                 }
                 PaneAction::GetOpenId(tx) => {
                     let opened_id = self.panes.get_open_id().cloned();
-                    let _ = tx.send(opened_id);
+                    let _ = tx.send(opened_id).await;
                 }
             }
         }

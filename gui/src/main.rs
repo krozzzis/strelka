@@ -359,7 +359,7 @@ impl App {
         stream::channel(100, |mut output| async move {
             info!("Completition listener thread");
             while let Ok(_result) = rx.recv().await {
-                println!("Receive complete notificaton");
+                info!("Receive complete notificaton");
                 let _ = output.send(AppMessage::None).await;
             }
         })
