@@ -11,9 +11,8 @@ use iced::{
     keyboard::{on_key_press, Key},
     stream,
     widget::{
-        row,
+        center,
         text_editor::{self, Content},
-        Container,
     },
     Element, Settings, Subscription, Task,
 };
@@ -30,7 +29,7 @@ use crate::util::get_file_name;
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
 use theming::{catalog::Catalog, Theme};
-use widget::pane::{self, pane_stack};
+use widget::container::background;
 
 use core::{
     action::{Action, FileAction, GenericAction, PaneAction},
@@ -224,7 +223,7 @@ impl App {
             AppMessage::None => {}
 
             AppMessage::Action(action) => {
-                info!("Processing action in update");
+                info!("Update. Processing action in update");
                 let action = self.plugin_host.process_action(&self.state, action);
                 let mut tasks = Vec::new();
                 for generic in action.iter() {
@@ -302,40 +301,7 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let mut grid_elements = Vec::new();
-        grid_elements.push(
-            pane_stack::pane_stack(&self.state).map(|msg| -> AppMessage {
-                match msg {
-                    pane_stack::Message::NewDocument(pane::new_document::Message::PickFile) => {
-                        AppMessage::Action(Action::new(FileAction::PickFile))
-                    }
-
-                    pane_stack::Message::NewPane(pane) => {
-                        AppMessage::Action(Action::new(PaneAction::Add(pane, None)))
-                    }
-
-                    pane_stack::Message::OpenPane(id) => {
-                        AppMessage::Action(Action::new(PaneAction::Open(id)))
-                    }
-
-                    pane_stack::Message::ClosePane(id) => {
-                        AppMessage::Action(Action::new(PaneAction::Close(id)))
-                    }
-
-                    pane_stack::Message::TextEditor(
-                        id,
-                        pane::text_editor::Message::EditorAction(action),
-                    ) => AppMessage::TextEditorAction(action, id),
-
-                    pane_stack::Message::None => AppMessage::None,
-                }
-            }),
-        );
-        let grid = row(grid_elements);
-
-        let primary_screen = Container::new(grid);
-
-        primary_screen.into()
+        background(center("nothing")).into()
     }
 
     fn theme(&self) -> Theme {
