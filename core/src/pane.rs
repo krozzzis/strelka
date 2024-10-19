@@ -104,4 +104,16 @@ impl PaneModel {
             *pane = new;
         }
     }
+
+    pub fn get_visible_panes(&self) -> Vec<(PaneId, Pane)> {
+        self.visible
+            .iter()
+            .filter_map(|id| self.panes.get(id).map(|pane| (*id, *pane)))
+            .collect()
+    }
+}
+
+pub struct VisiblePaneModel {
+    pub panes: Vec<(PaneId, Pane)>,
+    pub opened: Option<PaneId>,
 }

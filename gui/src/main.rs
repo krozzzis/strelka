@@ -20,7 +20,7 @@ use log::{debug, info};
 use state::{
     ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor, State,
 };
-use tokio::sync::mpsc::{channel, Sender};
+use tokio::sync::mpsc::{self, channel, Sender};
 
 use std::{collections::HashMap, path::PathBuf};
 
@@ -29,7 +29,10 @@ use crate::util::get_file_name;
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
 use theming::{catalog::Catalog, Theme};
-use widget::container::background;
+use widget::{
+    container::background,
+    pane::pane_stack::{self, pane_stack},
+};
 
 use core::{
     action::{Action, FileAction, GenericAction, PaneAction},
@@ -301,7 +304,28 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        background(center("nothing")).into()
+        let (tx, mut rx) = mpsc::channel(1);
+        let get_model_action = ActionWrapper::new(GenericAction::Pane(PaneAction::GetModel(tx)));
+        let _ = self.brocker_tx.try_send(get_model_action);
+        if let Ok(Some(model)) = rx.try_recv() {
+            let pane_stack = pane_stack(model).map(|message| match message {
+                pane_stack::Message::OpenPane(id) => {
+                    AppMessage::Action(Action::new(PaneAction::Open(id)))
+                }
+                pane_stack::Message::ClosePane(id) => {
+                    AppMessage::Action(Action::new(PaneAction::Close(id)))
+                }
+                pane_stack::Message::NewPane(pane) => {
+                    AppMessage::Action(Action::new(PaneAction::Add(pane, None)))
+                }
+                pane_stack::Message::NewDocument(_message) => todo!(),
+                pane_stack::Message::TextEditor(_, _message) => todo!(),
+                pane_stack::Message::None => AppMessage::None,
+            });
+            pane_stack
+        } else {
+            background(center("Can't load PaneModel")).into()
+        }
     }
 
     fn theme(&self) -> Theme {

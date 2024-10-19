@@ -4,7 +4,7 @@ use tokio::sync::mpsc::Sender;
 
 use crate::{
     document::{DocumentHandler, DocumentId},
-    pane::{Pane, PaneId},
+    pane::{Pane, PaneId, VisiblePaneModel},
     ThemeID,
 };
 
@@ -16,6 +16,7 @@ pub enum PaneAction {
     Replace(PaneId, Pane),
     GetOpen(Sender<Option<Pane>>),
     GetOpenId(Sender<Option<PaneId>>),
+    GetModel(Sender<Option<VisiblePaneModel>>),
 }
 
 #[derive(Debug, Clone)]

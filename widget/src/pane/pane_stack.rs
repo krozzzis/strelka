@@ -1,12 +1,11 @@
 use core::{
     buffer::{Buffer, FormattedBuffer},
     document::DocumentId,
-    pane::{Pane, PaneId},
+    pane::{Pane, PaneId, VisiblePaneModel},
 };
-use state::State;
 
 use iced::{
-    widget::{column, svg, Space},
+    widget::{center, column, svg, Space},
     Element, Length,
 };
 use theming::Theme;
@@ -19,11 +18,8 @@ use crate::{
         text_editor,
     },
     tab::{tab_bar, Tab},
-    util::filename,
     Label,
 };
-
-use super::config::config_pane;
 
 lazy_static::lazy_static! {
     pub static ref BUFFER: Buffer = Buffer::new("Hello\nAboba");
@@ -40,21 +36,15 @@ pub enum Message {
     None,
 }
 
-pub fn pane_stack(state: &State) -> Element<'_, Message, Theme> {
-    let open = state.panes.get_open_id().unwrap_or(&0);
-
-    let mut tabs: Vec<Tab<Message>> = state
+pub fn pane_stack<'a>(model: VisiblePaneModel) -> Element<'a, Message, Theme> {
+    let mut tabs: Vec<Tab<Message>> = model
         .panes
-        .list()
         .iter()
         .map(|(id, pane)| {
-            let title: Option<Label> = match **pane {
+            let title: Option<Label> = match pane {
                 Pane::Empty => None,
                 Pane::NewDocument => Some("New tab".into()),
-                Pane::Editor(id) => state
-                    .documents
-                    .get(&id)
-                    .map(|handler| filename(handler.path.clone()).unwrap_or_default().into()),
+                Pane::Editor(_doc_id) => Some("File tab".into()),
                 Pane::Buffer => Some("Buffer tab (EXPERIMENTAL)".into()),
                 Pane::Config => Some("Config viewer".into()),
             };
@@ -62,10 +52,10 @@ pub fn pane_stack(state: &State) -> Element<'_, Message, Theme> {
             Tab {
                 label: title,
                 icon: None,
-                selected: *id == open,
-                on_click: Some(Message::OpenPane(**id)),
-                on_close: Some(Message::ClosePane(**id)),
-                on_middle_click: Some(Message::ClosePane(**id)),
+                selected: Some(*id) == model.opened,
+                on_click: Some(Message::OpenPane(*id)),
+                on_close: Some(Message::ClosePane(*id)),
+                on_middle_click: Some(Message::ClosePane(*id)),
             }
         })
         .collect();
@@ -83,14 +73,17 @@ pub fn pane_stack(state: &State) -> Element<'_, Message, Theme> {
 
     let tab_bar = tab_bar(tabs);
 
-    let pane = if let Some(pane) = state.panes.get_open() {
-        match *pane {
-            Pane::Empty => background(Space::new(Length::Fill, Length::Fill)).into(),
-            Pane::NewDocument => new_document_pane().map(Message::NewDocument),
-            Pane::Editor(id) => text_editor::text_editor(id, state)
-                .map(move |action| Message::TextEditor(id, action)),
-            Pane::Buffer => background(buffer(&FORMATTED)).into(),
-            Pane::Config => config_pane(state).map(|_| Message::None),
+    let pane = if let Some(id) = model.opened {
+        if let Some((_id, pane)) = model.panes.iter().find(|(x, _pane)| *x == id) {
+            match pane {
+                Pane::Empty => background(Space::new(Length::Fill, Length::Fill)).into(),
+                Pane::NewDocument => new_document_pane().map(Message::NewDocument),
+                Pane::Editor(_id) => background(center("file buffer")).into(),
+                Pane::Buffer => background(buffer(&FORMATTED)).into(),
+                Pane::Config => background(center("config buffer")).into(),
+            }
+        } else {
+            Space::new(Length::Fill, Length::Fill).into()
         }
     } else {
         Space::new(Length::Fill, Length::Fill).into()

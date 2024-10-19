@@ -6,7 +6,7 @@ use config::Config;
 use core::{
     action::{DocumentAction, FileAction, GenericAction, PaneAction},
     document::{DocumentHandler, DocumentStore},
-    pane::{Pane, PaneModel},
+    pane::{Pane, PaneModel, VisiblePaneModel},
     value::Value,
     ThemeID,
 };
@@ -351,6 +351,16 @@ impl PaneActor {
                 PaneAction::GetOpenId(tx) => {
                     let opened_id = self.panes.get_open_id().cloned();
                     let _ = tx.send(opened_id).await;
+                    wrapper.try_notify_complete(ActionResult::Success);
+                }
+                PaneAction::GetModel(tx) => {
+                    let opened_id = self.panes.get_open_id().cloned();
+                    let panes = self.panes.get_visible_panes();
+                    let model = VisiblePaneModel {
+                        panes,
+                        opened: opened_id,
+                    };
+                    let _ = tx.send(Some(model)).await;
                     wrapper.try_notify_complete(ActionResult::Success);
                 }
             }
