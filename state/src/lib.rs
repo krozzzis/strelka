@@ -11,7 +11,7 @@ use core::{
     ThemeID,
 };
 use iced::widget::text_editor::Content;
-use log::info;
+use log::{info, warn};
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
@@ -56,7 +56,7 @@ pub struct ActionBrocker {
     receiver: Receiver<ActionWrapper>,
     document_sender: Option<Sender<ActionWrapper>>,
     file_sender: Option<Sender<FileAction>>,
-    pane_sender: Option<Sender<PaneAction>>,
+    pane_sender: Option<Sender<ActionWrapper>>,
 }
 
 impl ActionBrocker {
@@ -79,7 +79,7 @@ impl ActionBrocker {
         self
     }
 
-    pub fn pane_actor(mut self, pane_tx: Sender<PaneAction>) -> Self {
+    pub fn pane_actor(mut self, pane_tx: Sender<ActionWrapper>) -> Self {
         self.pane_sender = Some(pane_tx);
         self
     }
@@ -96,7 +96,16 @@ impl ActionBrocker {
                 }
                 GenericAction::Pane(action) => {
                     if let Some(tx) = &self.pane_sender {
-                        let _ = tx.send(action.clone()).await;
+                        let (complete_tx, mut complete_rx) = broadcast::channel(1);
+                        let message = ActionWrapper::new(GenericAction::Pane(action.clone()))
+                            .notify(complete_tx);
+                        let _ = tx.send(message).await;
+
+                        // ActionResult throwing
+                        while let Ok(result) = complete_rx.recv().await {
+                            info!("Brocker. Received {result:?} from PaneActor");
+                            wrapper.try_notify_complete(result);
+                        }
                     }
                 }
                 GenericAction::Document(action) => {
@@ -108,7 +117,7 @@ impl ActionBrocker {
 
                         // ActionResult throwing
                         while let Ok(result) = complete_rx.recv().await {
-                            info!("Brocker. Received success from DocumentActor");
+                            info!("Brocker. Received {result:?} from DocumentActor");
                             wrapper.try_notify_complete(result);
                         }
                     }
@@ -141,7 +150,7 @@ impl DocumentActor {
             let action = if let GenericAction::Document(action) = wrapper.action() {
                 action
             } else {
-                info!("DocumentActor. Dropping processing action because incorrect type");
+                warn!("DocumentActor. Dropping processing action because incorrect type");
                 continue;
             };
             match action {
@@ -277,12 +286,12 @@ impl FileActor {
 
 pub struct PaneActor {
     panes: PaneModel,
-    receiver: Receiver<PaneAction>,
+    receiver: Receiver<ActionWrapper>,
     brocker_sender: Sender<ActionWrapper>,
 }
 
 impl PaneActor {
-    pub fn new(rx: Receiver<PaneAction>, brocker_tx: Sender<ActionWrapper>) -> Self {
+    pub fn new(rx: Receiver<ActionWrapper>, brocker_tx: Sender<ActionWrapper>) -> Self {
         Self {
             panes: PaneModel::new(),
             receiver: rx,
@@ -291,12 +300,18 @@ impl PaneActor {
     }
 
     pub async fn run(&mut self) {
-        info!("Started PaneActors's thread");
-        while let Some(action) = self.receiver.recv().await {
-            info!("Processing: {action:?}");
+        info!("PaneActors. Started thread");
+        while let Some(wrapper) = self.receiver.recv().await {
+            info!("PaneActor. Processing: {wrapper:?}");
+            let action = if let GenericAction::Pane(action) = wrapper.action() {
+                action
+            } else {
+                warn!("PaneActor. Dropping processing action because incorrect type");
+                continue;
+            };
             match action {
                 PaneAction::Close(id) => {
-                    let pane = self.panes.remove(&id);
+                    let pane = self.panes.remove(id);
 
                     // Close document if Editor pane was closed
                     if let Some(Pane::Editor(doc_id)) = pane {
@@ -309,25 +324,34 @@ impl PaneActor {
                         let id = self.panes.add(Pane::NewDocument);
                         self.panes.open(&id);
                     }
+
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
-                PaneAction::Open(id) => self.panes.open(&id),
+                PaneAction::Open(id) => {
+                    self.panes.open(id);
+                    wrapper.try_notify_complete(ActionResult::Success);
+                }
                 PaneAction::Add(pane, tx) => {
-                    let id = self.panes.add(pane);
+                    let id = self.panes.add(*pane);
                     self.panes.open(&id);
                     if let Some(tx) = tx {
                         let _ = tx.send(id).await;
                     }
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
                 PaneAction::Replace(id, pane) => {
-                    self.panes.replace(&id, pane);
+                    self.panes.replace(id, *pane);
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
                 PaneAction::GetOpen(tx) => {
                     let opened = self.panes.get_open().cloned();
                     let _ = tx.send(opened).await;
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
                 PaneAction::GetOpenId(tx) => {
                     let opened_id = self.panes.get_open_id().cloned();
                     let _ = tx.send(opened_id).await;
+                    wrapper.try_notify_complete(ActionResult::Success);
                 }
             }
         }
