@@ -18,7 +18,8 @@ use log::{debug, info, warn};
 use state::{
     ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor, State,
 };
-use tokio::sync::mpsc::{self, channel, Sender};
+use tokio::sync;
+use tokio::sync::mpsc::{self, channel};
 
 use std::collections::HashMap;
 
@@ -39,17 +40,15 @@ use core::{
     HotKey, Modifiers,
 };
 
-type HotKeyHandler = dyn Fn(&State) -> AppMessage;
-
 static DEFAULT_THEME: &str = "core.light";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
     state: State,
-    brocker_tx: Sender<ActionWrapper>,
-    completition_tx: tokio::sync::broadcast::Sender<ActionResult>,
+    brocker_tx: sync::mpsc::Sender<ActionWrapper>,
+    completition_tx: sync::broadcast::Sender<ActionResult>,
     plugin_host: PluginHost,
-    hotkeys: HashMap<HotKey, Box<HotKeyHandler>>,
+    hotkeys: HashMap<HotKey, Action>,
 }
 
 #[derive(Debug, Clone)]
@@ -77,7 +76,6 @@ impl App {
         let mut tasks = Vec::new();
 
         // Actors
-
         let (document_tx, document_rx) = channel(10);
         let (file_tx, file_rx) = channel(10);
         let (pane_tx, pane_rx) = channel(10);
@@ -126,7 +124,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            |_: &State| AppMessage::Action(FileAction::PickFile.into()),
+            FileAction::PickFile.into(),
         );
 
         // Ctrl-t open new document tab
@@ -135,22 +133,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            |_: &State| AppMessage::Action(PaneAction::Add(Pane::NewDocument, None).into()),
-        );
-
-        // Ctrl-w close open tab
-        app.add_hotkey(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'w',
-            },
-            |state: &State| {
-                if let Some(id) = state.panes.get_open_id() {
-                    AppMessage::Action(PaneAction::Close(*id).into())
-                } else {
-                    AppMessage::None
-                }
-            },
+            PaneAction::Add(Pane::NewDocument, None).into(),
         );
 
         // Ctrl-b open experimental buffer pane
@@ -159,7 +142,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            |_state: &State| AppMessage::Action(PaneAction::Add(Pane::Buffer, None).into()),
+            PaneAction::Add(Pane::Buffer, None).into(),
         );
 
         // Ctrl-, open config viewer pane
@@ -168,7 +151,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: ',',
             },
-            |_state: &State| AppMessage::Action(PaneAction::Add(Pane::Config, None).into()),
+            PaneAction::Add(Pane::Config, None).into(),
         );
 
         for id in app.plugin_host.get_plugin_ids() {
@@ -189,12 +172,9 @@ impl App {
         (app, Task::batch(tasks))
     }
 
-    fn add_hotkey<F>(&mut self, hotkey: HotKey, func: F)
-    where
-        F: Fn(&State) -> AppMessage + 'static,
-    {
+    fn add_hotkey(&mut self, hotkey: HotKey, action: Action) {
         info!("Added hotkey {hotkey:?}");
-        self.hotkeys.insert(hotkey, Box::new(func));
+        self.hotkeys.insert(hotkey, action);
     }
 
     fn title(&self) -> String {
@@ -324,8 +304,8 @@ impl App {
 
             debug!("Pressed {hotkey:?}");
 
-            if let Some(func) = self.hotkeys.get(&hotkey) {
-                return Some(func(&self.state));
+            if let Some(action) = self.hotkeys.get(&hotkey) {
+                return Some(AppMessage::Action(action.clone()));
             }
         }
         None

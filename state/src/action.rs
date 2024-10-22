@@ -9,9 +9,9 @@ pub struct ActionWrapper {
 }
 
 impl ActionWrapper {
-    pub fn new(action: Action) -> Self {
+    pub fn new(action: impl Into<Action>) -> Self {
         Self {
-            action,
+            action: action.into(),
             completition_tx: None,
         }
     }
