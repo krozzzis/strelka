@@ -16,7 +16,7 @@ use iced::{
     },
     Element, Settings, Subscription, Task,
 };
-use log::{debug, info};
+use log::{debug, info, warn};
 use state::{
     ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor, State,
 };
@@ -306,8 +306,9 @@ impl App {
     fn view(&self) -> Element<AppMessage, Theme> {
         let (tx, mut rx) = mpsc::channel(1);
         let get_model_action = ActionWrapper::new(GenericAction::Pane(PaneAction::GetModel(tx)));
-        let _ = self.brocker_tx.try_send(get_model_action);
-        if let Ok(Some(model)) = rx.try_recv() {
+        let _ = self.brocker_tx.blocking_send(get_model_action);
+        if let Some(Some(model)) = rx.blocking_recv() {
+            info!("View. Loaded PaneModel");
             let pane_stack = pane_stack(model).map(|message| match message {
                 pane_stack::Message::OpenPane(id) => {
                     AppMessage::Action(Action::new(PaneAction::Open(id)))
@@ -324,6 +325,7 @@ impl App {
             });
             pane_stack
         } else {
+            warn!("View. Can't load PaneModel");
             background(center("Can't load PaneModel")).into()
         }
     }
