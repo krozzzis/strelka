@@ -9,6 +9,13 @@ use crate::{
 };
 
 #[derive(Debug, Clone)]
+pub struct Message {
+    pub destination: String,
+    pub kind: String,
+    pub payload: Option<String>,
+}
+
+#[derive(Debug, Clone)]
 pub enum PaneAction {
     Close(PaneId),
     Open(PaneId),
@@ -47,76 +54,34 @@ pub enum ThemeAction {
 }
 
 #[derive(Debug, Clone)]
-pub enum GenericAction {
+pub enum Action {
     File(FileAction),
     Pane(PaneAction),
     Document(DocumentAction),
     Theme(ThemeAction),
+    Message(Message),
 }
 
-impl From<FileAction> for GenericAction {
+impl From<FileAction> for Action {
     fn from(value: FileAction) -> Self {
         Self::File(value)
     }
 }
 
-impl From<PaneAction> for GenericAction {
+impl From<PaneAction> for Action {
     fn from(value: PaneAction) -> Self {
         Self::Pane(value)
     }
 }
 
-impl From<DocumentAction> for GenericAction {
+impl From<DocumentAction> for Action {
     fn from(value: DocumentAction) -> Self {
         Self::Document(value)
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Action {
-    pub actions: Vec<GenericAction>,
-}
-
-impl Action {
-    pub fn new(action: impl Into<GenericAction>) -> Self {
-        Self {
-            actions: vec![action.into()],
-        }
-    }
-
-    pub fn none() -> Self {
-        Self {
-            actions: Vec::new(),
-        }
-    }
-
-    pub fn push(mut self, action: impl Into<GenericAction>) -> Self {
-        self.actions.push(action.into());
-        self
-    }
-
-    pub fn batch(actions: impl IntoIterator<Item = GenericAction>) -> Self {
-        Self {
-            actions: actions.into_iter().collect(),
-        }
-    }
-
-    pub fn extend(mut self, actions: impl IntoIterator<Item = GenericAction>) -> Self {
-        self.actions.extend(actions);
-        self
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &GenericAction> {
-        self.actions.iter()
-    }
-}
-
-impl<'a> IntoIterator for &'a Action {
-    type Item = &'a GenericAction;
-
-    type IntoIter = std::slice::Iter<'a, GenericAction>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.actions.iter()
+impl From<Message> for Action {
+    fn from(value: Message) -> Self {
+        Self::Message(value)
     }
 }

@@ -35,7 +35,7 @@ use widget::{
 };
 
 use core::{
-    action::{Action, FileAction, GenericAction, PaneAction},
+    action::{Action, FileAction, PaneAction},
     document::{DocumentHandler, DocumentId, DocumentStore},
     pane::{Pane, PaneModel},
     smol_str::SmolStr,
@@ -60,7 +60,6 @@ pub struct App {
 pub enum AppMessage {
     LoadPlugin(PluginId, bool),
     OpenedFile(Result<(PathBuf, String), ()>),
-    GenericAction(GenericAction),
     Action(Action),
     OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
@@ -133,7 +132,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            |_: &State| AppMessage::Action(Action::new(FileAction::PickFile)),
+            |_: &State| AppMessage::Action(FileAction::PickFile.into()),
         );
 
         // Ctrl-t open new document tab
@@ -142,7 +141,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            |_: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::NewDocument, None))),
+            |_: &State| AppMessage::Action(PaneAction::Add(Pane::NewDocument, None).into()),
         );
 
         // Ctrl-w close open tab
@@ -153,7 +152,7 @@ impl App {
             },
             |state: &State| {
                 if let Some(id) = state.panes.get_open_id() {
-                    AppMessage::Action(Action::new(PaneAction::Close(*id)))
+                    AppMessage::Action(PaneAction::Close(*id).into())
                 } else {
                     AppMessage::None
                 }
@@ -166,7 +165,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Buffer, None))),
+            |_state: &State| AppMessage::Action(PaneAction::Add(Pane::Buffer, None).into()),
         );
 
         // Ctrl-, open config viewer pane
@@ -175,7 +174,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: ',',
             },
-            |_state: &State| AppMessage::Action(Action::new(PaneAction::Add(Pane::Config, None))),
+            |_state: &State| AppMessage::Action(PaneAction::Add(Pane::Config, None).into()),
         );
 
         for id in app.plugin_host.get_plugin_ids() {
@@ -208,7 +207,7 @@ impl App {
         String::from("Strelka")
     }
 
-    fn perform_action(&mut self, action: GenericAction) -> Task<AppMessage> {
+    fn perform_action(&mut self, action: Action) -> Task<AppMessage> {
         let wrapper = ActionWrapper::new(action).notify(self.completition_tx.clone());
         let brocker_tx = self.brocker_tx.clone();
         Task::perform(
@@ -225,18 +224,7 @@ impl App {
         match message {
             AppMessage::None => {}
 
-            AppMessage::Action(action) => {
-                info!("Update. Processing action in update");
-                let action = self.plugin_host.process_action(&self.state, action);
-                let mut tasks = Vec::new();
-                for generic in action.iter() {
-                    tasks.push(self.perform_action(generic.clone()));
-                }
-
-                return Task::batch(tasks);
-            }
-
-            AppMessage::GenericAction(action) => return self.perform_action(action),
+            AppMessage::Action(action) => return self.perform_action(action),
 
             AppMessage::OnKeyPress(key, modifiers) => {
                 if let Some(message) = self.on_key_press(key, modifiers) {
@@ -305,19 +293,19 @@ impl App {
 
     fn view(&self) -> Element<AppMessage, Theme> {
         let (tx, mut rx) = mpsc::channel(1);
-        let get_model_action = ActionWrapper::new(GenericAction::Pane(PaneAction::GetModel(tx)));
+        let get_model_action = ActionWrapper::new(Action::Pane(PaneAction::GetModel(tx)));
         let _ = self.brocker_tx.blocking_send(get_model_action);
         if let Some(Some(model)) = rx.blocking_recv() {
             info!("View. Loaded PaneModel");
             let pane_stack = pane_stack(model).map(|message| match message {
                 pane_stack::Message::OpenPane(id) => {
-                    AppMessage::Action(Action::new(PaneAction::Open(id)))
+                    AppMessage::Action(PaneAction::Open(id).into())
                 }
                 pane_stack::Message::ClosePane(id) => {
-                    AppMessage::Action(Action::new(PaneAction::Close(id)))
+                    AppMessage::Action(PaneAction::Close(id).into())
                 }
                 pane_stack::Message::NewPane(pane) => {
-                    AppMessage::Action(Action::new(PaneAction::Add(pane, None)))
+                    AppMessage::Action(PaneAction::Add(pane, None).into())
                 }
                 pane_stack::Message::NewDocument(_message) => todo!(),
                 pane_stack::Message::TextEditor(_, _message) => todo!(),

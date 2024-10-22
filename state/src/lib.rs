@@ -4,7 +4,7 @@ pub use action::{ActionResult, ActionWrapper};
 
 use config::Config;
 use core::{
-    action::{DocumentAction, FileAction, GenericAction, PaneAction},
+    action::{Action, DocumentAction, FileAction, PaneAction},
     document::{DocumentHandler, DocumentStore},
     pane::{Pane, PaneModel, VisiblePaneModel},
     value::Value,
@@ -89,16 +89,16 @@ impl ActionBrocker {
         while let Some(wrapper) = self.receiver.recv().await {
             info!("Brocker. Processing: {wrapper:?}");
             match wrapper.action() {
-                GenericAction::File(action) => {
+                Action::File(action) => {
                     if let Some(tx) = &self.file_sender {
                         let _ = tx.send(action.clone()).await;
                     }
                 }
-                GenericAction::Pane(action) => {
+                Action::Pane(action) => {
                     if let Some(tx) = &self.pane_sender {
                         let (complete_tx, mut complete_rx) = broadcast::channel(1);
-                        let message = ActionWrapper::new(GenericAction::Pane(action.clone()))
-                            .notify(complete_tx);
+                        let message =
+                            ActionWrapper::new(Action::Pane(action.clone())).notify(complete_tx);
                         let _ = tx.send(message).await;
 
                         // ActionResult throwing
@@ -108,10 +108,10 @@ impl ActionBrocker {
                         }
                     }
                 }
-                GenericAction::Document(action) => {
+                Action::Document(action) => {
                     if let Some(tx) = &self.document_sender {
                         let (complete_tx, mut complete_rx) = broadcast::channel(1);
-                        let message = ActionWrapper::new(GenericAction::Document(action.clone()))
+                        let message = ActionWrapper::new(Action::Document(action.clone()))
                             .notify(complete_tx);
                         let _ = tx.send(message).await;
 
@@ -122,7 +122,8 @@ impl ActionBrocker {
                         }
                     }
                 }
-                GenericAction::Theme(_) => todo!(),
+                Action::Message(_) => todo!(),
+                Action::Theme(_) => todo!(),
             }
         }
     }
@@ -147,7 +148,7 @@ impl DocumentActor {
         info!("Started DocumentActor's thread");
         while let Some(wrapper) = self.receiver.recv().await {
             info!("DocumentActor. Processing: {wrapper:?}");
-            let action = if let GenericAction::Document(action) = wrapper.action() {
+            let action = if let Action::Document(action) = wrapper.action() {
                 action
             } else {
                 warn!("DocumentActor. Dropping processing action because incorrect type");
@@ -172,7 +173,7 @@ impl DocumentActor {
                 }
                 DocumentAction::Open(id) => {
                     let pane = Pane::Editor(*id);
-                    let message = GenericAction::Pane(PaneAction::Add(pane, None));
+                    let message = Action::Pane(PaneAction::Add(pane, None));
                     let _ = self.brocker_sender.send(ActionWrapper::new(message)).await;
                     wrapper.try_notify_complete(ActionResult::Success);
                 }
@@ -218,9 +219,10 @@ impl FileActor {
                         let (tx, mut rx) = channel(1);
                         let _ = self
                             .brocker_sender
-                            .send(ActionWrapper::new(GenericAction::Document(
-                                DocumentAction::Add(Arc::new(handler), Some(tx)),
-                            )))
+                            .send(ActionWrapper::new(Action::Document(DocumentAction::Add(
+                                Arc::new(handler),
+                                Some(tx),
+                            ))))
                             .await;
 
                         if let Some(doc_id) = rx.recv().await {
@@ -231,39 +233,38 @@ impl FileActor {
                             let (tx, mut rx) = channel(1);
                             let _ = self
                                 .brocker_sender
-                                .send(ActionWrapper::new(GenericAction::Pane(
-                                    PaneAction::GetOpen(tx),
-                                )))
+                                .send(ActionWrapper::new(Action::Pane(PaneAction::GetOpen(tx))))
                                 .await;
                             if let Some(Some(Pane::NewDocument)) = rx.recv().await {
                                 let (tx, mut rx) = channel(1);
                                 let _ = self
                                     .brocker_sender
-                                    .send(ActionWrapper::new(GenericAction::Pane(
-                                        PaneAction::GetOpenId(tx),
-                                    )))
+                                    .send(ActionWrapper::new(Action::Pane(PaneAction::GetOpenId(
+                                        tx,
+                                    ))))
                                     .await;
 
                                 if let Some(Some(opened_id)) = rx.recv().await {
                                     let message =
-                                        GenericAction::Pane(PaneAction::Replace(opened_id, pane));
+                                        Action::Pane(PaneAction::Replace(opened_id, pane));
                                     let _ =
                                         self.brocker_sender.send(ActionWrapper::new(message)).await;
                                 }
                             } else {
                                 let (tx, mut rx) = channel(1);
-                                let _ =
-                                    self.brocker_sender
-                                        .send(ActionWrapper::new(GenericAction::Pane(
-                                            PaneAction::Add(pane, Some(tx)),
-                                        )))
-                                        .await;
+                                let _ = self
+                                    .brocker_sender
+                                    .send(ActionWrapper::new(Action::Pane(PaneAction::Add(
+                                        pane,
+                                        Some(tx),
+                                    ))))
+                                    .await;
                                 if let Some(pane_id) = rx.recv().await {
                                     let _ = self
                                         .brocker_sender
-                                        .send(ActionWrapper::new(GenericAction::Pane(
-                                            PaneAction::Open(pane_id),
-                                        )))
+                                        .send(ActionWrapper::new(Action::Pane(PaneAction::Open(
+                                            pane_id,
+                                        ))))
                                         .await;
                                 }
                             }
@@ -303,7 +304,7 @@ impl PaneActor {
         info!("PaneActors. Started thread");
         while let Some(wrapper) = self.receiver.recv().await {
             info!("PaneActor. Processing: {wrapper:?}");
-            let action = if let GenericAction::Pane(action) = wrapper.action() {
+            let action = if let Action::Pane(action) = wrapper.action() {
                 action
             } else {
                 warn!("PaneActor. Dropping processing action because incorrect type");
@@ -315,7 +316,7 @@ impl PaneActor {
 
                     // Close document if Editor pane was closed
                     if let Some(Pane::Editor(doc_id)) = pane {
-                        let message = GenericAction::Document(DocumentAction::Remove(doc_id));
+                        let message = Action::Document(DocumentAction::Remove(doc_id));
                         let _ = self.brocker_sender.send(ActionWrapper::new(message)).await;
                     }
 

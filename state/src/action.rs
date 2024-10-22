@@ -1,15 +1,15 @@
-use core::action::GenericAction;
+use core::action::Action;
 
 use tokio::sync::broadcast::Sender;
 
 #[derive(Debug)]
 pub struct ActionWrapper {
-    pub action: GenericAction,
+    pub action: Action,
     pub completition_tx: Option<Sender<ActionResult>>,
 }
 
 impl ActionWrapper {
-    pub fn new(action: GenericAction) -> Self {
+    pub fn new(action: Action) -> Self {
         Self {
             action,
             completition_tx: None,
@@ -21,7 +21,7 @@ impl ActionWrapper {
         self
     }
 
-    pub fn action(&self) -> &GenericAction {
+    pub fn action(&self) -> &Action {
         &self.action
     }
 
