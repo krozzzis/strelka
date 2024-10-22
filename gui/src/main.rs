@@ -1,7 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod util;
-
 use config::{
     workdir::{create_config_dir, create_workdir},
     Config,
@@ -12,7 +10,7 @@ use iced::{
     stream,
     widget::{
         center,
-        text_editor::{self, Content},
+        text_editor::{self},
     },
     Element, Settings, Subscription, Task,
 };
@@ -22,9 +20,7 @@ use state::{
 };
 use tokio::sync::mpsc::{self, channel, Sender};
 
-use std::{collections::HashMap, path::PathBuf};
-
-use crate::util::get_file_name;
+use std::collections::HashMap;
 
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
@@ -36,7 +32,7 @@ use widget::{
 
 use core::{
     action::{Action, FileAction, PaneAction},
-    document::{DocumentHandler, DocumentId, DocumentStore},
+    document::{DocumentId, DocumentStore},
     pane::{Pane, PaneModel},
     smol_str::SmolStr,
     value::Value,
@@ -59,9 +55,7 @@ pub struct App {
 #[derive(Debug, Clone)]
 pub enum AppMessage {
     LoadPlugin(PluginId, bool),
-    OpenedFile(Result<(PathBuf, String), ()>),
     Action(Action),
-    OpenDirectory(PathBuf),
     TextEditorAction(text_editor::Action, DocumentId),
     OnKeyPress(Key, iced::keyboard::Modifiers),
     None,
@@ -246,45 +240,6 @@ impl App {
                         handler.changed = true;
                     }
                     handler.text_content.perform(action);
-                }
-            }
-
-            // TODO: Should accept an document id and fill it's handler with content
-            AppMessage::OpenedFile(result) => {
-                if let Ok((path, content)) = result {
-                    let handler = DocumentHandler {
-                        text_content: Content::with_text(&content),
-                        path: path.clone(),
-                        filename: get_file_name(&path),
-                        changed: false,
-                    };
-
-                    let doc_id = self.state.documents.add(handler);
-                    let pane = Pane::Editor(doc_id);
-
-                    // If opened pane is NewDocument, replace it with Editor pane
-                    // otherwise add new one with Editor
-                    if let Some(&Pane::NewDocument) = self.state.panes.get_open() {
-                        self.state.panes.replace(
-                            &self.state.panes.get_open_id().cloned().unwrap_or(0usize),
-                            pane,
-                        );
-                    } else {
-                        let pane_id = self.state.panes.add(pane);
-                        self.state.panes.open(&pane_id);
-                    }
-                }
-            }
-
-            AppMessage::OpenDirectory(path) => {
-                if path.is_dir() {
-                    let path: PathBuf = path.canonicalize().unwrap_or_default();
-
-                    self.state.config.insert(
-                        "system",
-                        "workdir",
-                        Value::String(SmolStr::new(path.to_str().unwrap_or_default())),
-                    );
                 }
             }
         }
