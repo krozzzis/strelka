@@ -15,9 +15,7 @@ use iced::{
     Element, Settings, Subscription, Task,
 };
 use log::{debug, info, warn};
-use state::{
-    ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor, State,
-};
+use state::{ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor};
 use tokio::sync;
 use tokio::sync::mpsc::{self, channel};
 
@@ -25,7 +23,7 @@ use std::collections::HashMap;
 
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
 
-use theming::{catalog::Catalog, Theme};
+use theming::Theme;
 use widget::{
     container::background,
     pane::pane_stack::{self, pane_stack},
@@ -33,7 +31,7 @@ use widget::{
 
 use core::{
     action::{Action, FileAction, PaneAction},
-    document::{DocumentId, DocumentStore},
+    document::DocumentId,
     pane::{Pane, PaneModel},
     smol_str::SmolStr,
     value::Value,
@@ -44,7 +42,7 @@ static DEFAULT_THEME: &str = "core.light";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
-    state: State,
+    config: Config,
     brocker_tx: sync::mpsc::Sender<ActionWrapper>,
     completition_tx: sync::broadcast::Sender<ActionResult>,
     plugin_host: PluginHost,
@@ -103,15 +101,8 @@ impl App {
             panes.open(&id);
         }
 
-        let state = State {
-            documents: DocumentStore::new(),
-            panes,
-            themes: Catalog::new(),
-            config,
-        };
-
         let mut app = Self {
-            state,
+            config,
             brocker_tx,
             completition_tx,
             plugin_host,
@@ -214,13 +205,8 @@ impl App {
                 }
             }
 
-            AppMessage::TextEditorAction(action, document) => {
-                if let Some(handler) = self.state.documents.get_mut(&document) {
-                    if action.is_edit() {
-                        handler.changed = true;
-                    }
-                    handler.text_content.perform(action);
-                }
+            AppMessage::TextEditorAction(_action, _document) => {
+                todo!()
             }
         }
         Task::none()
@@ -254,7 +240,7 @@ impl App {
     }
 
     fn theme(&self) -> Theme {
-        (*self.state.get_theme()).clone()
+        Default::default()
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {

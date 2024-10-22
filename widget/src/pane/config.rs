@@ -4,19 +4,19 @@ use iced::{
     widget::{center, row, scrollable, text, Column, Space},
     Alignment, Element, Length, Padding,
 };
-use state::State;
 use theming::Theme;
 
 use crate::container::{background, background2};
 
-pub fn config_pane<'a>(state: &State) -> Element<'a, (), Theme> {
-    let properties = state.config.properties();
-    let entries: Vec<_> = properties
-        .map(|(namespace, property, value)| {
-            config_entry(namespace.clone(), property.clone(), value.clone())
-        })
-        .collect();
-    background(center(scrollable(Column::from_vec(entries).spacing(16.0)))).into()
+pub fn config_pane<'a>() -> Element<'a, (), Theme> {
+    todo!();
+    // let properties = ;
+    // let entries: Vec<_> = properties
+    //     .map(|(namespace, property, value)| {
+    //         config_entry(namespace.clone(), property.clone(), value.clone())
+    //     })
+    //     .collect();
+    // background(center(scrollable(Column::from_vec(entries).spacing(16.0)))).into()
 }
 
 pub fn config_entry<'a>(
