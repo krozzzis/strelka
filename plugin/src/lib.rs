@@ -1,10 +1,18 @@
 mod host;
 mod plugins;
 
-use core::action::Action;
+use core::action::{Action, Message};
+use std::{future::Future, pin::Pin, sync::Arc};
 
 pub use host::*;
 pub use plugins::*;
+use tokio::sync::Mutex;
+
+pub type MessageHandler = Box<
+    dyn Fn(Arc<Mutex<Box<dyn Plugin>>>, Message) -> Pin<Box<dyn Future<Output = ()> + Send>>
+        + Send
+        + Sync,
+>;
 
 /// Plugin runtime status
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -15,11 +23,17 @@ pub enum PluginStatus {
 }
 
 /// Generic plugin trait
-pub trait Plugin {
+pub trait Plugin: Send + Sync {
+    fn create_message_handler(&self) -> Option<MessageHandler> {
+        None
+    }
+
     fn on_action(&mut self, action: Action) -> Action {
         action
     }
+
     fn load(&mut self) {}
+
     fn unload(&mut self) {}
 }
 
@@ -76,5 +90,5 @@ impl PluginInfo {
 pub struct PluginHandler {
     pub info: PluginInfo,
     pub status: PluginStatus,
-    pub state: Box<dyn Plugin>,
+    pub state: Arc<Mutex<Box<dyn Plugin>>>,
 }

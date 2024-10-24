@@ -3019,6 +3019,7 @@ version = "0.1.0"
 dependencies = [
  "core",
  "state",
+ "tokio",
 ]
 
 [[package]]

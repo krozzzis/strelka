@@ -1,7 +1,9 @@
-use core::action::Action;
-use std::collections::HashMap;
+use core::action::{Action, Message};
+use std::{collections::HashMap, sync::Arc};
 
-use crate::{Plugin, PluginHandler, PluginInfo, PluginStatus};
+use tokio::sync::{self, Mutex};
+
+use crate::{MessageHandler, Plugin, PluginHandler, PluginInfo, PluginStatus};
 
 pub type PluginId = String;
 
@@ -12,6 +14,9 @@ pub struct PluginHost {
     /// Stores plugin id and plugin handler,
     /// that contains plugin state and plugin status
     pub plugins: HashMap<PluginId, PluginHandler>,
+    pub message_handlers: HashMap<PluginId, Arc<MessageHandler>>,
+
+    pub brocker_tx: Option<sync::mpsc::Sender<Action>>,
 }
 
 #[allow(dead_code)]
@@ -19,7 +24,13 @@ impl PluginHost {
     pub fn new() -> Self {
         Self {
             plugins: HashMap::new(),
+            message_handlers: HashMap::new(),
+            brocker_tx: None,
         }
+    }
+
+    pub fn set_brocker(&mut self, brocker: sync::mpsc::Sender<Action>) {
+        self.brocker_tx = Some(brocker);
     }
 
     /// Returns list of registered plugin ids
@@ -59,21 +70,32 @@ impl PluginHost {
         let handler = PluginHandler {
             info,
             status: PluginStatus::Loaded,
-            state: plugin,
+            state: Arc::new(Mutex::new(plugin)),
         };
         self.plugins.insert(id.clone(), handler);
     }
 
-    pub fn process_action(&mut self, action: Action) -> Action {
-        let mut action = action;
-        let ids: Vec<PluginId> = self.plugins.keys().cloned().collect();
-        for id in ids {
-            if let Some(handler) = self.plugins.get_mut(&id) {
-                if handler.status == PluginStatus::Loaded {
-                    // action = handler.state.on_action(state, action);
+    pub fn init_message_handler(&mut self, id: &PluginId) {
+        if let Some(plugin_handler) = self.plugins.get(id) {
+            let state = plugin_handler.state.blocking_lock();
+            if let Some(message_handler) = state.create_message_handler() {
+                self.message_handlers
+                    .insert(id.clone(), Arc::new(message_handler));
+            } else {
+                self.message_handlers.remove(id);
+            }
+        }
+    }
+
+    pub async fn process_message(&self, message: Message) {
+        let receiver = &message.destination;
+        if let Some(handler) = &self.plugins.get(receiver) {
+            if let PluginStatus::Loaded = handler.status {
+                if let Some(message_handler) = self.message_handlers.get(receiver).cloned() {
+                    let state = handler.state.clone();
+                    tokio::spawn(async move { message_handler(state, message).await });
                 }
             }
         }
-        action
     }
 }

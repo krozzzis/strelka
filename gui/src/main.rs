@@ -30,7 +30,7 @@ use widget::{
 };
 
 use core::{
-    action::{Action, FileAction, PaneAction},
+    action::{Action, FileAction, Message, PaneAction},
     document::DocumentId,
     pane::{Pane, PaneModel},
     smol_str::SmolStr,
@@ -149,6 +149,15 @@ impl App {
             let task = Task::done(AppMessage::LoadPlugin(id.clone(), true));
             tasks.push(task);
         }
+
+        // {
+        //     let task = Task::done(AppMessage::Action(Action::Message(Message {
+        //         destination: "core.example".to_string(),
+        //         kind: "".to_string(),
+        //         payload: None,
+        //     })));
+        //     tasks.push(task);
+        // }
 
         // Apply theme
         // let theme = if let Some(Value::String(id)) = app.state.config.get("system", "theme") {
