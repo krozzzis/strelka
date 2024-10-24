@@ -30,7 +30,7 @@ use widget::{
 };
 
 use core::{
-    action::{Action, FileAction, Message, PaneAction},
+    action::{Action, FileAction, PaneAction},
     document::DocumentId,
     pane::{Pane, PaneModel},
     smol_str::SmolStr,

@@ -14,12 +14,12 @@ pub struct PluginHost {
     /// Stores plugin id and plugin handler,
     /// that contains plugin state and plugin status
     pub plugins: HashMap<PluginId, PluginHandler>,
+
     pub message_handlers: HashMap<PluginId, Arc<MessageHandler>>,
 
     pub brocker_tx: Option<sync::mpsc::Sender<Action>>,
 }
 
-#[allow(dead_code)]
 impl PluginHost {
     pub fn new() -> Self {
         Self {
@@ -93,7 +93,8 @@ impl PluginHost {
             if let PluginStatus::Loaded = handler.status {
                 if let Some(message_handler) = self.message_handlers.get(receiver).cloned() {
                     let state = handler.state.clone();
-                    tokio::spawn(async move { message_handler(state, message).await });
+                    let brocker = self.brocker_tx.clone();
+                    tokio::spawn(async move { message_handler(state, message, brocker).await });
                 }
             }
         }

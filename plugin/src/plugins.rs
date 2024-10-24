@@ -7,7 +7,7 @@ unsafe impl Sync for ExamplePlugin {}
 
 impl Plugin for ExamplePlugin {
     fn create_message_handler(&self) -> Option<MessageHandler> {
-        Some(Box::new(|_plugin, message| {
+        Some(Box::new(|_plugin, message, _brocker| {
             Box::pin(async move {
                 // Handle the message asynchronously
                 println!("Received message: {:?}", message);

@@ -6,10 +6,14 @@ use std::{future::Future, pin::Pin, sync::Arc};
 
 pub use host::*;
 pub use plugins::*;
-use tokio::sync::Mutex;
+use tokio::sync::{mpsc, Mutex};
 
 pub type MessageHandler = Box<
-    dyn Fn(Arc<Mutex<Box<dyn Plugin>>>, Message) -> Pin<Box<dyn Future<Output = ()> + Send>>
+    dyn Fn(
+            Arc<Mutex<Box<dyn Plugin>>>,
+            Message,
+            Option<mpsc::Sender<Action>>,
+        ) -> Pin<Box<dyn Future<Output = ()> + Send>>
         + Send
         + Sync,
 >;
