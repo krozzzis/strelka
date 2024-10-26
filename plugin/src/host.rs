@@ -1,6 +1,7 @@
-use core::action::{Action, Message};
+use core::action::{ActionWrapper, Message};
 use std::{collections::HashMap, sync::Arc};
 
+use log::warn;
 use tokio::sync::{self, Mutex};
 
 use crate::{MessageHandler, Plugin, PluginHandler, PluginInfo, PluginStatus};
@@ -17,7 +18,7 @@ pub struct PluginHost {
 
     pub message_handlers: HashMap<PluginId, Arc<MessageHandler>>,
 
-    pub brocker_tx: Option<sync::mpsc::Sender<Action>>,
+    pub brocker_tx: Option<sync::mpsc::Sender<ActionWrapper>>,
 }
 
 impl PluginHost {
@@ -29,7 +30,7 @@ impl PluginHost {
         }
     }
 
-    pub fn set_brocker(&mut self, brocker: sync::mpsc::Sender<Action>) {
+    pub fn set_brocker(&mut self, brocker: sync::mpsc::Sender<ActionWrapper>) {
         self.brocker_tx = Some(brocker);
     }
 
@@ -73,6 +74,7 @@ impl PluginHost {
             state: Arc::new(Mutex::new(plugin)),
         };
         self.plugins.insert(id.clone(), handler);
+        self.init_message_handler(&id);
     }
 
     pub fn init_message_handler(&mut self, id: &PluginId) {
@@ -95,8 +97,14 @@ impl PluginHost {
                     let state = handler.state.clone();
                     let brocker = self.brocker_tx.clone();
                     tokio::spawn(async move { message_handler(state, message, brocker).await });
+                } else {
+                    warn!("No message handler found for processing message");
                 }
+            } else {
+                warn!("Receiving plugin is not active");
             }
+        } else {
+            warn!("Receiving plugin does not registered")
         }
     }
 }

@@ -7,5 +7,5 @@ authors = ["Nikita Shumov"]
 
 [dependencies]
 core = { path = "../core" }
-state = { path = "../state" }
 tokio = { workspace = true }
+log = { workspace = true }

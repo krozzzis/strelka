@@ -1,14 +1,9 @@
-mod action;
+use plugin::PluginHost;
 
-pub use action::{ActionResult, ActionWrapper};
-
-use config::Config;
 use core::{
-    action::{Action, DocumentAction, FileAction, PaneAction},
+    action::{Action, ActionResult, ActionWrapper, DocumentAction, FileAction, PaneAction},
     document::{DocumentHandler, DocumentStore},
     pane::{Pane, PaneModel, VisiblePaneModel},
-    value::Value,
-    ThemeID,
 };
 use iced::widget::text_editor::Content;
 use log::{info, warn};
@@ -26,6 +21,7 @@ pub struct ActionBrocker {
     document_sender: Option<Sender<ActionWrapper>>,
     file_sender: Option<Sender<FileAction>>,
     pane_sender: Option<Sender<ActionWrapper>>,
+    plugins_sender: Option<Sender<ActionWrapper>>,
 }
 
 impl ActionBrocker {
@@ -35,6 +31,7 @@ impl ActionBrocker {
             document_sender: None,
             file_sender: None,
             pane_sender: None,
+            plugins_sender: None,
         }
     }
 
@@ -50,6 +47,11 @@ impl ActionBrocker {
 
     pub fn pane_actor(mut self, pane_tx: Sender<ActionWrapper>) -> Self {
         self.pane_sender = Some(pane_tx);
+        self
+    }
+
+    pub fn plugin_host_actor(mut self, plugins_tx: Sender<ActionWrapper>) -> Self {
+        self.plugins_sender = Some(plugins_tx);
         self
     }
 
@@ -91,7 +93,20 @@ impl ActionBrocker {
                         }
                     }
                 }
-                Action::Message(_) => todo!(),
+                Action::Message(action) => {
+                    if let Some(tx) = &self.plugins_sender {
+                        let (complete_tx, mut complete_rx) = broadcast::channel(1);
+                        let message =
+                            ActionWrapper::new(Action::Message(action.clone())).notify(complete_tx);
+                        let _ = tx.send(message).await;
+
+                        // ActionResult throwing
+                        while let Ok(result) = complete_rx.recv().await {
+                            info!("Brocker. Received {result:?} from PluginHostActor");
+                            wrapper.try_notify_complete(result);
+                        }
+                    }
+                }
                 Action::Theme(_) => todo!(),
             }
         }
@@ -334,6 +349,41 @@ impl PaneActor {
                     wrapper.try_notify_complete(ActionResult::Success);
                 }
             }
+        }
+    }
+}
+
+pub struct PluginHostActor {
+    plugin_host: PluginHost,
+    receiver: Receiver<ActionWrapper>,
+    brocker_sender: Sender<ActionWrapper>,
+}
+
+impl PluginHostActor {
+    pub fn new(rx: Receiver<ActionWrapper>, brocker_tx: Sender<ActionWrapper>) -> Self {
+        Self {
+            plugin_host: PluginHost::new(),
+            receiver: rx,
+            brocker_sender: brocker_tx,
+        }
+    }
+
+    pub fn set_host(mut self, host: PluginHost) -> Self {
+        self.plugin_host = host;
+        self
+    }
+
+    pub async fn run(&mut self) {
+        info!("PluginHostActor. Started thread");
+        while let Some(wrapper) = self.receiver.recv().await {
+            info!("PluginHostActor. Processing: {wrapper:?}");
+            let message = if let Action::Message(message) = wrapper.action {
+                message
+            } else {
+                warn!("PluginHostActor. Dropping processing action because incorrect type");
+                continue;
+            };
+            self.plugin_host.process_message(message).await;
         }
     }
 }

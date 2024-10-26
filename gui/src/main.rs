@@ -15,13 +15,13 @@ use iced::{
     Element, Settings, Subscription, Task,
 };
 use log::{debug, info, warn};
-use state::{ActionBrocker, ActionResult, ActionWrapper, DocumentActor, FileActor, PaneActor};
+use state::{ActionBrocker, DocumentActor, FileActor, PaneActor, PluginHostActor};
 use tokio::sync;
 use tokio::sync::mpsc::{self, channel};
 
 use std::collections::HashMap;
 
-use plugin::{ExamplePlugin, Plugin, PluginHost, PluginId, PluginInfo};
+use plugin::{ExamplePlugin, Plugin, PluginHost, PluginInfo};
 
 use theming::Theme;
 use widget::{
@@ -30,9 +30,9 @@ use widget::{
 };
 
 use core::{
-    action::{Action, FileAction, PaneAction},
+    action::{Action, ActionResult, ActionWrapper, FileAction, Message, PaneAction},
     document::DocumentId,
-    pane::{Pane, PaneModel},
+    pane::Pane,
     smol_str::SmolStr,
     value::Value,
     HotKey, Modifiers,
@@ -45,13 +45,11 @@ pub struct App {
     config: Config,
     brocker_tx: sync::mpsc::Sender<ActionWrapper>,
     completition_tx: sync::broadcast::Sender<ActionResult>,
-    plugin_host: PluginHost,
     hotkeys: HashMap<HotKey, Action>,
 }
 
 #[derive(Debug, Clone)]
 pub enum AppMessage {
-    LoadPlugin(PluginId, bool),
     Action(Action),
     TextEditorAction(text_editor::Action, DocumentId),
     OnKeyPress(Key, iced::keyboard::Modifiers),
@@ -60,6 +58,17 @@ pub enum AppMessage {
 
 impl App {
     fn new(config: Config) -> (Self, Task<AppMessage>) {
+        let mut startup_tasks = Vec::new();
+
+        // Actor channels
+        let (document_tx, document_rx) = channel(10);
+        let (file_tx, file_rx) = channel(10);
+        let (pane_tx, pane_rx) = channel(10);
+        let (plugins_tx, plugins_rx) = channel(10);
+        let (brocker_tx, brocker_rx) = channel(10);
+
+        let (completition_tx, _) = tokio::sync::broadcast::channel(10);
+
         let mut plugin_host = PluginHost::new();
         plugin_host.register_plugin(
             PluginInfo::new()
@@ -70,44 +79,48 @@ impl App {
                 .description("An example plugin that do nothing useful)"),
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
-
-        let mut tasks = Vec::new();
+        plugin_host.set_brocker(brocker_tx.clone());
 
         // Actors
-        let (document_tx, document_rx) = channel(10);
-        let (file_tx, file_rx) = channel(10);
-        let (pane_tx, pane_rx) = channel(10);
-        let (brocker_tx, brocker_rx) = channel(10);
-        let (completition_tx, _) = tokio::sync::broadcast::channel(10);
-
         let mut document_actor = DocumentActor::new(document_rx, brocker_tx.clone());
         let mut pane_actor = PaneActor::new(pane_rx, brocker_tx.clone());
         let mut file_actor = FileActor::new(file_rx, brocker_tx.clone());
+        let mut plugin_host_actor =
+            PluginHostActor::new(plugins_rx, brocker_tx.clone()).set_host(plugin_host);
 
         let mut brocker = ActionBrocker::new(brocker_rx)
             .document_actor(document_tx.clone())
             .file_actor(file_tx.clone())
-            .pane_actor(pane_tx.clone());
+            .pane_actor(pane_tx.clone())
+            .plugin_host_actor(plugins_tx.clone());
 
         tokio::spawn(async move { brocker.run().await });
 
         tokio::spawn(async move { document_actor.run().await });
         tokio::spawn(async move { pane_actor.run().await });
         tokio::spawn(async move { file_actor.run().await });
-
-        let mut panes = PaneModel::new();
-        {
-            let id = panes.add(Pane::NewDocument);
-            panes.open(&id);
-        }
+        tokio::spawn(async move { plugin_host_actor.run().await });
 
         let mut app = Self {
             config,
             brocker_tx,
             completition_tx,
-            plugin_host,
             hotkeys: HashMap::new(),
         };
+
+        // Ctrl-d run plugin's message
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'd',
+            },
+            Message {
+                destination: "core.example".to_string(),
+                kind: "test".to_string(),
+                payload: None,
+            }
+            .into(),
+        );
 
         // Ctrl-o open file
         app.add_hotkey(
@@ -145,11 +158,6 @@ impl App {
             PaneAction::Add(Pane::Config, None).into(),
         );
 
-        for id in app.plugin_host.get_plugin_ids() {
-            let task = Task::done(AppMessage::LoadPlugin(id.clone(), true));
-            tasks.push(task);
-        }
-
         // {
         //     let task = Task::done(AppMessage::Action(Action::Message(Message {
         //         destination: "core.example".to_string(),
@@ -169,7 +177,7 @@ impl App {
         // tasks.push(apply_theme);
 
         info!("App constructor done");
-        (app, Task::batch(tasks))
+        (app, Task::batch(startup_tasks))
     }
 
     fn add_hotkey(&mut self, hotkey: HotKey, action: Action) {
@@ -203,14 +211,6 @@ impl App {
             AppMessage::OnKeyPress(key, modifiers) => {
                 if let Some(message) = self.on_key_press(key, modifiers) {
                     return Task::done(message);
-                }
-            }
-
-            AppMessage::LoadPlugin(id, load) => {
-                if load {
-                    self.plugin_host.load_plugin(&id);
-                } else {
-                    self.plugin_host.unload_plugin(&id);
                 }
             }
 

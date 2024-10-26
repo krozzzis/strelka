@@ -11,6 +11,7 @@ crossbeam = { workspace = true }
 tokio = { workspace = true }
 core = { path = "../core" }
 config = { path = "../config" }
+plugin = { path = "../plugin" }
 theming = { path = "../theming" }
 log = { workspace = true }
 iced = { workspace = true }

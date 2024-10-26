@@ -10,7 +10,7 @@ impl Plugin for ExamplePlugin {
         Some(Box::new(|_plugin, message, _brocker| {
             Box::pin(async move {
                 // Handle the message asynchronously
-                println!("Received message: {:?}", message);
+                println!("EXAMPLE PLUGIN. Received message: {:?}", message);
             })
         }))
     }

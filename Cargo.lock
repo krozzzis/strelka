@@ -3018,7 +3018,7 @@ name = "plugin"
 version = "0.1.0"
 dependencies = [
  "core",
- "state",
+ "log",
  "tokio",
 ]
 
@@ -3678,6 +3678,7 @@ dependencies = [
  "crossbeam",
  "iced",
  "log",
+ "plugin",
  "rfd",
  "theming",
  "tokio",
