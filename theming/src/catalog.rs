@@ -1,4 +1,4 @@
-use core::ThemeID;
+use core::ThemeId;
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{index::ThemeIndex, Theme};
@@ -8,7 +8,7 @@ use crate::{index::ThemeIndex, Theme};
 /// Contains `ThemeId`'s and corresponding `Theme` and `ThemeMetadata`
 #[derive(Default)]
 pub struct Catalog {
-    cache: HashMap<ThemeID, Arc<Theme>>,
+    cache: HashMap<ThemeId, Arc<Theme>>,
     index: ThemeIndex,
     current_theme: Arc<Theme>,
 }
@@ -27,7 +27,7 @@ impl Catalog {
         self.index = index;
     }
 
-    pub async fn load_theme(&mut self, id: ThemeID) -> Option<Arc<Theme>> {
+    pub async fn load_theme(&mut self, id: ThemeId) -> Option<Arc<Theme>> {
         if let Some(theme) = self.cache.get(&id) {
             Some(theme.clone())
         } else if let Some(path) = self.index.get_path(&id) {
@@ -45,7 +45,7 @@ impl Catalog {
         }
     }
 
-    pub async fn set_theme(&mut self, id: ThemeID) {
+    pub async fn set_theme(&mut self, id: ThemeId) {
         if let Some(theme) = self.load_theme(id).await {
             self.current_theme = theme;
         }

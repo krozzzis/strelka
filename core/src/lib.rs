@@ -10,4 +10,4 @@ pub use color::*;
 pub use hotkey::*;
 pub use smol_str;
 
-pub type ThemeID = smol_str::SmolStr;
+pub type ThemeId = smol_str::SmolStr;

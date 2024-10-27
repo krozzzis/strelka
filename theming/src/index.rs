@@ -1,4 +1,4 @@
-use core::ThemeID;
+use core::ThemeId;
 use std::{collections::HashMap, path::Path};
 
 use crate::metadata::ThemeMetadata;
@@ -6,7 +6,7 @@ use crate::metadata::ThemeMetadata;
 /// Represents an index of themes, storing metadata for each theme.
 #[derive(Debug, Default)]
 pub struct ThemeIndex {
-    metadata: HashMap<ThemeID, ThemeMetadata<'static>>,
+    metadata: HashMap<ThemeId, ThemeMetadata<'static>>,
 }
 
 impl ThemeIndex {
@@ -18,11 +18,11 @@ impl ThemeIndex {
     }
 
     /// Adds a theme to the index.
-    pub fn add(&mut self, id: impl Into<ThemeID>, metadata: ThemeMetadata<'static>) {
+    pub fn add(&mut self, id: impl Into<ThemeId>, metadata: ThemeMetadata<'static>) {
         self.metadata.insert(id.into(), metadata);
     }
 
-    pub fn get_path<'a>(&mut self, id: impl Into<&'a ThemeID>) -> Option<&Path> {
+    pub fn get_path<'a>(&mut self, id: impl Into<&'a ThemeId>) -> Option<&Path> {
         if let Some(meta) = self.metadata.get(id.into()) {
             if let Some(path) = &meta.path {
                 Some(path.as_ref())
@@ -35,7 +35,7 @@ impl ThemeIndex {
     }
 
     /// Returns an iterator over theme IDs and their corresponding paths.
-    pub fn paths(&self) -> impl Iterator<Item = (&ThemeID, &Path)> {
+    pub fn paths(&self) -> impl Iterator<Item = (&ThemeId, &Path)> {
         self.metadata
             .iter()
             .map(|(id, meta)| (id, meta.path.as_ref()))
@@ -43,7 +43,7 @@ impl ThemeIndex {
     }
 
     /// Returns an iterator over all theme IDs in the index.
-    pub fn ids(&self) -> impl Iterator<Item = &ThemeID> {
+    pub fn ids(&self) -> impl Iterator<Item = &ThemeId> {
         self.metadata.keys()
     }
 

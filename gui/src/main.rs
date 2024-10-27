@@ -1,9 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use config::{
-    workdir::{create_config_dir, create_workdir},
-    Config,
-};
+use config::{AppConfig, GuiConfig};
 use iced::{
     futures::{SinkExt, Stream},
     keyboard::{on_key_press, Key},
@@ -37,7 +34,6 @@ use core::{
     document::DocumentId,
     pane::Pane,
     smol_str::SmolStr,
-    value::Value,
     HotKey, Modifiers,
 };
 
@@ -45,7 +41,7 @@ static DEFAULT_THEME: &str = "core.light";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
-    config: Config,
+    config: AppConfig,
     brocker_tx: sync::mpsc::Sender<ActionWrapper>,
     completition_tx: sync::broadcast::Sender<ActionResult>,
     hotkeys: HashMap<HotKey, Action>,
@@ -60,7 +56,7 @@ pub enum AppMessage {
 }
 
 impl App {
-    fn new(config: Config) -> (Self, Task<AppMessage>) {
+    fn new() -> (Self, Task<AppMessage>) {
         let mut startup_tasks = Vec::new();
 
         // Actor channels
@@ -103,6 +99,13 @@ impl App {
         tokio::spawn(async move { pane_actor.run().await });
         tokio::spawn(async move { file_actor.run().await });
         tokio::spawn(async move { plugin_host_actor.run().await });
+
+        let config = AppConfig {
+            gui: GuiConfig {
+                theme_id: SmolStr::new(DEFAULT_THEME),
+                theme: Theme::default(),
+            },
+        };
 
         let mut app = Self {
             config,
@@ -252,7 +255,7 @@ impl App {
     }
 
     fn theme(&self) -> Theme {
-        Default::default()
+        self.config.gui.theme.clone()
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {
@@ -313,54 +316,6 @@ impl App {
 fn main() -> iced::Result {
     env_logger::init();
 
-    let mut config = Config::new();
-
-    // Initializing workdir. Default is ~/strelka
-    let workdir_path = if let Ok(path) = create_workdir() {
-        path
-    } else {
-        panic!("Can't create workdir")
-    };
-
-    config.insert(
-        "system",
-        "workdir",
-        Value::String(SmolStr::new(workdir_path.to_str().unwrap())),
-    );
-
-    // Initializing config directory. Default is ~/strelka/.config
-    let config_dir_path = if let Ok(path) = create_config_dir(&workdir_path) {
-        path
-    } else {
-        panic!("Can't create config directory")
-    };
-
-    config.insert(
-        "system",
-        "config_dir",
-        Value::String(SmolStr::new(config_dir_path.to_str().unwrap())),
-    );
-
-    // Path to system config file
-    let system_config_path = {
-        let mut a = config_dir_path.clone();
-        a.push("system.toml");
-        a
-    };
-
-    // Default config which used when config from file doesn't loaded
-    let mut default_config = Config::new();
-    default_config.insert(
-        "system",
-        "theme",
-        Value::String(SmolStr::new(DEFAULT_THEME)),
-    );
-
-    // Loading system config from file or initializing it with default one
-    let system_config =
-        Config::load_or_create_default(&system_config_path, default_config).unwrap();
-    config.merge(system_config);
-
     iced::application(App::title, App::update, App::view)
         .subscription(App::subscription)
         .theme(App::theme)
@@ -373,5 +328,5 @@ fn main() -> iced::Result {
             ..Default::default()
         })
         .centered()
-        .run_with(move || App::new(config))
+        .run_with(App::new)
 }

@@ -758,6 +758,7 @@ dependencies = [
  "core",
  "dirs 5.0.1",
  "serde",
+ "theming",
  "toml",
 ]
 

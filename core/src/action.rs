@@ -5,7 +5,7 @@ use tokio::sync::{broadcast, mpsc};
 use crate::{
     document::{DocumentHandler, DocumentId},
     pane::{Pane, PaneId, VisiblePaneModel},
-    ThemeID,
+    ThemeId,
 };
 
 #[derive(Debug, Clone)]
@@ -53,7 +53,7 @@ pub enum DocumentActionResponse {
 #[derive(Debug, Clone)]
 pub enum ThemeAction {
     MakeIndex,
-    SetTheme(ThemeID),
+    SetTheme(ThemeId),
 }
 
 #[derive(Debug, Clone)]
