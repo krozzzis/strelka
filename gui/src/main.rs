@@ -15,7 +15,10 @@ use iced::{
     Element, Settings, Subscription, Task,
 };
 use log::{debug, info, warn};
-use state::{ActionBrocker, DocumentActor, FileActor, PaneActor, PluginHostActor};
+use state::{
+    actors::{DocumentActor, FileActor, PaneActor, PluginHostActor},
+    ActionBrocker,
+};
 use tokio::sync;
 use tokio::sync::mpsc::{self, channel};
 
