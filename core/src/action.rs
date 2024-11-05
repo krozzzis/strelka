@@ -65,34 +65,44 @@ pub enum Action {
     Message(Message),
 }
 
-impl From<FileAction> for Action {
-    fn from(value: FileAction) -> Self {
-        Self::File(value)
+impl IntoAction for FileAction {
+    fn into_action(self) -> Action {
+        Action::File(self)
     }
 }
 
-impl From<PaneAction> for Action {
-    fn from(value: PaneAction) -> Self {
-        Self::Pane(value)
+impl IntoAction for PaneAction {
+    fn into_action(self) -> Action {
+        Action::Pane(self)
     }
 }
 
-impl From<DocumentAction> for Action {
-    fn from(value: DocumentAction) -> Self {
-        Self::Document(value)
+impl IntoAction for DocumentAction {
+    fn into_action(self) -> Action {
+        Action::Document(self)
     }
 }
 
-impl From<ThemeAction> for Action {
-    fn from(value: ThemeAction) -> Self {
-        Self::Theme(value)
+impl IntoAction for ThemeAction {
+    fn into_action(self) -> Action {
+        Action::Theme(self)
     }
 }
 
-impl From<Message> for Action {
-    fn from(value: Message) -> Self {
-        Self::Message(value)
+impl IntoAction for Message {
+    fn into_action(self) -> Action {
+        Action::Message(self)
     }
+}
+
+impl IntoAction for Action {
+    fn into_action(self) -> Action {
+        self
+    }
+}
+
+pub trait IntoAction {
+    fn into_action(self) -> Action;
 }
 
 #[derive(Debug)]
@@ -102,9 +112,9 @@ pub struct ActionWrapper {
 }
 
 impl ActionWrapper {
-    pub fn new(action: impl Into<Action>) -> Self {
+    pub fn new(action: impl IntoAction) -> Self {
         Self {
-            action: action.into(),
+            action: action.into_action(),
             completition_tx: None,
         }
     }

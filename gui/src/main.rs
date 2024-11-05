@@ -30,7 +30,10 @@ use widget::{
 };
 
 use core::{
-    action::{Action, ActionResult, ActionWrapper, FileAction, Message, PaneAction, ThemeAction},
+    action::{
+        Action, ActionResult, ActionWrapper, FileAction, IntoAction, Message, PaneAction,
+        ThemeAction,
+    },
     document::DocumentId,
     pane::Pane,
     smol_str::SmolStr,
@@ -79,6 +82,7 @@ impl App {
                 .description("An example plugin that do nothing useful)"),
             Box::new(ExamplePlugin {}) as Box<dyn Plugin>,
         );
+
         plugin_host.set_brocker(brocker_tx.clone());
 
         // Actors
@@ -128,8 +132,7 @@ impl App {
                 destination: "core.example".to_string(),
                 kind: "test".to_string(),
                 payload: None,
-            }
-            .into(),
+            },
         );
 
         // Ctrl-o open file
@@ -138,7 +141,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            FileAction::PickFile.into(),
+            FileAction::PickFile,
         );
 
         // Ctrl-t open new document tab
@@ -147,7 +150,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            PaneAction::Add(Pane::NewDocument, None).into(),
+            PaneAction::Add(Pane::NewDocument, None),
         );
 
         // Ctrl-b open experimental buffer pane
@@ -156,7 +159,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            PaneAction::Add(Pane::Buffer, None).into(),
+            PaneAction::Add(Pane::Buffer, None),
         );
 
         // Ctrl-, open config viewer pane
@@ -165,7 +168,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: ',',
             },
-            PaneAction::Add(Pane::Config, None).into(),
+            PaneAction::Add(Pane::Config, None),
         );
 
         // Ctrl-, open config viewer pane
@@ -174,10 +177,10 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'm',
             },
-            ThemeAction::MakeIndex.into(),
+            ThemeAction::MakeIndex,
         );
         {
-            let task = Task::done(AppMessage::Action(ThemeAction::MakeIndex.into()));
+            let task = Task::done(AppMessage::Action(ThemeAction::MakeIndex.into_action()));
             startup_tasks.push(task);
         }
 
@@ -194,9 +197,9 @@ impl App {
         (app, Task::batch(startup_tasks))
     }
 
-    fn add_hotkey(&mut self, hotkey: HotKey, action: Action) {
+    fn add_hotkey(&mut self, hotkey: HotKey, action: impl IntoAction) {
         info!("Added hotkey {hotkey:?}");
-        self.hotkeys.insert(hotkey, action);
+        self.hotkeys.insert(hotkey, action.into_action());
     }
 
     fn title(&self) -> String {
@@ -243,13 +246,13 @@ impl App {
             info!("View. Loaded PaneModel");
             let pane_stack = pane_stack(model).map(|message| match message {
                 pane_stack::Message::OpenPane(id) => {
-                    AppMessage::Action(PaneAction::Open(id).into())
+                    AppMessage::Action(PaneAction::Open(id).into_action())
                 }
                 pane_stack::Message::ClosePane(id) => {
-                    AppMessage::Action(PaneAction::Close(id).into())
+                    AppMessage::Action(PaneAction::Close(id).into_action())
                 }
                 pane_stack::Message::NewPane(pane) => {
-                    AppMessage::Action(PaneAction::Add(pane, None).into())
+                    AppMessage::Action(PaneAction::Add(pane, None).into_action())
                 }
                 pane_stack::Message::NewDocument(_message) => todo!(),
                 pane_stack::Message::TextEditor(_, _message) => todo!(),
