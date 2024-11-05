@@ -11,6 +11,7 @@ pub struct ActionBrocker {
     document_sender: Option<Sender<ActionWrapper>>,
     file_sender: Option<Sender<FileAction>>,
     pane_sender: Option<Sender<ActionWrapper>>,
+    theme_sender: Option<Sender<ActionWrapper>>,
     plugins_sender: Option<Sender<ActionWrapper>>,
 }
 
@@ -21,6 +22,7 @@ impl ActionBrocker {
             document_sender: None,
             file_sender: None,
             pane_sender: None,
+            theme_sender: None,
             plugins_sender: None,
         }
     }
@@ -37,6 +39,11 @@ impl ActionBrocker {
 
     pub fn pane_actor(mut self, pane_tx: Sender<ActionWrapper>) -> Self {
         self.pane_sender = Some(pane_tx);
+        self
+    }
+
+    pub fn theme_actor(mut self, theme_tx: Sender<ActionWrapper>) -> Self {
+        self.theme_sender = Some(theme_tx);
         self
     }
 
@@ -97,7 +104,20 @@ impl ActionBrocker {
                         }
                     }
                 }
-                Action::Theme(_) => todo!(),
+                Action::Theme(action) => {
+                    if let Some(tx) = &self.theme_sender {
+                        let (complete_tx, mut complete_rx) = broadcast::channel(1);
+                        let message =
+                            ActionWrapper::new(Action::Theme(action.clone())).notify(complete_tx);
+                        let _ = tx.send(message).await;
+
+                        // ActionResult throwing
+                        while let Ok(result) = complete_rx.recv().await {
+                            info!("Brocker. Received {result:?} from ThemeActor");
+                            wrapper.try_notify_complete(result);
+                        }
+                    }
+                }
             }
         }
     }

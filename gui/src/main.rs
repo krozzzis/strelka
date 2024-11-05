@@ -13,7 +13,7 @@ use iced::{
 };
 use log::{debug, info, warn};
 use state::{
-    actors::{DocumentActor, FileActor, PaneActor, PluginHostActor},
+    actors::{DocumentActor, FileActor, PaneActor, PluginHostActor, ThemeActor},
     ActionBrocker,
 };
 use tokio::sync;
@@ -30,7 +30,7 @@ use widget::{
 };
 
 use core::{
-    action::{Action, ActionResult, ActionWrapper, FileAction, Message, PaneAction},
+    action::{Action, ActionResult, ActionWrapper, FileAction, Message, PaneAction, ThemeAction},
     document::DocumentId,
     pane::Pane,
     smol_str::SmolStr,
@@ -63,6 +63,7 @@ impl App {
         let (document_tx, document_rx) = channel(10);
         let (file_tx, file_rx) = channel(10);
         let (pane_tx, pane_rx) = channel(10);
+        let (theme_tx, theme_rx) = channel(10);
         let (plugins_tx, plugins_rx) = channel(10);
         let (brocker_tx, brocker_rx) = channel(10);
 
@@ -84,6 +85,7 @@ impl App {
         let mut document_actor = DocumentActor::new(document_rx, brocker_tx.clone());
         let mut pane_actor = PaneActor::new(pane_rx, brocker_tx.clone());
         let mut file_actor = FileActor::new(file_rx, brocker_tx.clone());
+        let mut theme_actor = ThemeActor::new(theme_rx, brocker_tx.clone());
         let mut plugin_host_actor =
             PluginHostActor::new(plugins_rx, brocker_tx.clone()).set_host(plugin_host);
 
@@ -91,6 +93,7 @@ impl App {
             .document_actor(document_tx.clone())
             .file_actor(file_tx.clone())
             .pane_actor(pane_tx.clone())
+            .theme_actor(theme_tx.clone())
             .plugin_host_actor(plugins_tx.clone());
 
         tokio::spawn(async move { brocker.run().await });
@@ -98,6 +101,7 @@ impl App {
         tokio::spawn(async move { document_actor.run().await });
         tokio::spawn(async move { pane_actor.run().await });
         tokio::spawn(async move { file_actor.run().await });
+        tokio::spawn(async move { theme_actor.run().await });
         tokio::spawn(async move { plugin_host_actor.run().await });
 
         let config = AppConfig {
@@ -164,14 +168,18 @@ impl App {
             PaneAction::Add(Pane::Config, None).into(),
         );
 
-        // {
-        //     let task = Task::done(AppMessage::Action(Action::Message(Message {
-        //         destination: "core.example".to_string(),
-        //         kind: "".to_string(),
-        //         payload: None,
-        //     })));
-        //     tasks.push(task);
-        // }
+        // Ctrl-, open config viewer pane
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'm',
+            },
+            ThemeAction::MakeIndex.into(),
+        );
+        {
+            let task = Task::done(AppMessage::Action(ThemeAction::MakeIndex.into()));
+            startup_tasks.push(task);
+        }
 
         // Apply theme
         // let theme = if let Some(Value::String(id)) = app.state.config.get("system", "theme") {

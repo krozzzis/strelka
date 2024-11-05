@@ -83,6 +83,12 @@ impl From<DocumentAction> for Action {
     }
 }
 
+impl From<ThemeAction> for Action {
+    fn from(value: ThemeAction) -> Self {
+        Self::Theme(value)
+    }
+}
+
 impl From<Message> for Action {
     fn from(value: Message) -> Self {
         Self::Message(value)
