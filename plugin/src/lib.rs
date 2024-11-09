@@ -1,7 +1,7 @@
 mod host;
 mod plugins;
 
-use core::action::{Action, ActionWrapper, Message};
+use action::{Action, ActionWrapper, Message};
 use std::{future::Future, pin::Pin, sync::Arc};
 
 pub use host::*;

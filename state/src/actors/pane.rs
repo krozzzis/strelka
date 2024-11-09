@@ -1,7 +1,5 @@
-use core::{
-    action::{Action, ActionResult, ActionWrapper, DocumentAction, PaneAction},
-    pane::{Pane, PaneModel, VisiblePaneModel},
-};
+use action::{Action, ActionResult, ActionWrapper, DocumentAction, PaneAction};
+use core::pane::{Pane, PaneModel, VisiblePaneModel};
 
 use log::{info, warn};
 use tokio::sync::mpsc::{Receiver, Sender};

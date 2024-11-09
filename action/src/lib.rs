@@ -1,8 +1,9 @@
 use std::{path::PathBuf, sync::Arc};
 
-use tokio::sync::{broadcast, mpsc};
+use theming::Theme;
+use tokio::sync::{broadcast, mpsc, RwLock};
 
-use crate::{
+use core::{
     document::{DocumentHandler, DocumentId},
     pane::{Pane, PaneId, VisiblePaneModel},
     ThemeId,
@@ -54,6 +55,7 @@ pub enum DocumentActionResponse {
 pub enum ThemeAction {
     MakeIndex,
     SetTheme(ThemeId),
+    GetCurrentTheme(mpsc::Sender<Arc<RwLock<Theme>>>),
 }
 
 #[derive(Debug, Clone)]

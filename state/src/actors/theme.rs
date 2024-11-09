@@ -1,10 +1,15 @@
-use core::action::{Action, ActionWrapper, ThemeAction};
+use action::{Action, ActionWrapper, ThemeAction};
+use std::sync::Arc;
 
 use log::{info, warn};
-use theming::index::ThemeIndex;
-use tokio::sync::mpsc::{Receiver, Sender};
+use theming::{index::ThemeIndex, Theme};
+use tokio::sync::{
+    mpsc::{Receiver, Sender},
+    RwLock,
+};
 
 pub struct ThemeActor {
+    theme: Arc<RwLock<Theme>>,
     index: ThemeIndex,
     receiver: Receiver<ActionWrapper>,
     brocker_sender: Sender<ActionWrapper>,
@@ -13,6 +18,7 @@ pub struct ThemeActor {
 impl ThemeActor {
     pub fn new(rx: Receiver<ActionWrapper>, brocker_tx: Sender<ActionWrapper>) -> Self {
         Self {
+            theme: Arc::new(RwLock::new(Theme::default())),
             index: ThemeIndex::new(),
             receiver: rx,
             brocker_sender: brocker_tx,
@@ -38,7 +44,24 @@ impl ThemeActor {
                         warn!("Can't make index from directory");
                     }
                 }
-                ThemeAction::SetTheme(id) => todo!(),
+                ThemeAction::SetTheme(id) => {
+                    if let Some(dir_path) = self.index.get_path(id) {
+                        let mut path = dir_path.to_path_buf();
+                        path.push("theme.toml");
+                        let theme = Theme::from_file(&path).await;
+                        if let Ok(theme) = theme {
+                            *self.theme.write().await = theme;
+                            info!("Set theme {id}");
+                        } else {
+                            warn!("Can't load theme '{id}' from file '{path:?}'");
+                        }
+                    } else {
+                        warn!("Theme '{id} not found");
+                    }
+                }
+                ThemeAction::GetCurrentTheme(sender) => {
+                    let _ = sender.send(self.theme.clone()).await;
+                }
             }
         }
     }

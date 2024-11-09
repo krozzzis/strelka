@@ -29,16 +29,10 @@ use widget::{
     pane::pane_stack::{self, pane_stack},
 };
 
-use core::{
-    action::{
-        Action, ActionResult, ActionWrapper, FileAction, IntoAction, Message, PaneAction,
-        ThemeAction,
-    },
-    document::DocumentId,
-    pane::Pane,
-    smol_str::SmolStr,
-    HotKey, Modifiers,
+use action::{
+    Action, ActionResult, ActionWrapper, FileAction, IntoAction, Message, PaneAction, ThemeAction,
 };
+use core::{document::DocumentId, pane::Pane, smol_str::SmolStr, HotKey, Modifiers};
 
 static DEFAULT_THEME: &str = "core.light";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
@@ -171,7 +165,7 @@ impl App {
             PaneAction::Add(Pane::Config, None),
         );
 
-        // Ctrl-, open config viewer pane
+        // Ctrl-m make theme index
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::Ctrl,
@@ -179,6 +173,16 @@ impl App {
             },
             ThemeAction::MakeIndex,
         );
+
+        // Ctrl-l set light themw
+        app.add_hotkey(
+            HotKey {
+                modifiers: Modifiers::Ctrl,
+                key: 'l',
+            },
+            ThemeAction::SetTheme(SmolStr::new(DEFAULT_THEME)),
+        );
+
         {
             let task = Task::done(AppMessage::Action(ThemeAction::MakeIndex.into_action()));
             startup_tasks.push(task);
@@ -240,7 +244,7 @@ impl App {
 
     fn view(&self) -> Element<AppMessage, Theme> {
         let (tx, mut rx) = mpsc::channel(1);
-        let get_model_action = ActionWrapper::new(Action::Pane(PaneAction::GetModel(tx)));
+        let get_model_action = ActionWrapper::new(PaneAction::GetModel(tx));
         let _ = self.brocker_tx.blocking_send(get_model_action);
         if let Some(Some(model)) = rx.blocking_recv() {
             info!("View. Loaded PaneModel");
@@ -266,7 +270,14 @@ impl App {
     }
 
     fn theme(&self) -> Theme {
-        self.config.gui.theme.clone()
+        let (tx, mut rx) = mpsc::channel(1);
+        let get_theme = ActionWrapper::new(ThemeAction::GetCurrentTheme(tx));
+        let _ = self.brocker_tx.blocking_send(get_theme);
+        if let Some(theme) = rx.blocking_recv() {
+            theme.blocking_read().clone()
+        } else {
+            self.config.gui.theme.clone()
+        }
     }
 
     fn subscription(&self) -> Subscription<AppMessage> {

@@ -1,5 +1,5 @@
 use core::ThemeId;
-use std::{collections::HashMap, path::Path};
+use std::{borrow::Cow, collections::HashMap, path::Path};
 
 use crate::metadata::ThemeMetadata;
 
@@ -65,10 +65,12 @@ impl ThemeIndex {
 
                     // Parse metadata from TOML file
                     let metadata_content = tokio::fs::read_to_string(metadata_file_path).await?;
-                    let metadata: ThemeMetadata =
-                        toml::from_str(&metadata_content).map_err(|e| {
+                    let metadata: ThemeMetadata = ThemeMetadata {
+                        path: Some(Cow::Owned(dir_entry.path())),
+                        ..toml::from_str(&metadata_content).map_err(|e| {
                             std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
-                        })?;
+                        })?
+                    };
 
                     index.add(metadata.id.clone(), metadata);
                 }

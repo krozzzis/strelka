@@ -1,5 +1,5 @@
+use action::{Action, ActionResult, ActionWrapper, DocumentAction, PaneAction};
 use core::{
-    action::{Action, ActionResult, ActionWrapper, DocumentAction, PaneAction},
     document::{DocumentHandler, DocumentStore},
     pane::Pane,
 };

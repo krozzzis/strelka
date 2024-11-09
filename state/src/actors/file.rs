@@ -1,8 +1,5 @@
-use core::{
-    action::{ActionWrapper, DocumentAction, FileAction, PaneAction},
-    document::DocumentHandler,
-    pane::Pane,
-};
+use action::{ActionWrapper, DocumentAction, FileAction, PaneAction};
+use core::{document::DocumentHandler, pane::Pane};
 use std::{
     path::{Path, PathBuf},
     sync::Arc,

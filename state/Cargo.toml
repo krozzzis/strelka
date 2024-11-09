@@ -9,6 +9,7 @@ authors = ["Nikita Shumov"]
 rfd = "^0.15"
 crossbeam = { workspace = true }
 tokio = { workspace = true }
+action = { path = "../action" }
 core = { path = "../core" }
 config = { path = "../config" }
 plugin = { path = "../plugin" }

@@ -19,6 +19,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c71b1793ee61086797f5c80b6efa2b8ffa6d5dd703f118545808a7f2e27f7046"
 
 [[package]]
+name = "action"
+version = "0.1.0"
+dependencies = [
+ "core",
+ "crossbeam",
+ "theming",
+ "tokio",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1652,6 +1662,7 @@ dependencies = [
 name = "gui"
 version = "0.1.0"
 dependencies = [
+ "action",
  "config",
  "core",
  "crossbeam",
@@ -3018,6 +3029,7 @@ checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 name = "plugin"
 version = "0.1.0"
 dependencies = [
+ "action",
  "core",
  "log",
  "tokio",
@@ -3674,6 +3686,7 @@ dependencies = [
 name = "state"
 version = "0.1.0"
 dependencies = [
+ "action",
  "config",
  "core",
  "crossbeam",

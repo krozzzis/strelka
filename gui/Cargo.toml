@@ -12,6 +12,7 @@ path = "src/main.rs"
 [dependencies]
 rfd = "^0.15"
 crossbeam = { workspace = true }
+action = { path = "../action" }
 core = { path = "../core" }
 plugin = { path = "../plugin" }
 theming = { path = "../theming" }

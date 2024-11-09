@@ -1,4 +1,4 @@
-use core::action::{Action, ActionWrapper};
+use action::{Action, ActionWrapper};
 
 use log::{info, warn};
 use plugin::PluginHost;
