@@ -1,61 +1,19 @@
-use std::{path::PathBuf, sync::Arc};
+mod document;
+mod file;
+mod message;
+mod pane;
+mod theme;
 
-use theming::Theme;
-use tokio::sync::{broadcast, mpsc, RwLock};
+pub use document::DocumentAction;
+pub use file::FileAction;
+pub use message::Message;
+pub use pane::PaneAction;
+pub use theme::ThemeAction;
 
-use core::{
-    document::{DocumentHandler, DocumentId},
-    pane::{Pane, PaneId, VisiblePaneModel},
-    ThemeId,
-};
+use tokio::sync::broadcast;
 
-#[derive(Debug, Clone)]
-pub struct Message {
-    pub destination: String,
-    pub kind: String,
-    pub payload: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub enum PaneAction {
-    Close(PaneId),
-    Open(PaneId),
-    Add(Pane, Option<mpsc::Sender<PaneId>>),
-    Replace(PaneId, Pane),
-    GetOpen(mpsc::Sender<Option<Pane>>),
-    GetOpenId(mpsc::Sender<Option<PaneId>>),
-    GetModel(mpsc::Sender<Option<VisiblePaneModel>>),
-}
-
-#[derive(Debug, Clone)]
-pub enum FileAction {
-    PickFile,
-    OpenFileCurrentTab(PathBuf),
-    OpenFileForceCurrentTab(PathBuf),
-    OpenFileNewTab(PathBuf),
-}
-
-#[derive(Debug, Clone)]
-pub enum DocumentAction {
-    Add(
-        Arc<DocumentHandler<String>>,
-        Option<mpsc::Sender<DocumentId>>,
-    ),
-    Open(DocumentId),
-    Save(DocumentId),
-    Remove(DocumentId),
-}
-
-#[derive(Debug, Clone)]
-pub enum DocumentActionResponse {
-    DocumentAdded(DocumentId),
-}
-
-#[derive(Debug, Clone)]
-pub enum ThemeAction {
-    MakeIndex,
-    SetTheme(ThemeId),
-    GetCurrentTheme(mpsc::Sender<Arc<RwLock<Theme>>>),
+pub trait IntoAction {
+    fn into_action(self) -> Action;
 }
 
 #[derive(Debug, Clone)]
@@ -67,44 +25,10 @@ pub enum Action {
     Message(Message),
 }
 
-impl IntoAction for FileAction {
-    fn into_action(self) -> Action {
-        Action::File(self)
-    }
-}
-
-impl IntoAction for PaneAction {
-    fn into_action(self) -> Action {
-        Action::Pane(self)
-    }
-}
-
-impl IntoAction for DocumentAction {
-    fn into_action(self) -> Action {
-        Action::Document(self)
-    }
-}
-
-impl IntoAction for ThemeAction {
-    fn into_action(self) -> Action {
-        Action::Theme(self)
-    }
-}
-
-impl IntoAction for Message {
-    fn into_action(self) -> Action {
-        Action::Message(self)
-    }
-}
-
 impl IntoAction for Action {
     fn into_action(self) -> Action {
         self
     }
-}
-
-pub trait IntoAction {
-    fn into_action(self) -> Action;
 }
 
 #[derive(Debug)]

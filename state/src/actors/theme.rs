@@ -1,5 +1,4 @@
 use action::{Action, ActionWrapper, ThemeAction};
-use std::sync::Arc;
 
 use log::{info, warn};
 use theming::{index::ThemeIndex, Theme};
@@ -9,7 +8,7 @@ use tokio::sync::{
 };
 
 pub struct ThemeActor {
-    theme: Arc<RwLock<Theme>>,
+    theme: Theme,
     index: ThemeIndex,
     receiver: Receiver<ActionWrapper>,
     brocker_sender: Sender<ActionWrapper>,
@@ -18,7 +17,7 @@ pub struct ThemeActor {
 impl ThemeActor {
     pub fn new(rx: Receiver<ActionWrapper>, brocker_tx: Sender<ActionWrapper>) -> Self {
         Self {
-            theme: Arc::new(RwLock::new(Theme::default())),
+            theme: Theme::default(),
             index: ThemeIndex::new(),
             receiver: rx,
             brocker_sender: brocker_tx,
@@ -50,7 +49,7 @@ impl ThemeActor {
                         path.push("theme.toml");
                         let theme = Theme::from_file(&path).await;
                         if let Ok(theme) = theme {
-                            *self.theme.write().await = theme;
+                            self.theme = theme;
                             info!("Set theme {id}");
                         } else {
                             warn!("Can't load theme '{id}' from file '{path:?}'");

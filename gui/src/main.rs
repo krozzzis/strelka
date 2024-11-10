@@ -274,7 +274,7 @@ impl App {
         let get_theme = ActionWrapper::new(ThemeAction::GetCurrentTheme(tx));
         let _ = self.brocker_tx.blocking_send(get_theme);
         if let Some(theme) = rx.blocking_recv() {
-            theme.blocking_read().clone()
+            theme
         } else {
             self.config.gui.theme.clone()
         }
