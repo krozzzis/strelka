@@ -1,4 +1,4 @@
-use action::{ActionWrapper, Message};
+use action::{Action, Message};
 use std::{collections::HashMap, sync::Arc};
 
 use log::warn;
@@ -18,7 +18,7 @@ pub struct PluginHost {
 
     pub message_handlers: HashMap<PluginId, Arc<MessageHandler>>,
 
-    pub brocker_tx: Option<sync::mpsc::Sender<ActionWrapper>>,
+    pub brocker_tx: Option<sync::mpsc::Sender<Action>>,
 }
 
 impl PluginHost {
@@ -30,7 +30,7 @@ impl PluginHost {
         }
     }
 
-    pub fn set_brocker(&mut self, brocker: sync::mpsc::Sender<ActionWrapper>) {
+    pub fn set_brocker(&mut self, brocker: sync::mpsc::Sender<Action>) {
         self.brocker_tx = Some(brocker);
     }
 
@@ -96,7 +96,7 @@ impl PluginHost {
                 if let Some(message_handler) = self.message_handlers.get(receiver).cloned() {
                     let state = handler.state.clone();
                     let brocker = self.brocker_tx.clone();
-                    tokio::spawn(async move { message_handler(state, message, brocker).await });
+                    // tokio::spawn(async move { message_handler(state, message, brocker).await });
                 } else {
                     warn!("No message handler found for processing message");
                 }

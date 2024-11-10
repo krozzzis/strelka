@@ -1,7 +1,7 @@
 mod host;
 mod plugins;
 
-use action::{Action, ActionWrapper, Message};
+use action::{Action, Message};
 use std::{future::Future, pin::Pin, sync::Arc};
 
 pub use host::*;
@@ -12,7 +12,7 @@ pub type MessageHandler = Box<
     dyn Fn(
             Arc<Mutex<Box<dyn Plugin>>>,
             Message,
-            Option<mpsc::Sender<ActionWrapper>>,
+            Option<mpsc::Sender<Action>>,
         ) -> Pin<Box<dyn Future<Output = ()> + Send>>
         + Send
         + Sync,

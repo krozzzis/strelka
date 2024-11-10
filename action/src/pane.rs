@@ -2,7 +2,7 @@ use core::pane::{Pane, PaneId, VisiblePaneModel};
 
 use tokio::sync::mpsc;
 
-use crate::{Action, IntoAction};
+use crate::{Action, IntoAction, Receiver};
 
 #[derive(Debug, Clone)]
 pub enum PaneAction {
@@ -17,6 +17,10 @@ pub enum PaneAction {
 
 impl IntoAction for PaneAction {
     fn into_action(self) -> Action {
-        Action::Pane(self)
+        Action {
+            receiver: Receiver::Pane,
+            content: Box::new(self),
+            return_tx: None,
+        }
     }
 }

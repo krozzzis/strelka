@@ -1,4 +1,6 @@
-use crate::{Action, IntoAction};
+use core::smol_str::SmolStr;
+
+use crate::{Action, IntoAction, Receiver};
 
 #[derive(Debug, Clone)]
 pub struct Message {
@@ -9,6 +11,10 @@ pub struct Message {
 
 impl IntoAction for Message {
     fn into_action(self) -> Action {
-        Action::Message(self)
+        Action {
+            receiver: Receiver::Plugin(SmolStr::new(self.destination.clone())),
+            content: Box::new(self),
+            return_tx: None,
+        }
     }
 }

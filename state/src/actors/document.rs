@@ -10,12 +10,12 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 pub struct DocumentActor {
     documents: DocumentStore<Content>,
-    receiver: Receiver<ActionWrapper>,
-    brocker_sender: Sender<ActionWrapper>,
+    receiver: Receiver<Action>,
+    brocker_sender: Sender<Action>,
 }
 
 impl DocumentActor {
-    pub fn new(rx: Receiver<ActionWrapper>, brocker_tx: Sender<ActionWrapper>) -> Self {
+    pub fn new(rx: Receiver<Action>, brocker_tx: Sender<Action>) -> Self {
         Self {
             documents: DocumentStore::new(),
             receiver: rx,
@@ -24,10 +24,10 @@ impl DocumentActor {
     }
 
     pub async fn run(&mut self) {
-        info!("Started DocumentActor's thread");
-        while let Some(wrapper) = self.receiver.recv().await {
-            info!("DocumentActor. Processing: {wrapper:?}");
-            let action = if let Action::Document(action) = wrapper.action() {
+        info!("Started DocumentActor");
+        while let Some(action) = self.receiver.recv().await {
+            info!("DocumentActor. Processing: {action:?}");
+            let action = if let Action::Document(action) = action.action() {
                 action
             } else {
                 warn!("DocumentActor. Dropping processing action because incorrect type");
@@ -48,20 +48,20 @@ impl DocumentActor {
                     }
 
                     info!("DocumentActor. Sending sucess");
-                    wrapper.try_notify_complete(ActionResult::Success);
+                    action.try_notify_complete(ActionResult::Success);
                 }
                 DocumentAction::Open(id) => {
                     let pane = Pane::Editor(*id);
                     let message = ActionWrapper::new(PaneAction::Add(pane, None));
                     let _ = self.brocker_sender.send(message).await;
-                    wrapper.try_notify_complete(ActionResult::Success);
+                    action.try_notify_complete(ActionResult::Success);
                 }
                 DocumentAction::Save(_id) => {
                     todo!()
                 }
                 DocumentAction::Remove(id) => {
                     self.documents.remove(id);
-                    wrapper.try_notify_complete(ActionResult::Success);
+                    action.try_notify_complete(ActionResult::Success);
                 }
             }
         }

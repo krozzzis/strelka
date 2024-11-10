@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::{Action, IntoAction};
+use crate::{Action, IntoAction, Receiver};
 
 #[derive(Debug, Clone)]
 pub enum FileAction {
@@ -12,6 +12,10 @@ pub enum FileAction {
 
 impl IntoAction for FileAction {
     fn into_action(self) -> Action {
-        Action::File(self)
+        Action {
+            receiver: Receiver::File,
+            content: Box::new(self),
+            return_tx: None,
+        }
     }
 }
