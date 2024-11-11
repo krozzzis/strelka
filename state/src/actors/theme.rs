@@ -46,7 +46,10 @@ impl ThemeActor {
                         path.push("theme.toml");
                         let theme = Theme::from_file(&path).await;
                         if let Ok(theme) = theme {
-                            self.theme = theme;
+                            self.theme = theme.clone();
+                            if let Ok(mut global_theme) = theming::THEME.write() {
+                                *global_theme = theme;
+                            }
                             info!("Set theme {id}");
                         } else {
                             warn!("Can't load theme '{id}' from file '{path:?}'");
