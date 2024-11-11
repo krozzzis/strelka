@@ -1,4 +1,4 @@
-use action::{Action, DocumentAction, IntoAction, PaneAction};
+use action::{Action, ActionResult, DocumentAction, IntoAction, PaneAction};
 use core::pane::{Pane, PaneModel, VisiblePaneModel};
 
 use log::{info, warn};
@@ -48,32 +48,38 @@ impl PaneActor {
                 PaneAction::Open(id) => {
                     self.panes.open(&id);
                 }
-                PaneAction::Add(pane, tx) => {
+                PaneAction::Add(pane) => {
                     let id = self.panes.add(pane);
                     self.panes.open(&id);
-                    if let Some(tx) = tx {
-                        let _ = tx.send(id).await;
+                    if let Some(tx) = generic_action.return_tx {
+                        let _ = tx.send(ActionResult::Value(Box::new(id)));
                     }
                 }
                 PaneAction::Replace(id, pane) => {
                     self.panes.replace(&id, pane);
                 }
-                PaneAction::GetOpen(tx) => {
-                    let opened = self.panes.get_open().cloned();
-                    let _ = tx.send(opened).await;
+                PaneAction::GetOpen() => {
+                    if let Some(tx) = generic_action.return_tx {
+                        let opened = self.panes.get_open().cloned();
+                        let _ = tx.send(ActionResult::Value(Box::new(opened)));
+                    }
                 }
-                PaneAction::GetOpenId(tx) => {
-                    let opened_id = self.panes.get_open_id().cloned();
-                    let _ = tx.send(opened_id).await;
+                PaneAction::GetOpenId() => {
+                    if let Some(tx) = generic_action.return_tx {
+                        let opened_id = self.panes.get_open_id().cloned();
+                        let _ = tx.send(ActionResult::Value(Box::new(opened_id)));
+                    }
                 }
-                PaneAction::GetModel(tx) => {
-                    let opened_id = self.panes.get_open_id().cloned();
-                    let panes = self.panes.get_visible_panes();
-                    let model = VisiblePaneModel {
-                        panes,
-                        opened: opened_id,
-                    };
-                    let _ = tx.send(Some(model)).await;
+                PaneAction::GetModel() => {
+                    if let Some(tx) = generic_action.return_tx {
+                        let opened_id = self.panes.get_open_id().cloned();
+                        let panes = self.panes.get_visible_panes();
+                        let model = VisiblePaneModel {
+                            panes,
+                            opened: opened_id,
+                        };
+                        let _ = tx.send(ActionResult::Value(Box::new(Some(model))));
+                    }
                 }
             }
         }

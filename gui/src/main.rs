@@ -27,8 +27,13 @@ use widget::{
     pane::pane_stack::{self, pane_stack},
 };
 
-use action::{Action, FileAction, IntoAction, Message, PaneAction, ThemeAction};
-use core::{document::DocumentId, pane::Pane, smol_str::SmolStr, HotKey, Modifiers};
+use action::{Action, ActionResult, FileAction, IntoAction, Message, PaneAction, ThemeAction};
+use core::{
+    document::DocumentId,
+    pane::{Pane, VisiblePaneModel},
+    smol_str::SmolStr,
+    HotKey, Modifiers,
+};
 
 static DEFAULT_THEME: &str = "core.light";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
@@ -141,7 +146,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            || PaneAction::Add(Pane::NewDocument, None).into_action(),
+            || PaneAction::Add(Pane::NewDocument).into_action(),
         );
 
         // Ctrl+b open experimental buffer pane
@@ -150,7 +155,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            || PaneAction::Add(Pane::Buffer, None).into_action(),
+            || PaneAction::Add(Pane::Buffer).into_action(),
         );
 
         // Ctrl+, open config viewer pane
@@ -159,7 +164,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: ',',
             },
-            || PaneAction::Add(Pane::Config, None).into_action(),
+            || PaneAction::Add(Pane::Config).into_action(),
         );
 
         // Ctrl+Alt+m make theme index
@@ -234,26 +239,40 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let (tx, mut rx) = mpsc::channel(1);
-        let get_model_action = PaneAction::GetModel(tx).into_action();
+        let (get_model_action, rx) = PaneAction::GetModel().into_returnable_action();
         let _ = self.brocker_tx.blocking_send(get_model_action);
-        if let Some(Some(model)) = rx.blocking_recv() {
-            info!("View. Loaded PaneModel");
-            let pane_stack = pane_stack(model).map(|message| match message {
-                pane_stack::Message::OpenPane(id) => {
-                    AppMessage::Action(PaneAction::Open(id).into_action())
+        if let Some(rx) = rx {
+            if let Ok(ActionResult::Value(model)) = rx.blocking_recv() {
+                if let Ok(model) = model.downcast::<Option<VisiblePaneModel>>() {
+                    if let Some(model) = *model {
+                        info!("View. Loaded PaneModel");
+                        let pane_stack = pane_stack(model).map(|message| match message {
+                            pane_stack::Message::OpenPane(id) => {
+                                AppMessage::Action(PaneAction::Open(id).into_action())
+                            }
+                            pane_stack::Message::ClosePane(id) => {
+                                AppMessage::Action(PaneAction::Close(id).into_action())
+                            }
+                            pane_stack::Message::NewPane(pane) => {
+                                AppMessage::Action(PaneAction::Add(pane).into_action())
+                            }
+                            pane_stack::Message::NewDocument(_message) => todo!(),
+                            pane_stack::Message::TextEditor(_, _message) => todo!(),
+                            pane_stack::Message::None => AppMessage::None,
+                        });
+                        pane_stack
+                    } else {
+                        warn!("View. Can't load PaneModel");
+                        background(center("Can't load PaneModel")).into()
+                    }
+                } else {
+                    warn!("View. Can't load PaneModel");
+                    background(center("Can't load PaneModel")).into()
                 }
-                pane_stack::Message::ClosePane(id) => {
-                    AppMessage::Action(PaneAction::Close(id).into_action())
-                }
-                pane_stack::Message::NewPane(pane) => {
-                    AppMessage::Action(PaneAction::Add(pane, None).into_action())
-                }
-                pane_stack::Message::NewDocument(_message) => todo!(),
-                pane_stack::Message::TextEditor(_, _message) => todo!(),
-                pane_stack::Message::None => AppMessage::None,
-            });
-            pane_stack
+            } else {
+                warn!("View. Can't load PaneModel");
+                background(center("Can't load PaneModel")).into()
+            }
         } else {
             warn!("View. Can't load PaneModel");
             background(center("Can't load PaneModel")).into()

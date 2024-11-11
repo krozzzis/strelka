@@ -51,7 +51,7 @@ impl DocumentActor {
                 }
                 DocumentAction::Open(id) => {
                     let pane = Pane::Editor(id);
-                    let message = PaneAction::Add(pane, None).into_action();
+                    let message = PaneAction::Add(pane).into_action();
                     let _ = self.brocker_sender.send(message).await;
                 }
                 DocumentAction::Save(_id) => {
