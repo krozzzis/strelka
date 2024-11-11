@@ -1,7 +1,7 @@
 use core::document::{DocumentHandler, DocumentId};
 use std::sync::Arc;
 
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 
 use crate::{Action, ActionResult, IntoAction, Receiver};
 
@@ -24,10 +24,7 @@ impl IntoAction for DocumentAction {
 
     fn into_returnable_action(
         self,
-    ) -> (
-        Action,
-        Option<tokio::sync::oneshot::Receiver<ActionResult>>,
-    ) {
+    ) -> (Action, Option<tokio::sync::oneshot::Receiver<ActionResult>>) {
         match &self {
             DocumentAction::Add(_) => {
                 let (tx, rx) = oneshot::channel();

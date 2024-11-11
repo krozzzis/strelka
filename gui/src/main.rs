@@ -2,9 +2,7 @@
 
 use config::{AppConfig, GuiConfig};
 use iced::{
-    futures::{SinkExt, Stream},
     keyboard::{on_key_press, Key},
-    stream,
     widget::{
         center,
         text_editor::{self},
@@ -29,22 +27,21 @@ use widget::{
     pane::pane_stack::{self, pane_stack},
 };
 
-use action::{
-    Action, ActionResult, ActionWrapper, FileAction, IntoAction, Message, PaneAction, ThemeAction,
-};
+use action::{Action, FileAction, IntoAction, Message, PaneAction, ThemeAction};
 use core::{document::DocumentId, pane::Pane, smol_str::SmolStr, HotKey, Modifiers};
 
 static DEFAULT_THEME: &str = "core.light";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
+pub type HotKeyHandler = Box<dyn Fn() -> Action>;
+
 pub struct App {
     config: AppConfig,
-    brocker_tx: sync::mpsc::Sender<ActionWrapper>,
-    completition_tx: sync::broadcast::Sender<ActionResult>,
-    hotkeys: HashMap<HotKey, Action>,
+    brocker_tx: sync::mpsc::Sender<Action>,
+    hotkeys: HashMap<HotKey, HotKeyHandler>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum AppMessage {
     Action(Action),
     TextEditorAction(text_editor::Action, DocumentId),
@@ -63,8 +60,6 @@ impl App {
         let (theme_tx, theme_rx) = channel(10);
         let (plugins_tx, plugins_rx) = channel(10);
         let (brocker_tx, brocker_rx) = channel(10);
-
-        let (completition_tx, _) = tokio::sync::broadcast::channel(10);
 
         let mut plugin_host = PluginHost::new();
         plugin_host.register_plugin(
@@ -112,7 +107,6 @@ impl App {
         let mut app = Self {
             config,
             brocker_tx,
-            completition_tx,
             hotkeys: HashMap::new(),
         };
 
@@ -122,10 +116,13 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'd',
             },
-            Message {
-                destination: "core.example".to_string(),
-                kind: "test".to_string(),
-                payload: None,
+            || {
+                Message {
+                    destination: "core.example".to_string(),
+                    kind: "test".to_string(),
+                    payload: None,
+                }
+                .into_action()
             },
         );
 
@@ -135,7 +132,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'o',
             },
-            FileAction::PickFile,
+            || FileAction::PickFile.into_action(),
         );
 
         // Ctrl-t open new document tab
@@ -144,7 +141,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 't',
             },
-            PaneAction::Add(Pane::NewDocument, None),
+            || PaneAction::Add(Pane::NewDocument, None).into_action(),
         );
 
         // Ctrl-b open experimental buffer pane
@@ -153,7 +150,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'b',
             },
-            PaneAction::Add(Pane::Buffer, None),
+            || PaneAction::Add(Pane::Buffer, None).into_action(),
         );
 
         // Ctrl-, open config viewer pane
@@ -162,7 +159,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: ',',
             },
-            PaneAction::Add(Pane::Config, None),
+            || PaneAction::Add(Pane::Config, None).into_action(),
         );
 
         // Ctrl-m make theme index
@@ -171,7 +168,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'm',
             },
-            ThemeAction::MakeIndex,
+            || ThemeAction::MakeIndex.into_action(),
         );
 
         // Ctrl-l set light themw
@@ -180,7 +177,7 @@ impl App {
                 modifiers: Modifiers::Ctrl,
                 key: 'l',
             },
-            ThemeAction::SetTheme(SmolStr::new(DEFAULT_THEME)),
+            || ThemeAction::SetTheme(SmolStr::new(DEFAULT_THEME)).into_action(),
         );
 
         {
@@ -188,22 +185,13 @@ impl App {
             startup_tasks.push(task);
         }
 
-        // Apply theme
-        // let theme = if let Some(Value::String(id)) = app.state.config.get("system", "theme") {
-        //     id
-        // } else {
-        //     SmolStr::new(DEFAULT_THEME)
-        // };
-        // let apply_theme = Task::perform(async move { theme }, AppMessage::LoadTheme);
-        // tasks.push(apply_theme);
-
         info!("App constructor done");
         (app, Task::batch(startup_tasks))
     }
 
-    fn add_hotkey(&mut self, hotkey: HotKey, action: impl IntoAction) {
+    fn add_hotkey<T: 'static + Fn() -> Action>(&mut self, hotkey: HotKey, handler: T) {
         info!("Added hotkey {hotkey:?}");
-        self.hotkeys.insert(hotkey, action.into_action());
+        self.hotkeys.insert(hotkey, Box::new(handler));
     }
 
     fn title(&self) -> String {
@@ -211,11 +199,10 @@ impl App {
     }
 
     fn perform_action(&mut self, action: Action) -> Task<AppMessage> {
-        let wrapper = ActionWrapper::new(action).notify(self.completition_tx.clone());
         let brocker_tx = self.brocker_tx.clone();
         Task::perform(
             async move {
-                let _ = brocker_tx.send(wrapper).await;
+                let _ = brocker_tx.send(action).await;
             },
             |_| AppMessage::None,
         )
@@ -244,7 +231,7 @@ impl App {
 
     fn view(&self) -> Element<AppMessage, Theme> {
         let (tx, mut rx) = mpsc::channel(1);
-        let get_model_action = ActionWrapper::new(PaneAction::GetModel(tx));
+        let get_model_action = PaneAction::GetModel(tx).into_action();
         let _ = self.brocker_tx.blocking_send(get_model_action);
         if let Some(Some(model)) = rx.blocking_recv() {
             info!("View. Loaded PaneModel");
@@ -271,7 +258,7 @@ impl App {
 
     fn theme(&self) -> Theme {
         let (tx, mut rx) = mpsc::channel(1);
-        let get_theme = ActionWrapper::new(ThemeAction::GetCurrentTheme(tx));
+        let get_theme = ThemeAction::GetCurrentTheme(tx).into_action();
         let _ = self.brocker_tx.blocking_send(get_theme);
         if let Some(theme) = rx.blocking_recv() {
             theme
@@ -282,25 +269,10 @@ impl App {
 
     fn subscription(&self) -> Subscription<AppMessage> {
         info!("Creating subscriptions");
-        let completition_listener =
-            Subscription::run_with_id(1, App::complition_stream(self.completition_tx.subscribe()));
         let key_press_listener =
             on_key_press(|key, modifiers| Some(AppMessage::OnKeyPress(key, modifiers)));
 
-        Subscription::batch([completition_listener, key_press_listener])
-    }
-
-    fn complition_stream(
-        mut rx: tokio::sync::broadcast::Receiver<ActionResult>,
-    ) -> impl Stream<Item = AppMessage> {
-        info!("Completition listener started");
-        stream::channel(100, |mut output| async move {
-            info!("Completition listener thread");
-            while let Ok(_result) = rx.recv().await {
-                info!("Receive complete notificaton");
-                let _ = output.send(AppMessage::None).await;
-            }
-        })
+        Subscription::batch([key_press_listener])
     }
 
     fn on_key_press(
@@ -327,8 +299,8 @@ impl App {
 
             debug!("Pressed {hotkey:?}");
 
-            if let Some(action) = self.hotkeys.get(&hotkey) {
-                return Some(AppMessage::Action(action.clone()));
+            if let Some(handler) = self.hotkeys.get(&hotkey) {
+                return Some(AppMessage::Action(handler()));
             }
         }
         None

@@ -1,4 +1,4 @@
-use action::{Action, ActionResult, ActionWrapper, DocumentAction, PaneAction};
+use action::{Action, ActionResult, DocumentAction, IntoAction, PaneAction};
 use core::{
     document::{DocumentHandler, DocumentStore},
     pane::Pane,
@@ -25,16 +25,16 @@ impl DocumentActor {
 
     pub async fn run(&mut self) {
         info!("Started DocumentActor");
-        while let Some(action) = self.receiver.recv().await {
-            info!("DocumentActor. Processing: {action:?}");
-            let action = if let Action::Document(action) = action.action() {
-                action
+        while let Some(generic_action) = self.receiver.recv().await {
+            info!("DocumentActor. Processing: {generic_action:?}");
+            let action = if let Ok(x) = generic_action.content.downcast() {
+                x
             } else {
                 warn!("DocumentActor. Dropping processing action because incorrect type");
                 continue;
             };
-            match action {
-                DocumentAction::Add(handler, tx) => {
+            match *action {
+                DocumentAction::Add(handler) => {
                     let content = Content::with_text(&handler.text_content);
                     let handler = DocumentHandler {
                         text_content: content,
@@ -43,25 +43,22 @@ impl DocumentActor {
                         changed: handler.changed,
                     };
                     let doc_id = self.documents.add(handler);
-                    if let Some(tx) = tx {
-                        let _ = tx.send(doc_id).await;
+                    if let Some(tx) = generic_action.return_tx {
+                        let result = ActionResult::Value(Box::new(doc_id));
+                        info!("Return {result:?}");
+                        let _ = tx.send(result);
                     }
-
-                    info!("DocumentActor. Sending sucess");
-                    action.try_notify_complete(ActionResult::Success);
                 }
                 DocumentAction::Open(id) => {
-                    let pane = Pane::Editor(*id);
-                    let message = ActionWrapper::new(PaneAction::Add(pane, None));
+                    let pane = Pane::Editor(id);
+                    let message = PaneAction::Add(pane, None).into_action();
                     let _ = self.brocker_sender.send(message).await;
-                    action.try_notify_complete(ActionResult::Success);
                 }
                 DocumentAction::Save(_id) => {
                     todo!()
                 }
                 DocumentAction::Remove(id) => {
-                    self.documents.remove(id);
-                    action.try_notify_complete(ActionResult::Success);
+                    self.documents.remove(&id);
                 }
             }
         }

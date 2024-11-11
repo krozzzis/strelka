@@ -1,20 +1,20 @@
-use action::{ActionWrapper, DocumentAction, FileAction, PaneAction};
+use action::{Action, DocumentAction, FileAction, IntoAction, PaneAction};
 use core::{document::DocumentHandler, pane::Pane};
 use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use log::info;
+use log::{info, warn};
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct FileActor {
-    receiver: Receiver<FileAction>,
-    brocker_sender: Sender<ActionWrapper>,
+    receiver: Receiver<Action>,
+    brocker_sender: Sender<Action>,
 }
 
 impl FileActor {
-    pub fn new(rx: Receiver<FileAction>, brocker_tx: Sender<ActionWrapper>) -> Self {
+    pub fn new(rx: Receiver<Action>, brocker_tx: Sender<Action>) -> Self {
         Self {
             receiver: rx,
             brocker_sender: brocker_tx,
@@ -22,10 +22,16 @@ impl FileActor {
     }
 
     pub async fn run(&mut self) {
-        info!("Started FileActor's thread");
-        while let Some(action) = self.receiver.recv().await {
-            info!("Processing: {action:?}");
-            match action {
+        info!("Started FileActor");
+        while let Some(generic_action) = self.receiver.recv().await {
+            info!("FileActor. Processing: {generic_action:?}");
+            let action = if let Ok(x) = generic_action.content.downcast() {
+                x
+            } else {
+                warn!("FileActor. Dropping processing action because incorrect type");
+                continue;
+            };
+            match *action {
                 FileAction::PickFile => {
                     if let Ok((path, content)) = pick_file(None).await {
                         let handler = DocumentHandler {
@@ -35,51 +41,51 @@ impl FileActor {
                             changed: false,
                         };
 
-                        let (tx, mut rx) = channel(1);
-                        let _ = self
-                            .brocker_sender
-                            .send(ActionWrapper::new(DocumentAction::Add(
-                                Arc::new(handler),
-                                Some(tx),
-                            )))
-                            .await;
+                        let (action, rx) =
+                            DocumentAction::Add(Arc::new(handler)).into_returnable_action();
+                        let _ = self.brocker_sender.send(action).await;
 
-                        if let Some(doc_id) = rx.recv().await {
-                            let pane = Pane::Editor(doc_id);
+                        if let Some(rx) = rx {
+                            if let Ok(action::ActionResult::Value(doc_id)) = rx.await {
+                                if let Ok(doc_id) = doc_id.downcast() {
+                                    let pane = Pane::Editor(*doc_id);
 
-                            // If opened pane is NewDocument, replace it with Editor pane
-                            // otherwise add new one with Editor
-                            let (tx, mut rx) = channel(1);
-                            let _ = self
-                                .brocker_sender
-                                .send(ActionWrapper::new(PaneAction::GetOpen(tx)))
-                                .await;
-                            if let Some(Some(Pane::NewDocument)) = rx.recv().await {
-                                let (tx, mut rx) = channel(1);
-                                let _ = self
-                                    .brocker_sender
-                                    .send(ActionWrapper::new(PaneAction::GetOpenId(tx)))
-                                    .await;
-
-                                if let Some(Some(opened_id)) = rx.recv().await {
+                                    // If opened pane is NewDocument, replace it with Editor pane
+                                    // otherwise add new one with Editor
+                                    let (tx, mut rx) = channel(1);
                                     let _ = self
                                         .brocker_sender
-                                        .send(ActionWrapper::new(PaneAction::Replace(
-                                            opened_id, pane,
-                                        )))
+                                        .send(PaneAction::GetOpen(tx).into_action())
                                         .await;
-                                }
-                            } else {
-                                let (tx, mut rx) = channel(1);
-                                let _ = self
-                                    .brocker_sender
-                                    .send(ActionWrapper::new(PaneAction::Add(pane, Some(tx))))
-                                    .await;
-                                if let Some(pane_id) = rx.recv().await {
-                                    let _ = self
-                                        .brocker_sender
-                                        .send(ActionWrapper::new(PaneAction::Open(pane_id)))
-                                        .await;
+                                    if let Some(Some(Pane::NewDocument)) = rx.recv().await {
+                                        let (tx, mut rx) = channel(1);
+                                        let _ = self
+                                            .brocker_sender
+                                            .send(PaneAction::GetOpenId(tx).into_action())
+                                            .await;
+
+                                        if let Some(Some(opened_id)) = rx.recv().await {
+                                            let _ = self
+                                                .brocker_sender
+                                                .send(
+                                                    PaneAction::Replace(opened_id, pane)
+                                                        .into_action(),
+                                                )
+                                                .await;
+                                        }
+                                    } else {
+                                        let (tx, mut rx) = channel(1);
+                                        let _ = self
+                                            .brocker_sender
+                                            .send(PaneAction::Add(pane, Some(tx)).into_action())
+                                            .await;
+                                        if let Some(pane_id) = rx.recv().await {
+                                            let _ = self
+                                                .brocker_sender
+                                                .send(PaneAction::Open(pane_id).into_action())
+                                                .await;
+                                        }
+                                    }
                                 }
                             }
                         }

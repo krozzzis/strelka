@@ -1,22 +1,19 @@
-use action::{Action, FileAction};
+use action::{Action, Receiver};
 
 use log::info;
-use tokio::sync::{
-    broadcast,
-    mpsc::{Receiver, Sender},
-};
+use tokio::sync::mpsc;
 
 pub struct ActionBrocker {
-    receiver: Receiver<Action>,
-    document_sender: Option<Sender<Action>>,
-    file_sender: Option<Sender<Action>>,
-    pane_sender: Option<Sender<Action>>,
-    theme_sender: Option<Sender<Action>>,
-    plugins_sender: Option<Sender<Action>>,
+    receiver: mpsc::Receiver<Action>,
+    document_sender: Option<mpsc::Sender<Action>>,
+    file_sender: Option<mpsc::Sender<Action>>,
+    pane_sender: Option<mpsc::Sender<Action>>,
+    theme_sender: Option<mpsc::Sender<Action>>,
+    plugins_sender: Option<mpsc::Sender<Action>>,
 }
 
 impl ActionBrocker {
-    pub fn new(rx: Receiver<Action>) -> Self {
+    pub fn new(rx: mpsc::Receiver<Action>) -> Self {
         Self {
             receiver: rx,
             document_sender: None,
@@ -27,27 +24,27 @@ impl ActionBrocker {
         }
     }
 
-    pub fn document_actor(mut self, document_tx: Sender<Action>) -> Self {
+    pub fn document_actor(mut self, document_tx: mpsc::Sender<Action>) -> Self {
         self.document_sender = Some(document_tx);
         self
     }
 
-    pub fn file_actor(mut self, file_tx: Sender<Action>) -> Self {
+    pub fn file_actor(mut self, file_tx: mpsc::Sender<Action>) -> Self {
         self.file_sender = Some(file_tx);
         self
     }
 
-    pub fn pane_actor(mut self, pane_tx: Sender<Action>) -> Self {
+    pub fn pane_actor(mut self, pane_tx: mpsc::Sender<Action>) -> Self {
         self.pane_sender = Some(pane_tx);
         self
     }
 
-    pub fn theme_actor(mut self, theme_tx: Sender<Action>) -> Self {
+    pub fn theme_actor(mut self, theme_tx: mpsc::Sender<Action>) -> Self {
         self.theme_sender = Some(theme_tx);
         self
     }
 
-    pub fn plugin_host_actor(mut self, plugins_tx: Sender<Action>) -> Self {
+    pub fn plugin_host_actor(mut self, plugins_tx: mpsc::Sender<Action>) -> Self {
         self.plugins_sender = Some(plugins_tx);
         self
     }
@@ -57,16 +54,28 @@ impl ActionBrocker {
         while let Some(action) = self.receiver.recv().await {
             info!("Brocker. Processing: {action:?}");
             match action.receiver {
-                action::Receiver::Void => {},
-                action::Receiver::Document => {
-                    if let Some(tx) = self.document_sender {
-                        tx.send(action.content).await
+                Receiver::Void => {}
+                Receiver::Document => {
+                    if let Some(tx) = &self.document_sender {
+                        let _ = tx.send(action).await;
                     }
                 }
-                action::Receiver::File => todo!(),
-                action::Receiver::Pane => todo!(),
-                action::Receiver::Theme => todo!(),
-                action::Receiver::Plugin(id) => todo!(),
+                Receiver::File => {
+                    if let Some(tx) = &self.file_sender {
+                        let _ = tx.send(action).await;
+                    }
+                }
+                Receiver::Pane => {
+                    if let Some(tx) = &self.pane_sender {
+                        let _ = tx.send(action).await;
+                    }
+                }
+                Receiver::Theme => {
+                    if let Some(tx) = &self.theme_sender {
+                        let _ = tx.send(action).await;
+                    }
+                }
+                Receiver::Plugin(_id) => todo!(),
             }
         }
     }

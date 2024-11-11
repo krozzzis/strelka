@@ -15,8 +15,9 @@ pub use theme::ThemeAction;
 
 use tokio::sync::oneshot;
 
+#[derive(Debug)]
 pub enum ActionResult {
-    Value(Box<dyn Any>),
+    Value(Box<dyn Any + Send>),
     None,
     ReceiverNotFound,
     Failed,
@@ -43,8 +44,8 @@ pub enum Receiver {
 #[derive(Debug)]
 pub struct Action {
     pub receiver: Receiver,
-    pub content: Box<dyn Any>,
-    pub return_tx: Option<oneshot::Sender<Box<dyn Any>>>,
+    pub content: Box<dyn Any + Send>,
+    pub return_tx: Option<oneshot::Sender<ActionResult>>,
 }
 
 impl IntoAction for Action {

@@ -1,21 +1,18 @@
-use action::{Action, ActionWrapper, ThemeAction};
+use action::{Action, ThemeAction};
 
 use log::{info, warn};
 use theming::{index::ThemeIndex, Theme};
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    RwLock,
-};
+use tokio::sync::mpsc::{Receiver, Sender};
 
 pub struct ThemeActor {
     theme: Theme,
     index: ThemeIndex,
-    receiver: Receiver<ActionWrapper>,
-    brocker_sender: Sender<ActionWrapper>,
+    receiver: Receiver<Action>,
+    brocker_sender: Sender<Action>,
 }
 
 impl ThemeActor {
-    pub fn new(rx: Receiver<ActionWrapper>, brocker_tx: Sender<ActionWrapper>) -> Self {
+    pub fn new(rx: Receiver<Action>, brocker_tx: Sender<Action>) -> Self {
         Self {
             theme: Theme::default(),
             index: ThemeIndex::new(),
@@ -25,16 +22,16 @@ impl ThemeActor {
     }
 
     pub async fn run(&mut self) {
-        info!("ThemeActor. Started thread");
-        while let Some(wrapper) = self.receiver.recv().await {
-            info!("ThemeActor. Processing: {wrapper:?}");
-            let action = if let Action::Theme(action) = wrapper.action() {
-                action
+        info!("Started ThemeActor");
+        while let Some(generic_action) = self.receiver.recv().await {
+            info!("ThemeActor. Processing: {generic_action:?}");
+            let action = if let Ok(x) = generic_action.content.downcast() {
+                x
             } else {
                 warn!("ThemeActor. Dropping processing action because incorrect type");
                 continue;
             };
-            match action {
+            match *action {
                 ThemeAction::MakeIndex => {
                     if let Ok(index) = ThemeIndex::load_from_directory("./themes").await {
                         info!("Index: {index:?}");
@@ -44,7 +41,7 @@ impl ThemeActor {
                     }
                 }
                 ThemeAction::SetTheme(id) => {
-                    if let Some(dir_path) = self.index.get_path(id) {
+                    if let Some(dir_path) = self.index.get_path(&id) {
                         let mut path = dir_path.to_path_buf();
                         path.push("theme.toml");
                         let theme = Theme::from_file(&path).await;
