@@ -110,7 +110,7 @@ impl App {
             hotkeys: HashMap::new(),
         };
 
-        // Ctrl-d run plugin's message
+        // Ctrl+d run plugin's message
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::Ctrl,
@@ -126,7 +126,7 @@ impl App {
             },
         );
 
-        // Ctrl-o open file
+        // Ctrl+o open file
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::Ctrl,
@@ -135,7 +135,7 @@ impl App {
             || FileAction::PickFile.into_action(),
         );
 
-        // Ctrl-t open new document tab
+        // Ctrl+t open new document tab
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::Ctrl,
@@ -144,7 +144,7 @@ impl App {
             || PaneAction::Add(Pane::NewDocument, None).into_action(),
         );
 
-        // Ctrl-b open experimental buffer pane
+        // Ctrl+b open experimental buffer pane
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::Ctrl,
@@ -153,7 +153,7 @@ impl App {
             || PaneAction::Add(Pane::Buffer, None).into_action(),
         );
 
-        // Ctrl-, open config viewer pane
+        // Ctrl+, open config viewer pane
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::Ctrl,
@@ -162,27 +162,31 @@ impl App {
             || PaneAction::Add(Pane::Config, None).into_action(),
         );
 
-        // Ctrl-m make theme index
+        // Ctrl+Alt+m make theme index
         app.add_hotkey(
             HotKey {
-                modifiers: Modifiers::Ctrl,
+                modifiers: Modifiers::CtrlAlt,
                 key: 'm',
             },
             || ThemeAction::MakeIndex.into_action(),
         );
 
-        // Ctrl-l set light themw
+        // Ctrl+Alt+l set light themw
         app.add_hotkey(
             HotKey {
-                modifiers: Modifiers::Ctrl,
+                modifiers: Modifiers::CtrlAlt,
                 key: 'l',
             },
             || ThemeAction::SetTheme(SmolStr::new(DEFAULT_THEME)).into_action(),
         );
 
         {
-            let task = Task::done(AppMessage::Action(ThemeAction::MakeIndex.into_action()));
-            startup_tasks.push(task);
+            let make_index = Task::done(AppMessage::Action(ThemeAction::MakeIndex.into_action()));
+            let set_theme = Task::done(AppMessage::Action(
+                ThemeAction::SetTheme(SmolStr::new(DEFAULT_THEME)).into_action(),
+            ));
+            let chain = make_index.chain(set_theme);
+            startup_tasks.push(chain);
         }
 
         info!("App constructor done");
