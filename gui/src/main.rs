@@ -115,22 +115,6 @@ impl App {
             hotkeys: HashMap::new(),
         };
 
-        // Ctrl+d run plugin's message
-        app.add_hotkey(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'd',
-            },
-            || {
-                Message {
-                    destination: "core.example".to_string(),
-                    kind: "test".to_string(),
-                    payload: None,
-                }
-                .into_action()
-            },
-        );
-
         // Ctrl+o open file
         app.add_hotkey(
             HotKey {
@@ -147,15 +131,6 @@ impl App {
                 key: 't',
             },
             || PaneAction::Add(Pane::NewDocument).into_action(),
-        );
-
-        // Ctrl+b open experimental buffer pane
-        app.add_hotkey(
-            HotKey {
-                modifiers: Modifiers::Ctrl,
-                key: 'b',
-            },
-            || PaneAction::Add(Pane::Buffer).into_action(),
         );
 
         // Ctrl+, open config viewer pane
@@ -176,13 +151,13 @@ impl App {
             || ThemeAction::MakeIndex.into_action(),
         );
 
-        // Ctrl+Alt+l set light themw
+        // Ctrl+Alt+l set dark theme
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::CtrlAlt,
                 key: 'l',
             },
-            || ThemeAction::SetTheme(SmolStr::new(DEFAULT_THEME)).into_action(),
+            || ThemeAction::SetTheme(SmolStr::new("core.dark")).into_action(),
         );
 
         {
