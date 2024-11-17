@@ -5,4 +5,4 @@ pub mod workdir;
 
 pub use app::AppConfig;
 pub use config::Config;
-pub use gui::GuiConfig;
+pub use gui::{GuiConfig, InterfaceMode};

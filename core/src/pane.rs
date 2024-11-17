@@ -14,6 +14,18 @@ pub enum Pane {
     Config,
 }
 
+impl Pane {
+    pub fn title(&self) -> &'static str {
+        match self {
+            Pane::Empty => "Empty",
+            Pane::NewDocument => "New Document",
+            Pane::Editor(_) => "Note",
+            Pane::Buffer => "Buffer",
+            Pane::Config => "Config",
+        }
+    }
+}
+
 #[derive(Default, Debug)]
 pub struct PaneModel {
     panes: HashMap<PaneId, Pane>,

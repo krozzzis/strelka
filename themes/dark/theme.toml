@@ -1,7 +1,7 @@
 [generic]
-background = "#141414"
-background2 = "#191919"
-text = "#cccccc"
+background = "#191919"
+background2 = "#1d1d1d"
+text = "#dddddd"
 
 
 # Buttons
@@ -41,55 +41,55 @@ radius = 4.0
 
 # Tab
 [tab]
-height = 44.0
+height = 52.0
 min_width = 200.0
 
 [tab.active]
 background = "#222222"
-text = "#cccccc"
-radius = 10.0
+text = "#dddddd"
+radius = 18.0
 
 [tab.active.margin]
 left = 0.0
 top = 0.0
 right = 0.0
-bottom = 8.0
+bottom = 0.0
 
 [tab.active.border]
 color = "#00000000"
 width = 0.0
 
 [tab.active.border.radius]
-top_left = 10.0
-top_right = 10.0
-bottom_left = 10.0
-bottom_right = 10.0
+top_left = 18.0
+top_right = 18.0
+bottom_left = 18.0
+bottom_right = 18.0
 
 [tab.hover]
-background = "#333333"
-text = "#cccccc"
-radius = 10.0
+background = "#22222200"
+text = "#dddddd"
+radius = 18.0
 
 [tab.hover.margin]
 left = 0.0
 top = 0.0
 right = 0.0
-bottom = 8.0
+bottom = 0.0
 
 [tab.hover.border]
 color = "#00000000"
 width = 0.0
 
 [tab.hover.border.radius]
-top_left = 10.0
-top_right = 10.0
-bottom_left = 10.0
-bottom_right = 10.0
+top_left = 18.0
+top_right = 18.0
+bottom_left = 18.0
+bottom_right = 18.0
 
 [tab.selected]
-background = "#141414"
-text = "#cccccc"
-radius = 10.0
+background = "#191919"
+text = "#dddddd"
+radius = 18.0
 
 [tab.selected.margin]
 left = 0.0
@@ -102,15 +102,15 @@ color = "#00000000"
 width = 0.0
 
 [tab.selected.border.radius]
-top_left = 10.0
-top_right = 10.0
-bottom_left = -10.0
-bottom_right = -10.0
+top_left = 18.0
+top_right = 18.0
+bottom_left = 18.0
+bottom_right = 18.0
 
 
 # TabBar
 [tab_bar]
-background = "#191919"
+background = "#1d1d1d"
 height = 52
 spacing = 8.0
 
@@ -124,17 +124,17 @@ bottom = 0.0
 # ListItem
 [list_item.active]
 background = "#ffffff00"
-text = "#cccccc"
+text = "#dddddd"
 radius = 4.0
 
 [list_item.hover]
 background = "#222222"
-text = "#cccccc"
+text = "#dddddd"
 radius = 4.0
 
 [list_item.selected]
 background = "#222222"
-text = "#cccccc"
+text = "#dddddd"
 radius = 4.0
 
 
@@ -145,9 +145,9 @@ spacing = 4.0
 
 # Editor
 [editor]
-background = "#141414"
-background2 = "#191919"
-text = "#cccccc"
+background = "#191919"
+background2 = "#1d1d1d"
+text = "#dddddd"
 cursor = "#efefef"
 selection = "#444444"
 radius = 50.0
@@ -158,7 +158,7 @@ width = 800.0
 # Notification
 [notification]
 background = "#444444"
-text = "#cccccc"
+text = "#dddddd"
 border_color = "#111111"
 border_width = 1
 radius = 4
@@ -189,6 +189,6 @@ shadow_blur = 2
 # File explorer
 [file_explorer]
 background = "#161616"
-text = "#cccccc"
+text = "#dddddd"
 padding = 4
 width = 300
