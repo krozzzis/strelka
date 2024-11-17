@@ -35,9 +35,9 @@ pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, 
 
     // Label
     if let Some(label) = tab.label.clone() {
-        content.push(text(label).width(Length::Fill).height(24.0).into());
+        content.push(text(label).width(Length::Shrink).height(24.0).into());
     } else {
-        content.push(Space::with_width(Length::Fill).into());
+        content.push(Space::with_width(Length::Shrink).into());
     }
 
     // Close button
@@ -60,11 +60,12 @@ pub fn tab<'a, Message: Clone + 'a>(tab: &Tab<Message>) -> Element<'a, Message, 
     )
     .selected(tab.selected)
     .on_press_maybe(tab.on_click.clone())
+    .width(Length::Shrink)
     .height(theme!(tab.height));
 
     // Change width if button icon only
     if tab.icon.is_some() && tab.label.is_none() && tab.on_close.is_none() {
-        btn = btn.min_width(36.0);
+        btn = btn.width(Length::Fixed(36.0));
     }
 
     if let Some(message) = &tab.on_middle_click {

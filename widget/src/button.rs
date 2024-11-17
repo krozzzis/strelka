@@ -24,13 +24,14 @@ pub mod a {
     use iced::{
         advanced::{
             graphics::geometry::{self, Frame},
-            layout, mouse, renderer,
+            layout, mouse,
+            renderer::{self, Quad},
             widget::{tree, Operation, Tree},
             Clipboard, Layout, Shell, Widget,
         },
         event, touch,
         widget::canvas::{self, path::Builder, Fill, Stroke},
-        Element, Event, Length, Point, Rectangle, Size, Vector,
+        Alignment, Element, Event, Length, Padding, Point, Rectangle, Shadow, Size, Vector,
     };
     use theming::{Border, Color, Font, Margin, Theme};
 
@@ -49,30 +50,39 @@ pub mod a {
 
     pub struct Button<'a, Message, Renderer> {
         content: Element<'a, Message, Theme, Renderer>,
+        padding: Padding,
         selected: bool,
-        height: f32,
-        min_width: f32,
+        height: Length,
+        width: Length,
         on_press: Option<Message>,
     }
 
-    impl<'a, Message, Renderer> Button<'a, Message, Renderer> {
+    impl<'a, Message, Renderer: iced::advanced::Renderer> Button<'a, Message, Renderer> {
         pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
+            let content = content.into();
+            let content_size = content.as_widget().size_hint();
             Self {
-                content: content.into(),
+                content,
                 selected: false,
-                height: 40.0,
-                min_width: 200.0,
+                padding: Padding::new(5.0),
+                height: content_size.height.fluid(),
+                width: content_size.width.fluid(),
                 on_press: None,
             }
         }
 
-        pub fn min_width(mut self, value: f32) -> Self {
-            self.min_width = value;
+        pub fn height(mut self, value: impl Into<Length>) -> Self {
+            self.height = value.into();
             self
         }
 
-        pub fn height(mut self, value: f32) -> Self {
-            self.height = value;
+        pub fn width(mut self, value: impl Into<Length>) -> Self {
+            self.width = value.into();
+            self
+        }
+
+        pub fn padding(mut self, value: impl Into<Padding>) -> Self {
+            self.padding = value.into();
             self
         }
 
@@ -106,7 +116,7 @@ pub mod a {
         }
 
         fn size(&self) -> Size<Length> {
-            Size::new(Length::Shrink, Length::Shrink)
+            Size::new(self.width, self.height)
         }
 
         fn children(&self) -> Vec<Tree> {
@@ -123,7 +133,7 @@ pub mod a {
             renderer: &Renderer,
             limits: &layout::Limits,
         ) -> layout::Node {
-            layout::contained(limits, self.min_width, self.height, |limits| {
+            layout::padded(limits, self.width, self.height, self.padding, |limits| {
                 self.content
                     .as_widget()
                     .layout(&mut tree.children[0], renderer, limits)
@@ -282,90 +292,99 @@ pub mod a {
             };
 
             let radius = style.border.radius.clone();
-            let draw_bound = Size::new(
-                layout.bounds().width
-                    + style.border.width * 2.0
-                    + if radius.bottom_left < 0.0 {
-                        radius.bottom_left.abs()
-                    } else {
-                        0.0
-                    }
-                    + if radius.bottom_right < 0.0 {
-                        radius.bottom_left.abs()
-                    } else {
-                        0.0
-                    },
-                layout.bounds().height + style.border.width * 2.0,
-            );
 
-            // Offset of inner content due to possible outer border radius
-            let content_x = if radius.bottom_left < 0.0 {
+            // Calculate the total widget bounds including border and negative radius offsets
+            let border_width = style.border.width;
+            let left_offset = if radius.bottom_left < 0.0 {
                 radius.bottom_left.abs()
             } else {
                 0.0
-            } + style.margin.left;
-            let content_y = style.margin.top;
+            };
+            let right_offset = if radius.bottom_right < 0.0 {
+                radius.bottom_left.abs()
+            } else {
+                0.0
+            };
 
-            // Size of content
-            let content_width = self.min_width - style.margin.left - style.margin.right;
-            let content_height = self.height - style.margin.top - style.margin.bottom;
+            let widget_bounds = Size::new(
+                layout.bounds().width + border_width * 2.0 + left_offset + right_offset,
+                layout.bounds().height + border_width * 2.0,
+            );
 
-            let mut frame = Frame::new(renderer, draw_bound);
+            // Calculate the content area bounds accounting for margins
+            let content_origin = Point::new(left_offset + style.margin.left, style.margin.top);
+
+            let content_bounds = Rectangle::new(
+                content_origin,
+                Size::new(
+                    layout.bounds().width - style.margin.left - style.margin.right,
+                    layout.bounds().height - style.margin.top - style.margin.bottom,
+                ),
+            );
+
+            // Draw the button shape
+            let mut frame = Frame::new(renderer, widget_bounds);
             let mut builder = Builder::new();
 
             // Top line
-            builder.move_to(Point::new(content_x + radius.top_left, content_y));
+            builder.move_to(Point::new(
+                content_bounds.x + radius.top_left,
+                content_bounds.y,
+            ));
             builder.line_to(Point::new(
-                content_x + content_width - radius.top_right,
-                content_y,
+                content_bounds.x + content_bounds.width - radius.top_right,
+                content_bounds.y,
             ));
 
             // Top right arc
             builder.arc_to(
-                Point::new(content_x + content_width, content_y),
+                Point::new(content_bounds.x + content_bounds.width, content_bounds.y),
                 Point::new(
-                    content_x + content_width,
-                    content_y + content_height - radius.bottom_right.abs(),
+                    content_bounds.x + content_bounds.width,
+                    content_bounds.y + content_bounds.height - radius.bottom_right.abs(),
                 ),
                 radius.top_right.abs(),
             );
 
             // Bottom right arc
             builder.arc_to(
-                Point::new(content_x + content_width, content_y + content_height),
                 Point::new(
-                    content_x + content_width - radius.bottom_right,
-                    content_y + content_height,
+                    content_bounds.x + content_bounds.width,
+                    content_bounds.y + content_bounds.height,
+                ),
+                Point::new(
+                    content_bounds.x + content_bounds.width - radius.bottom_right,
+                    content_bounds.y + content_bounds.height,
                 ),
                 radius.bottom_right.abs(),
             );
 
             // Bottom line
             builder.line_to(Point::new(
-                content_x + radius.bottom_left,
-                content_y + content_height,
+                content_bounds.x + radius.bottom_left,
+                content_bounds.y + content_bounds.height,
             ));
 
             // Bottom left arc
             builder.arc_to(
-                Point::new(content_x, content_y + content_height),
+                Point::new(content_bounds.x, content_bounds.y + content_bounds.height),
                 Point::new(
-                    content_x,
-                    content_y + content_height - radius.bottom_left.abs(),
+                    content_bounds.x,
+                    content_bounds.y + content_bounds.height - radius.bottom_left.abs(),
                 ),
                 radius.bottom_left.abs(),
             );
 
             // Top left arc
             builder.arc_to(
-                Point::new(content_x, content_y),
-                Point::new(content_x + radius.top_left, content_y),
+                Point::new(content_bounds.x, content_bounds.y),
+                Point::new(content_bounds.x + radius.top_left, content_bounds.y),
                 radius.top_left.abs(),
             );
 
             let path = builder.build();
 
-            // Background
+            // Draw background
             frame.fill(
                 &path,
                 Fill {
@@ -374,25 +393,31 @@ pub mod a {
                 },
             );
 
-            // Border
+            // Draw border
             frame.stroke(
                 &path,
                 Stroke {
                     style: canvas::Style::Solid(style.border.color.into()),
-                    width: style.border.width,
+                    width: border_width,
                     ..Default::default()
                 },
             );
 
+            let content_layout = layout.children().next().unwrap();
+
+            // Draw the frame with proper translation
             let geometry = frame.into_geometry();
             renderer.with_translation(
-                Vector::new(layout.bounds().x - content_x, layout.bounds().y - content_y),
+                Vector::new(
+                    layout.bounds().x - content_bounds.x,
+                    layout.bounds().y - content_bounds.y,
+                ),
                 |renderer| {
                     renderer.draw_geometry(geometry);
                 },
             );
 
-            let content_layout = layout.children().next().unwrap();
+            // Draw the content
             self.content.as_widget().draw(
                 &tree.children[0],
                 renderer,

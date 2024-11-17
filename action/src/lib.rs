@@ -44,7 +44,7 @@ pub enum Receiver {
 #[derive(Debug)]
 pub struct Action {
     pub receiver: Receiver,
-    pub content: Box<dyn Any + Send>,
+    pub content: Box<dyn Any + Send + Sync>,
     pub return_tx: Option<oneshot::Sender<ActionResult>>,
 }
 
