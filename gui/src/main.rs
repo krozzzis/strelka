@@ -167,6 +167,13 @@ impl App {
             startup_tasks.push(chain);
         }
 
+        {
+            let new_doc = Task::done(AppMessage::Action(
+                PaneAction::Add(Pane::NewDocument).into_action(),
+            ));
+            startup_tasks.push(new_doc);
+        }
+
         info!("App constructor done");
         (app, Task::batch(startup_tasks))
     }
