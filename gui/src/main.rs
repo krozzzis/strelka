@@ -3,10 +3,7 @@
 use config::{AppConfig, GuiConfig};
 use iced::{
     keyboard::{on_key_press, Key},
-    widget::{
-        center,
-        text_editor::{self},
-    },
+    widget::center,
     Element, Settings, Subscription, Task,
 };
 use log::{debug, info, warn};
@@ -27,9 +24,8 @@ use widget::{
     pane::pane_stack::{self, pane_stack},
 };
 
-use action::{Action, ActionResult, FileAction, IntoAction, Message, PaneAction, ThemeAction};
+use action::{Action, ActionResult, FileAction, IntoAction, PaneAction, ThemeAction};
 use core::{
-    document::DocumentId,
     pane::{Pane, VisiblePaneModel},
     smol_str::SmolStr,
     HotKey, Modifiers,
@@ -49,7 +45,6 @@ pub struct App {
 #[derive(Debug)]
 pub enum AppMessage {
     Action(Action),
-    TextEditorAction(text_editor::Action, DocumentId),
     OnKeyPress(Key, iced::keyboard::Modifiers),
     None,
 }
@@ -204,10 +199,6 @@ impl App {
                 if let Some(message) = self.on_key_press(key, modifiers) {
                     return Task::done(message);
                 }
-            }
-
-            AppMessage::TextEditorAction(_action, _document) => {
-                todo!()
             }
         }
         Task::none()
