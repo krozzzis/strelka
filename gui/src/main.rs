@@ -32,7 +32,7 @@ use core::{
     HotKey, Modifiers,
 };
 
-static DEFAULT_THEME: &str = "core.light";
+static DEFAULT_THEME: &str = "core.dark";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub type HotKeyHandler = Box<dyn Fn() -> Action>;
@@ -149,13 +149,13 @@ impl App {
             || ThemeAction::MakeIndex.into_action(),
         );
 
-        // Ctrl+Alt+l set dark theme
+        // Ctrl+Alt+l set light theme
         app.add_hotkey(
             HotKey {
                 modifiers: Modifiers::CtrlAlt,
                 key: 'l',
             },
-            || ThemeAction::SetTheme(SmolStr::new("core.dark")).into_action(),
+            || ThemeAction::SetTheme(SmolStr::new("core.light")).into_action(),
         );
 
         {
