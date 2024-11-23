@@ -2,9 +2,18 @@
 resolver = "2"
 members = ["core", "gui", "theming", "widget", "plugin", "state", "config", "action"]
 
+[profile.dev-opt]
+inherits = "dev"
+opt_level = 1
+
 [profile.release]
-strip = true
+debug = true
+
+[profile.prod]
+inherits = "release"
+debug = false
 lto = true
+strip = true
 
 [workspace.dependencies]
 log = "^0.4"
