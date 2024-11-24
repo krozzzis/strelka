@@ -235,7 +235,6 @@ impl App {
                                     AppMessage::Action(PaneAction::Add(pane).into_action())
                                 }
                                 pane_stack::Message::NewDocument(_message) => todo!(),
-                                pane_stack::Message::TextEditor(_, _message) => todo!(),
                                 pane_stack::Message::None => AppMessage::None,
                             });
                             pane_stack

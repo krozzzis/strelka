@@ -5,11 +5,13 @@ use theming::Theme;
 
 pub static MENU_ICON: &[u8] = include_bytes!("../../contrib/menu.svg");
 pub static ADD_ICON: &[u8] = include_bytes!("../../contrib/add.svg");
+pub static CLOSE_ICON: &[u8] = include_bytes!("../../contrib/close.svg");
 
 #[derive(Debug, Clone, Copy)]
 pub enum Icon {
     Menu,
     Add,
+    Close,
 }
 
 impl Icon {
@@ -17,6 +19,7 @@ impl Icon {
         Handle::from_memory(Cow::Borrowed(match self {
             Icon::Menu => MENU_ICON,
             Icon::Add => ADD_ICON,
+            Icon::Close => CLOSE_ICON,
         }))
     }
 

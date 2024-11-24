@@ -1,6 +1,5 @@
 use core::{
     buffer::{Buffer, FormattedBuffer},
-    document::DocumentId,
     pane::{Pane, PaneId, VisiblePaneModel},
 };
 
@@ -13,10 +12,7 @@ use theming::Theme;
 use crate::{
     buffer::buffer,
     container::background,
-    pane::{
-        new_document::{self, new_document_pane},
-        text_editor,
-    },
+    pane::new_document::{self, new_document_pane},
     tab::{tab_bar, Tab},
     Label,
 };
@@ -32,7 +28,6 @@ pub enum Message {
     ClosePane(PaneId),
     NewPane(Pane),
     NewDocument(new_document::Message),
-    TextEditor(DocumentId, text_editor::Message),
     None,
 }
 

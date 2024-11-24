@@ -1,7 +1,6 @@
 pub mod buffer;
 pub mod button;
 pub mod container;
-pub mod editor;
 pub mod icon;
 pub mod list;
 pub mod pane;

@@ -1,12 +1,12 @@
 use core::{smol_str::SmolStr, value::Value};
 
 use iced::{
-    widget::{center, row, scrollable, text, Column, Space},
+    widget::{row, text, Space},
     Alignment, Element, Length, Padding,
 };
 use theming::Theme;
 
-use crate::container::{background, background2};
+use crate::container::background2;
 
 pub fn config_pane<'a>() -> Element<'a, (), Theme> {
     todo!();
