@@ -104,7 +104,7 @@ impl App {
                 theme_id: SmolStr::new(DEFAULT_THEME),
                 theme: Theme::default(),
                 interface_mode: InterfaceMode::Simplified,
-                scale_factor: 0.85,
+                scale_factor: 0.80,
             },
         };
 
