@@ -2,6 +2,8 @@ use iced::{widget::Button, Element};
 
 use theming::Theme;
 
+use crate::icon::Icon;
+
 pub fn primary_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
 ) -> Button<'a, Message, Theme> {
@@ -20,18 +22,24 @@ pub fn text_button<'a, Message>(
     Button::new(content).style(theming::iced::button::text)
 }
 
+pub fn icon_button<'a, Message>(icon: Icon) -> Button<'a, Message, Theme> {
+    Button::new(icon.svg().width(36.0).height(36.0))
+        .padding(0)
+        .style(theming::iced::button::text)
+}
+
 pub mod a {
     use iced::{
         advanced::{
             graphics::geometry::{self, Frame},
             layout, mouse,
-            renderer::{self, Quad},
+            renderer::{self},
             widget::{tree, Operation, Tree},
             Clipboard, Layout, Shell, Widget,
         },
         event, touch,
         widget::canvas::{self, path::Builder, Fill, Stroke},
-        Alignment, Element, Event, Length, Padding, Point, Rectangle, Shadow, Size, Vector,
+        Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
     };
     use theming::{Border, Color, Font, Margin, Theme};
 

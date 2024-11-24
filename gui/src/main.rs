@@ -20,8 +20,9 @@ use plugin::{ExamplePlugin, Plugin, PluginHost, PluginInfo};
 
 use theming::{theme, Theme};
 use widget::{
-    button::a,
+    button::{a, icon_button},
     container::{background, background2},
+    icon::Icon,
     pane::pane_stack::{self, pane_stack},
 };
 
@@ -239,8 +240,17 @@ impl App {
                             });
                             pane_stack
                         } else {
-                            let top_bar =
-                                background2(Space::new(Length::Fill, Length::Fixed(52.0)));
+                            let menu_button: Element<(), Theme> = icon_button(Icon::Menu).into();
+                            let add_button: Element<(), Theme> = icon_button(Icon::Add).into();
+                            let top_bar = background2(
+                                Row::with_children([
+                                    menu_button.map(|_| AppMessage::None),
+                                    add_button.map(|_| AppMessage::None),
+                                    Space::new(Length::Fill, Length::Fixed(36.0)).into(),
+                                ])
+                                .padding(8.0)
+                                .spacing(8.0),
+                            );
                             let mut panes = Vec::new();
                             for pane in model.panes {
                                 panes.push(pane);
