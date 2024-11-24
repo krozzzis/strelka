@@ -46,7 +46,7 @@ pub struct App {
     hotkeys: HashMap<HotKey, HotKeyHandler>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AppMessage {
     Action(Action),
     OnKeyPress(Key, iced::keyboard::Modifiers),
@@ -241,11 +241,15 @@ impl App {
                         pane_stack
                     } else {
                         let menu_button: Element<(), Theme> = icon_button(Icon::Menu).into();
-                        let add_button: Element<(), Theme> = icon_button(Icon::Add).into();
+                        let add_button: Element<AppMessage, Theme> = icon_button(Icon::Add)
+                            .on_press(AppMessage::Action(
+                                PaneAction::Add(Pane::NewDocument).into_action(),
+                            ))
+                            .into();
                         let top_bar = background2(
                             Row::with_children([
                                 menu_button.map(|_| AppMessage::None),
-                                add_button.map(|_| AppMessage::None),
+                                add_button,
                                 Space::new(Length::Fill, Length::Fixed(36.0)).into(),
                             ])
                             .padding(8.0)
