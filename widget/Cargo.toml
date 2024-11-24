@@ -6,6 +6,7 @@ license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
 [dependencies]
+action = { path = "../action" }
 core = { path = "../core" }
 theming = { path = "../theming", features = ["tokio"] }
 state = { path = "../state" }

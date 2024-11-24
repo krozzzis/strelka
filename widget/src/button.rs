@@ -19,7 +19,7 @@ pub fn secondary_button<'a, Message>(
 pub fn text_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
 ) -> Button<'a, Message, Theme> {
-    Button::new(content).style(theming::iced::button::text)
+    Button::new(content).style(theming::iced::button::secondary)
 }
 
 pub fn icon_button<'a, Message>(icon: Icon) -> Button<'a, Message, Theme> {

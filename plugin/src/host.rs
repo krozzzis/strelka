@@ -1,4 +1,4 @@
-use action::{Action, ActionTransport, Message};
+use action::{ActionTransport, Message};
 use std::{collections::HashMap, sync::Arc};
 
 use log::warn;

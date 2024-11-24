@@ -6,12 +6,14 @@ use theming::Theme;
 pub static MENU_ICON: &[u8] = include_bytes!("../../contrib/menu.svg");
 pub static ADD_ICON: &[u8] = include_bytes!("../../contrib/add.svg");
 pub static CLOSE_ICON: &[u8] = include_bytes!("../../contrib/close.svg");
+pub static FILE_ICON: &[u8] = include_bytes!("../../contrib/file.svg");
 
 #[derive(Debug, Clone, Copy)]
 pub enum Icon {
     Menu,
     Add,
     Close,
+    File,
 }
 
 impl Icon {
@@ -20,6 +22,7 @@ impl Icon {
             Icon::Menu => MENU_ICON,
             Icon::Add => ADD_ICON,
             Icon::Close => CLOSE_ICON,
+            Icon::File => FILE_ICON,
         }))
     }
 

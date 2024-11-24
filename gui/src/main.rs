@@ -3,10 +3,9 @@
 use config::{AppConfig, GuiConfig, InterfaceMode};
 use iced::{
     keyboard::{on_key_press, Key},
-    widget::{center, text, Column, Row, Space},
-    Alignment, Element, Length, Padding, Settings, Subscription, Task,
+    Element, Settings, Subscription, Task,
 };
-use log::{debug, info, warn};
+use log::{debug, info};
 use state::{
     actors::{DocumentActor, FileActor, PaneActor, PluginHostActor, ThemeActor},
     ActionBrocker,
@@ -18,22 +17,11 @@ use std::collections::HashMap;
 
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginInfo};
 
-use theming::{theme, Theme};
-use widget::{
-    button::{a, icon_button},
-    container::{background, background2},
-    icon::Icon,
-    pane::pane_stack::{self, pane_stack},
-};
+use theming::Theme;
+use widget::pane::pane_stack::simplified_pane_stack;
 
-use action::{
-    Action, ActionResult, ActionTransport, FileAction, IntoAction, PaneAction, ThemeAction,
-};
-use core::{
-    pane::{Pane, PaneId, VisiblePaneModel},
-    smol_str::SmolStr,
-    HotKey, Modifiers,
-};
+use action::{Action, ActionTransport, FileAction, IntoAction, PaneAction, ThemeAction};
+use core::{pane::Pane, smol_str::SmolStr, HotKey, Modifiers};
 
 static DEFAULT_THEME: &str = "core.dark";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
@@ -218,109 +206,10 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        let (get_model_action, rx) = PaneAction::GetModel().into_transport_receive();
-        let _ = self.brocker_tx.blocking_send(get_model_action);
-        if let Ok(ActionResult::Value(model)) = rx.blocking_recv() {
-            if let Ok(model) = model.downcast::<Option<VisiblePaneModel>>() {
-                if let Some(model) = *model {
-                    info!("View. Loaded PaneModel");
-                    if let InterfaceMode::Full = self.config.gui.interface_mode {
-                        let pane_stack = pane_stack(model).map(|message| match message {
-                            pane_stack::Message::OpenPane(id) => {
-                                AppMessage::Action(PaneAction::Open(id).into_action())
-                            }
-                            pane_stack::Message::ClosePane(id) => {
-                                AppMessage::Action(PaneAction::Close(id).into_action())
-                            }
-                            pane_stack::Message::NewPane(pane) => {
-                                AppMessage::Action(PaneAction::Add(pane).into_action())
-                            }
-                            pane_stack::Message::NewDocument(_message) => todo!(),
-                            pane_stack::Message::None => AppMessage::None,
-                        });
-                        pane_stack
-                    } else {
-                        let menu_button: Element<(), Theme> = icon_button(Icon::Menu).into();
-                        let add_button: Element<AppMessage, Theme> = icon_button(Icon::Add)
-                            .on_press(AppMessage::Action(
-                                PaneAction::Add(Pane::NewDocument).into_action(),
-                            ))
-                            .into();
-                        let top_bar = background2(
-                            Row::with_children([
-                                menu_button.map(|_| AppMessage::None),
-                                add_button,
-                                Space::new(Length::Fill, Length::Fixed(36.0)).into(),
-                            ])
-                            .padding(8.0)
-                            .spacing(8.0),
-                        );
-                        let mut panes = Vec::new();
-                        for pane in model.panes {
-                            panes.push(pane);
-                        }
-                        let pane_buttons = panes.iter().map(|pane| {
-                            let id = pane.0;
-                            let btn: Element<PaneId, Theme> =
-                                a::Button::new(Row::with_children(vec![
-                                    Space::new(Length::Fixed(52.0), Length::Fill).into(),
-                                    text(pane.1.title())
-                                        .size(20)
-                                        .height(Length::Fill)
-                                        .align_y(Alignment::Center)
-                                        .into(),
-                                ]))
-                                .width(Length::Fill)
-                                .height(theme!(tab.height))
-                                .padding(0)
-                                .on_press(id)
-                                .into();
-
-                            btn.map(|id| AppMessage::Action(PaneAction::Open(id).into_action()))
-                        });
-
-                        let note_stack = background2(
-                            Column::with_children(
-                                pane_buttons.chain(std::iter::once(
-                                    text("Note stack")
-                                        .color(iced::Color::from_rgb8(67, 67, 67))
-                                        .size(20.0)
-                                        .align_x(Alignment::Center)
-                                        .height(theme!(tab.height))
-                                        .width(Length::Fill)
-                                        .into(),
-                                )),
-                            )
-                            .spacing(8)
-                            .padding(Padding::new(8.0).top(0.0))
-                            .height(Length::Fill)
-                            .width(Length::Fixed(270.0)),
-                        )
-                        .into();
-
-                        Column::with_children(vec![
-                            top_bar.into(),
-                            Row::with_children(vec![
-                                note_stack,
-                                Space::new(Length::Fill, Length::Fill).into(),
-                            ])
-                            .height(Length::Fill)
-                            .into(),
-                        ])
-                        .into()
-                    }
-                } else {
-                    warn!("View. Can't load PaneModel");
-                    background(center("Can't load PaneModel")).into()
-                }
-            } else {
-                warn!("View. Can't load PaneModel");
-                background(center("Can't load PaneModel")).into()
-            }
-        } else {
-            warn!("View. Can't load PaneModel");
-            background(center("Can't load PaneModel")).into()
-        }
+        simplified_pane_stack(self.brocker_tx.clone()).map(|x| match x {
+            None => AppMessage::None,
+            Some(action) => AppMessage::Action(action),
+        })
     }
 
     fn scale_factor(&self) -> f64 {
