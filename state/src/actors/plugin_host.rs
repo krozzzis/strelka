@@ -1,4 +1,6 @@
-use action::Action;
+use std::sync::Arc;
+
+use action::{ActionTransport, Message};
 
 use log::{info, warn};
 use plugin::PluginHost;
@@ -6,12 +8,12 @@ use tokio::sync::mpsc::{Receiver, Sender};
 
 pub struct PluginHostActor {
     plugin_host: PluginHost,
-    receiver: Receiver<Action>,
-    brocker_sender: Sender<Action>,
+    receiver: Receiver<ActionTransport>,
+    brocker_sender: Sender<ActionTransport>,
 }
 
 impl PluginHostActor {
-    pub fn new(rx: Receiver<Action>, brocker_tx: Sender<Action>) -> Self {
+    pub fn new(rx: Receiver<ActionTransport>, brocker_tx: Sender<ActionTransport>) -> Self {
         Self {
             plugin_host: PluginHost::new(),
             receiver: rx,
@@ -26,15 +28,15 @@ impl PluginHostActor {
 
     pub async fn run(&mut self) {
         info!("Started PluginHostActor");
-        while let Some(generic_action) = self.receiver.recv().await {
-            info!("PluginHostActor. Processing: {generic_action:?}");
-            let action = if let Ok(x) = generic_action.content.downcast() {
+        while let Some(transport) = self.receiver.recv().await {
+            info!("PluginHostActor. Processing: {transport:?}");
+            let action: Arc<Message> = if let Ok(x) = transport.action.content.downcast() {
                 x
             } else {
                 warn!("PluginHostActor. Dropping processing action because incorrect type");
                 continue;
             };
-            self.plugin_host.process_message(*action).await;
+            self.plugin_host.process_message(action).await;
         }
     }
 }

@@ -1,16 +1,19 @@
-use action::{Action, FileAction};
-use std::path::{Path, PathBuf};
+use action::{ActionTransport, FileAction};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use log::{info, warn};
 use tokio::sync::mpsc::{Receiver, Sender};
 
 pub struct FileActor {
-    receiver: Receiver<Action>,
-    brocker_sender: Sender<Action>,
+    receiver: Receiver<ActionTransport>,
+    brocker_sender: Sender<ActionTransport>,
 }
 
 impl FileActor {
-    pub fn new(rx: Receiver<Action>, brocker_tx: Sender<Action>) -> Self {
+    pub fn new(rx: Receiver<ActionTransport>, brocker_tx: Sender<ActionTransport>) -> Self {
         Self {
             receiver: rx,
             brocker_sender: brocker_tx,
@@ -19,15 +22,15 @@ impl FileActor {
 
     pub async fn run(&mut self) {
         info!("Started FileActor");
-        while let Some(generic_action) = self.receiver.recv().await {
-            info!("FileActor. Processing: {generic_action:?}");
-            let action = if let Ok(x) = generic_action.content.downcast() {
+        while let Some(transport) = self.receiver.recv().await {
+            info!("FileActor. Processing: {transport:?}");
+            let action: Arc<FileAction> = if let Ok(x) = transport.action.content.downcast() {
                 x
             } else {
                 warn!("FileActor. Dropping processing action because incorrect type");
                 continue;
             };
-            match *action {
+            match action.as_ref() {
                 FileAction::PickFile => todo!(),
                 FileAction::OpenFileCurrentTab(_path) => {
                     todo!()

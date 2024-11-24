@@ -1,4 +1,5 @@
 use core::ThemeId;
+use std::sync::Arc;
 
 use theming::Theme;
 use tokio::sync::mpsc;
@@ -16,8 +17,7 @@ impl IntoAction for ThemeAction {
     fn into_action(self) -> Action {
         Action {
             receiver: Receiver::Theme,
-            content: Box::new(self),
-            return_tx: None,
+            content: Arc::new(self),
         }
     }
 }

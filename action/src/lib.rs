@@ -5,7 +5,7 @@ mod pane;
 mod theme;
 
 use core::smol_str::SmolStr;
-use std::any::Any;
+use std::{any::Any, sync::Arc};
 
 pub use document::DocumentAction;
 pub use file::FileAction;
@@ -25,8 +25,21 @@ pub enum ActionResult {
 
 pub trait IntoAction: Sized {
     fn into_action(self) -> Action;
-    fn into_returnable_action(self) -> (Action, Option<oneshot::Receiver<ActionResult>>) {
-        (Self::into_action(self), None)
+    fn into_transport(self) -> ActionTransport {
+        ActionTransport {
+            action: self.into_action(),
+            return_tx: None,
+        }
+    }
+    fn into_transport_receive(self) -> (ActionTransport, oneshot::Receiver<ActionResult>) {
+        let (tx, rx) = oneshot::channel();
+        (
+            ActionTransport {
+                return_tx: Some(tx),
+                ..self.into_transport()
+            },
+            rx,
+        )
     }
 }
 
@@ -41,10 +54,15 @@ pub enum Receiver {
     Plugin(SmolStr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Action {
     pub receiver: Receiver,
-    pub content: Box<dyn Any + Send + Sync>,
+    pub content: Arc<dyn Any + Send + Sync>,
+}
+
+#[derive(Debug)]
+pub struct ActionTransport {
+    pub action: Action,
     pub return_tx: Option<oneshot::Sender<ActionResult>>,
 }
 
@@ -52,7 +70,21 @@ impl IntoAction for Action {
     fn into_action(self) -> Action {
         self
     }
-    fn into_returnable_action(self) -> (Action, Option<oneshot::Receiver<ActionResult>>) {
-        (self, None)
+
+    fn into_transport(self) -> ActionTransport {
+        ActionTransport {
+            action: self,
+            return_tx: None,
+        }
+    }
+    fn into_transport_receive(self) -> (ActionTransport, oneshot::Receiver<ActionResult>) {
+        let (tx, rx) = oneshot::channel();
+        (
+            ActionTransport {
+                action: self,
+                return_tx: Some(tx),
+            },
+            rx,
+        )
     }
 }

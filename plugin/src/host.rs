@@ -1,4 +1,4 @@
-use action::{Action, Message};
+use action::{Action, ActionTransport, Message};
 use std::{collections::HashMap, sync::Arc};
 
 use log::warn;
@@ -18,7 +18,7 @@ pub struct PluginHost {
 
     pub message_handlers: HashMap<PluginId, Arc<MessageHandler>>,
 
-    pub brocker_tx: Option<sync::mpsc::Sender<Action>>,
+    pub brocker_tx: Option<sync::mpsc::Sender<ActionTransport>>,
 }
 
 impl PluginHost {
@@ -30,7 +30,7 @@ impl PluginHost {
         }
     }
 
-    pub fn set_brocker(&mut self, brocker: sync::mpsc::Sender<Action>) {
+    pub fn set_brocker(&mut self, brocker: sync::mpsc::Sender<ActionTransport>) {
         self.brocker_tx = Some(brocker);
     }
 
@@ -89,7 +89,7 @@ impl PluginHost {
         }
     }
 
-    pub async fn process_message(&self, message: Message) {
+    pub async fn process_message(&self, message: Arc<Message>) {
         let receiver = &message.destination;
         if let Some(handler) = &self.plugins.get(receiver) {
             if let PluginStatus::Loaded = handler.status {

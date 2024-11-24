@@ -1,4 +1,5 @@
 use core::smol_str::SmolStr;
+use std::sync::Arc;
 
 use crate::{Action, IntoAction, Receiver};
 
@@ -13,8 +14,7 @@ impl IntoAction for Message {
     fn into_action(self) -> Action {
         Action {
             receiver: Receiver::Plugin(SmolStr::new(self.destination.clone())),
-            content: Box::new(self),
-            return_tx: None,
+            content: Arc::new(self),
         }
     }
 }
