@@ -9,6 +9,7 @@ pub static CLOSE_ICON: &[u8] = include_bytes!("../../contrib/close.svg");
 pub static FILE_ICON: &[u8] = include_bytes!("../../contrib/file.svg");
 pub static MAXIMIZE_ICON: &[u8] = include_bytes!("../../contrib/maximize.svg");
 pub static COLLAPSE_ICON: &[u8] = include_bytes!("../../contrib/collapse.svg");
+pub static MORE_ICON: &[u8] = include_bytes!("../../contrib/more.svg");
 
 #[derive(Debug, Clone, Copy)]
 pub enum Icon {
@@ -18,6 +19,7 @@ pub enum Icon {
     File,
     Maximize,
     Collapse,
+    More,
 }
 
 impl Icon {
@@ -29,6 +31,7 @@ impl Icon {
             Icon::File => FILE_ICON,
             Icon::Maximize => MAXIMIZE_ICON,
             Icon::Collapse => COLLAPSE_ICON,
+            Icon::More => MORE_ICON,
         }))
     }
 

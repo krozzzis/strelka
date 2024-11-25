@@ -6,8 +6,8 @@ use core::{
 use action::{Action, ActionResult, ActionTransport, IntoAction, PaneAction};
 use iced::{
     widget::{
-        center, column, horizontal_space, mouse_area, row, stack, svg, text, Column, MouseArea,
-        Row, Space,
+        center, column, horizontal_space, mouse_area, row, stack, svg, text::IntoFragment, Column,
+        MouseArea, Row, Space, Text,
     },
     Alignment, Border, Element, Length, Padding,
 };
@@ -135,6 +135,36 @@ pub fn top_bar<'a>() -> Element<'a, Msg, Theme> {
     stack![bg, topbar].into()
 }
 
+pub fn simplified_pane_tab<'a>(
+    title: impl IntoFragment<'a>,
+    id: PaneId,
+) -> Element<'a, Msg, Theme> {
+    let btn: Element<'a, Msg, Theme> = a::Button::new(
+        Row::with_children(vec![
+            Icon::File.svg().width(36.0).height(36.0).into(),
+            Text::new(title)
+                .size(20)
+                .height(Length::Fill)
+                .align_y(Alignment::Center)
+                .align_x(Alignment::Start)
+                .into(),
+            horizontal_space().into(),
+            icon_button(Icon::More).on_press(Msg::None).into(),
+        ])
+        .padding(8.0)
+        .align_y(Alignment::Center),
+    )
+    .width(Length::Fill)
+    .height(theme!(tab.height))
+    .padding(0)
+    .on_press(Msg::Action(PaneAction::Open(id).into_action()))
+    .into();
+
+    MouseArea::new(btn)
+        .on_middle_press(Msg::Action(PaneAction::Close(id).into_action()))
+        .into()
+}
+
 pub fn simplified_pane_stack<'a>(
     brocker_tx: mpsc::Sender<ActionTransport>,
 ) -> Element<'a, Msg, Theme> {
@@ -166,36 +196,15 @@ pub fn simplified_pane_stack<'a>(
         let pane_tabs = panes.iter().map(|pane| {
             let id = pane.0;
 
-            let btn: Element<'a, Msg, Theme> = a::Button::new(
-                Row::with_children(vec![
-                    Icon::File.svg().width(36.0).height(36.0).into(),
-                    text(pane.1.title())
-                        .size(20)
-                        .height(Length::Fill)
-                        .align_y(Alignment::Center)
-                        .align_x(Alignment::Start)
-                        .into(),
-                ])
-                .padding(8.0)
-                .align_y(Alignment::Center),
-            )
-            .width(Length::Fill)
-            .height(theme!(tab.height))
-            .padding(0)
-            .on_press(Msg::Action(PaneAction::Open(id).into_action()))
-            .into();
-
-            MouseArea::new(btn)
-                .on_middle_press(Msg::Action(PaneAction::Close(id).into_action()))
-                .into()
+            simplified_pane_tab(pane.1.title(), id)
         });
 
         Column::with_children(pane_tabs).spacing(8.0).into()
     } else {
-        text("Can't load pane model").into()
+        Text::new("Can't load pane model").into()
     };
 
-    let notestack_text: Element<'a, Msg, Theme> = text("Note stack")
+    let notestack_text: Element<'a, Msg, Theme> = Text::new("Note stack")
         .color(iced::Color::from_rgb8(67, 67, 67))
         .size(20.0)
         .align_x(Alignment::Center)
