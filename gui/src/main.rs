@@ -3,6 +3,7 @@
 use config::{AppConfig, GuiConfig, InterfaceMode};
 use iced::{
     keyboard::{on_key_press, Key},
+    window::{close, drag, get_oldest, maximize, minimize, Id},
     Element, Settings, Subscription, Task,
 };
 use log::{debug, info};
@@ -18,7 +19,7 @@ use std::collections::HashMap;
 use plugin::{ExamplePlugin, Plugin, PluginHost, PluginInfo};
 
 use theming::Theme;
-use widget::pane::pane_stack::simplified_pane_stack;
+use widget::pane::pane_stack::{simplified_pane_stack, Msg};
 
 use action::{Action, ActionTransport, FileAction, IntoAction, PaneAction, ThemeAction};
 use core::{pane::Pane, smol_str::SmolStr, HotKey, Modifiers};
@@ -38,6 +39,11 @@ pub struct App {
 pub enum AppMessage {
     Action(Action),
     OnKeyPress(Key, iced::keyboard::Modifiers),
+    WindowDrag,
+    WindowClose,
+    WindowMaximize,
+    WindowMinimize,
+    WindowCollapse,
     None,
 }
 
@@ -201,14 +207,26 @@ impl App {
                     return Task::done(message);
                 }
             }
+
+            AppMessage::WindowDrag => return get_oldest().then(|x| drag(x.unwrap())),
+            AppMessage::WindowClose => return get_oldest().then(|x| close(x.unwrap())),
+            AppMessage::WindowMaximize => return get_oldest().then(|x| maximize(x.unwrap(), true)),
+            AppMessage::WindowMinimize => {
+                return get_oldest().then(|x| maximize(x.unwrap(), false))
+            }
+            AppMessage::WindowCollapse => return get_oldest().then(|x| minimize(x.unwrap(), true)),
         }
         Task::none()
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
         simplified_pane_stack(self.brocker_tx.clone()).map(|x| match x {
-            None => AppMessage::None,
-            Some(action) => AppMessage::Action(action),
+            Msg::None => AppMessage::None,
+            Msg::Action(action) => AppMessage::Action(action),
+            Msg::Close => AppMessage::WindowClose,
+            Msg::Maximize => AppMessage::WindowMaximize,
+            Msg::Collapse => AppMessage::WindowCollapse,
+            Msg::Drag => AppMessage::WindowDrag,
         })
     }
 
@@ -280,6 +298,7 @@ fn main() -> iced::Result {
         })
         .window(iced::window::Settings {
             icon: iced::window::icon::from_file_data(APP_ICON, None).ok(),
+            decorations: false,
             ..Default::default()
         })
         .centered()

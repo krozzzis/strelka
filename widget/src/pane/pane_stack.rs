@@ -5,7 +5,10 @@ use core::{
 
 use action::{Action, ActionResult, ActionTransport, IntoAction, PaneAction};
 use iced::{
-    widget::{center, column, row, stack, svg, text, Column, MouseArea, Row, Space},
+    widget::{
+        center, column, horizontal_space, mouse_area, row, stack, svg, text, Column, MouseArea,
+        Row, Space,
+    },
     Alignment, Border, Element, Length, Padding,
 };
 use theming::{theme, Theme};
@@ -32,6 +35,16 @@ pub enum Message {
     ClosePane(PaneId),
     NewPane(Pane),
     NewDocument(new_document::Message),
+    None,
+}
+
+#[derive(Debug, Clone)]
+pub enum Msg {
+    Action(Action),
+    Close,
+    Maximize,
+    Collapse,
+    Drag,
     None,
 }
 
@@ -91,15 +104,41 @@ pub fn pane_stack<'a>(model: VisiblePaneModel) -> Element<'a, Message, Theme> {
     column![tab_bar, pane,].into()
 }
 
+pub fn top_bar<'a>() -> Element<'a, Msg, Theme> {
+    let menu_button: Element<Msg, Theme> = icon_button(Icon::Menu).on_press(Msg::None).into();
+    let add_button: Element<Msg, Theme> = icon_button(Icon::Add)
+        .on_press(Msg::Action(
+            PaneAction::Add(Pane::NewDocument).into_action(),
+        ))
+        .into();
+    let close_button: Element<Msg, Theme> = icon_button(Icon::Close).on_press(Msg::Close).into();
+    let maximize_button: Element<Msg, Theme> =
+        icon_button(Icon::Maximize).on_press(Msg::Maximize).into();
+    let collapse_button: Element<Msg, Theme> =
+        icon_button(Icon::Collapse).on_press(Msg::Collapse).into();
+
+    let topbar = row![
+        menu_button,
+        add_button,
+        horizontal_space(),
+        collapse_button,
+        maximize_button,
+        close_button
+    ]
+    .spacing(8.0)
+    .padding(8.0)
+    .width(Length::Fill);
+
+    let bg =
+        mouse_area(background2(Space::new(Length::Fill, Length::Fixed(52.0)))).on_press(Msg::Drag);
+
+    stack![bg, topbar].into()
+}
+
 pub fn simplified_pane_stack<'a>(
     brocker_tx: mpsc::Sender<ActionTransport>,
-) -> Element<'a, Option<Action>, Theme> {
-    let menu_button: Element<Option<Action>, Theme> = icon_button(Icon::Menu).on_press(None).into();
-    let add_button: Element<Option<Action>, Theme> = icon_button(Icon::Add)
-        .on_press(Some(PaneAction::Add(Pane::NewDocument).into_action()))
-        .into();
-    let topbar =
-        background2(row![menu_button, add_button].spacing(8.0).padding(8.0)).width(Length::Fill);
+) -> Element<'a, Msg, Theme> {
+    let topbar = top_bar();
 
     let pane_model: Option<Box<VisiblePaneModel>> = 'pane_model: {
         let (action, rx) = PaneAction::GetModel().into_transport_receive();
@@ -118,7 +157,7 @@ pub fn simplified_pane_stack<'a>(
         }
     };
 
-    let sidebar_tabs: Element<'a, Option<Action>, Theme> = if let Some(model) = pane_model {
+    let sidebar_tabs: Element<'a, Msg, Theme> = if let Some(model) = pane_model {
         let mut panes = Vec::new();
         for pane in model.panes {
             panes.push(pane);
@@ -127,7 +166,7 @@ pub fn simplified_pane_stack<'a>(
         let pane_tabs = panes.iter().map(|pane| {
             let id = pane.0;
 
-            let btn: Element<'a, Option<Action>, Theme> = a::Button::new(
+            let btn: Element<'a, Msg, Theme> = a::Button::new(
                 Row::with_children(vec![
                     Icon::File.svg().width(36.0).height(36.0).into(),
                     text(pane.1.title())
@@ -143,11 +182,11 @@ pub fn simplified_pane_stack<'a>(
             .width(Length::Fill)
             .height(theme!(tab.height))
             .padding(0)
-            .on_press(Some(PaneAction::Open(id).into_action()))
+            .on_press(Msg::Action(PaneAction::Open(id).into_action()))
             .into();
 
             MouseArea::new(btn)
-                .on_middle_press(Some(PaneAction::Close(id).into_action()))
+                .on_middle_press(Msg::Action(PaneAction::Close(id).into_action()))
                 .into()
         });
 
@@ -156,21 +195,21 @@ pub fn simplified_pane_stack<'a>(
         text("Can't load pane model").into()
     };
 
-    let notestack_text: Element<'a, Option<Action>, Theme> = text("Note stack")
+    let notestack_text: Element<'a, Msg, Theme> = text("Note stack")
         .color(iced::Color::from_rgb8(67, 67, 67))
         .size(20.0)
         .align_x(Alignment::Center)
         .height(theme!(tab.height))
         .width(Length::Fill)
         .into();
-    let sidebar: Element<Option<Action>, Theme> =
+    let sidebar: Element<Msg, Theme> =
         background2(column![sidebar_tabs, notestack_text].spacing(8.0))
             .padding(Padding::new(8.0).top(0.0))
             .width(270)
             .height(Length::Fill)
             .into();
 
-    let content: Element<Option<Action>, Theme> = stack![
+    let content: Element<Msg, Theme> = stack![
         background2(Space::new(Length::Fill, Length::Fill))
             .width(Length::Fill)
             .height(Length::Fill),

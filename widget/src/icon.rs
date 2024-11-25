@@ -7,6 +7,8 @@ pub static MENU_ICON: &[u8] = include_bytes!("../../contrib/menu.svg");
 pub static ADD_ICON: &[u8] = include_bytes!("../../contrib/add.svg");
 pub static CLOSE_ICON: &[u8] = include_bytes!("../../contrib/close.svg");
 pub static FILE_ICON: &[u8] = include_bytes!("../../contrib/file.svg");
+pub static MAXIMIZE_ICON: &[u8] = include_bytes!("../../contrib/maximize.svg");
+pub static COLLAPSE_ICON: &[u8] = include_bytes!("../../contrib/collapse.svg");
 
 #[derive(Debug, Clone, Copy)]
 pub enum Icon {
@@ -14,6 +16,8 @@ pub enum Icon {
     Add,
     Close,
     File,
+    Maximize,
+    Collapse,
 }
 
 impl Icon {
@@ -23,6 +27,8 @@ impl Icon {
             Icon::Add => ADD_ICON,
             Icon::Close => CLOSE_ICON,
             Icon::File => FILE_ICON,
+            Icon::Maximize => MAXIMIZE_ICON,
+            Icon::Collapse => COLLAPSE_ICON,
         }))
     }
 
