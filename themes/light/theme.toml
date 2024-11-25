@@ -20,8 +20,7 @@ radius = 4.0
 [secondary_button.active]
 background = "#f1f1f1"
 text = "#444444"
-radius = 4.0
-
+radius = 4.1.0
 [secondary_button.hover]
 background = "#cecece"
 text = "#444444"

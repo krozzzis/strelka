@@ -22,10 +22,8 @@ pub fn text_button<'a, Message>(
     Button::new(content).style(theming::iced::button::secondary)
 }
 
-pub fn icon_button<'a, Message>(icon: Icon) -> Button<'a, Message, Theme> {
-    Button::new(icon.svg().width(36.0).height(36.0))
-        .padding(0)
-        .style(theming::iced::button::text)
+pub fn icon_button<'a, Message>(icon: Icon) -> a::Button<'a, Message, iced::Renderer> {
+    a::Button::new(icon.svg().width(36.0).height(36.0)).padding(0)
 }
 
 pub mod a {
