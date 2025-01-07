@@ -1,5 +1,15 @@
 use std::str::FromStr;
 
+use nom::{
+    branch::alt,
+    bytes::complete::{is_not, tag, take_while1},
+    character::complete::char,
+    combinator::{map, map_res, opt},
+    sequence::{preceded, separated_pair, tuple},
+    IResult,
+};
+use palette::{FromColor, Hsl, Hsluv, Srgb};
+
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -36,43 +46,116 @@ impl Color {
         Self { r, g, b, a }
     }
 
-    pub fn from_hex(hex: &str) -> Result<Self, String> {
-        if !hex.starts_with('#') {
-            return Err("Invalid hex color format. Expected '#rrggbb' or '#rrggbbaa'.".to_string());
+    fn parse(input: &str) -> Result<Self, String> {
+        match Color::parse_color(input.trim()) {
+            Ok((_, srgb)) => Ok(srgb),
+            Err(_) => Err(format!("Failed to parse color: {}", input)),
         }
+    }
 
-        match hex.len() {
-            // #rrggbbaa
-            9 => {
-                let r = u8::from_str_radix(&hex[1..3], 16).map_err(|e| e.to_string())?;
-                let g = u8::from_str_radix(&hex[3..5], 16).map_err(|e| e.to_string())?;
-                let b = u8::from_str_radix(&hex[5..7], 16).map_err(|e| e.to_string())?;
-                let a = u8::from_str_radix(&hex[7..9], 16).map_err(|e| e.to_string())?;
-
-                Ok(Color {
-                    r: r as f32 / 255.0,
-                    g: g as f32 / 255.0,
-                    b: b as f32 / 255.0,
-                    a: a as f32 / 255.0,
-                })
+    pub fn from_hex(hex: &str) -> Option<Self> {
+        let hex = hex.trim_start_matches('#');
+        let (r, g, b, a) = match hex.len() {
+            3 => {
+                let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
+                let g = u8::from_str_radix(&hex[1..2].repeat(2), 16).ok()?;
+                let b = u8::from_str_radix(&hex[2..3].repeat(2), 16).ok()?;
+                (r, g, b, 255)
             }
-
-            // #rrggbb
-            7 => {
-                let r = u8::from_str_radix(&hex[1..3], 16).map_err(|e| e.to_string())?;
-                let g = u8::from_str_radix(&hex[3..5], 16).map_err(|e| e.to_string())?;
-                let b = u8::from_str_radix(&hex[5..7], 16).map_err(|e| e.to_string())?;
-
-                Ok(Color {
-                    r: r as f32 / 255.0,
-                    g: g as f32 / 255.0,
-                    b: b as f32 / 255.0,
-                    a: 1.0,
-                })
+            4 => {
+                let r = u8::from_str_radix(&hex[0..1].repeat(2), 16).ok()?;
+                let g = u8::from_str_radix(&hex[1..2].repeat(2), 16).ok()?;
+                let b = u8::from_str_radix(&hex[2..3].repeat(2), 16).ok()?;
+                let a = u8::from_str_radix(&hex[3..4].repeat(2), 16).ok()?;
+                (r, g, b, a)
             }
+            6 => {
+                let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+                let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+                let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+                (r, g, b, 255)
+            }
+            8 => {
+                let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+                let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+                let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+                let a = u8::from_str_radix(&hex[6..8], 16).ok()?;
+                (r, g, b, a)
+            }
+            _ => return None,
+        };
 
-            _ => Err("Invalid hex color format. Expected '#rrggbb' or '#rrggbbaa'.".to_string()),
+        Some(Self {
+            r: r as f32 / 255.0,
+            g: g as f32 / 255.0,
+            b: b as f32 / 255.0,
+            a: a as f32 / 255.0,
+        })
+    }
+
+    pub fn from_hsl(h: f32, s: f32, l: f32, a: Option<f32>) -> Self {
+        let hsl = Hsl::new(h, s, l);
+        let srgb: Srgb = Srgb::from_color(hsl);
+        Self {
+            r: srgb.red,
+            g: srgb.green,
+            b: srgb.blue,
+            a: a.unwrap_or(1.0),
         }
+    }
+
+    pub fn from_hsluv(h: f32, s: f32, l: f32, a: Option<f32>) -> Self {
+        let hsluv = Hsluv::new(h, s, l);
+        let srgb: Srgb = Srgb::from_color(hsluv);
+        Self {
+            r: srgb.red,
+            g: srgb.green,
+            b: srgb.blue,
+            a: a.unwrap_or(1.0),
+        }
+    }
+
+    fn parse_hex(input: &str) -> IResult<&str, Color> {
+        map_res(
+            preceded(tag("#"), take_while1(|c: char| c.is_ascii_hexdigit())),
+            |hex| Color::from_hex(hex).ok_or("Invalid hex color"),
+        )(input)
+    }
+
+    fn parse_hsl(input: &str) -> IResult<&str, Color> {
+        map(
+            tuple((
+                tag("hsl("),
+                separated_pair(Color::parse_number, char(','), Color::parse_number),
+                char(','),
+                Color::parse_number,
+                opt(preceded(char(','), Color::parse_number)),
+                char(')'),
+            )),
+            |(_, (h, s), _, l, a, _)| Color::from_hsl(h, s, l, a),
+        )(input)
+    }
+
+    fn parse_hsluv(input: &str) -> IResult<&str, Color> {
+        map(
+            tuple((
+                tag("hsluv("),
+                separated_pair(Color::parse_number, char(','), Color::parse_number),
+                char(','),
+                Color::parse_number,
+                opt(preceded(char(','), Color::parse_number)),
+                char(')'),
+            )),
+            |(_, (h, s), _, l, a, _)| Color::from_hsluv(h, s, l, a),
+        )(input)
+    }
+
+    fn parse_number(input: &str) -> IResult<&str, f32> {
+        map_res(is_not(",)"), |s: &str| f32::from_str(s.trim()))(input)
+    }
+
+    fn parse_color(input: &str) -> IResult<&str, Color> {
+        alt((Color::parse_hex, Color::parse_hsluv, Color::parse_hsl))(input)
     }
 }
 
@@ -115,7 +198,7 @@ impl FromStr for Color {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Color::from_hex(s)
+        Color::parse(s)
     }
 }
 
@@ -162,36 +245,70 @@ mod test {
     #[test]
     fn from_hex_rrggbb() {
         let black = "#000000";
-        assert_eq!(Color::from_hex(black), Ok(Color::new(0.0, 0.0, 0.0, 1.0)));
+        assert_eq!(Color::parse(black), Ok(Color::new(0.0, 0.0, 0.0, 1.0)));
 
         let white = "#ffffff";
-        assert_eq!(Color::from_hex(white), Ok(Color::new(1.0, 1.0, 1.0, 1.0)));
+        assert_eq!(Color::parse(white), Ok(Color::new(1.0, 1.0, 1.0, 1.0)));
 
         let red = "#ff0000";
-        assert_eq!(Color::from_hex(red), Ok(Color::new(1.0, 0.0, 0.0, 1.0)));
+        assert_eq!(Color::parse(red), Ok(Color::new(1.0, 0.0, 0.0, 1.0)));
 
         let green = "#00ff00";
-        assert_eq!(Color::from_hex(green), Ok(Color::new(0.0, 1.0, 0.0, 1.0)));
+        assert_eq!(Color::parse(green), Ok(Color::new(0.0, 1.0, 0.0, 1.0)));
 
         let blue = "#0000ff";
-        assert_eq!(Color::from_hex(blue), Ok(Color::new(0.0, 0.0, 1.0, 1.0)));
+        assert_eq!(Color::parse(blue), Ok(Color::new(0.0, 0.0, 1.0, 1.0)));
     }
 
     #[test]
-    fn from_hex_rrggbbaa() {
+    fn parse_rrggbbaa() {
         let black = "#00000000";
-        assert_eq!(Color::from_hex(black), Ok(Color::new(0.0, 0.0, 0.0, 0.0)));
+        assert_eq!(Color::parse(black), Ok(Color::new(0.0, 0.0, 0.0, 0.0)));
 
         let white = "#ffffffff";
-        assert_eq!(Color::from_hex(white), Ok(Color::new(1.0, 1.0, 1.0, 1.0)));
+        assert_eq!(Color::parse(white), Ok(Color::new(1.0, 1.0, 1.0, 1.0)));
 
         let red = "#ff0000ff";
-        assert_eq!(Color::from_hex(red), Ok(Color::new(1.0, 0.0, 0.0, 1.0)));
+        assert_eq!(Color::parse(red), Ok(Color::new(1.0, 0.0, 0.0, 1.0)));
 
         let green = "#00ff00ff";
-        assert_eq!(Color::from_hex(green), Ok(Color::new(0.0, 1.0, 0.0, 1.0)));
+        assert_eq!(Color::parse(green), Ok(Color::new(0.0, 1.0, 0.0, 1.0)));
 
         let blue = "#0000ffff";
-        assert_eq!(Color::from_hex(blue), Ok(Color::new(0.0, 0.0, 1.0, 1.0)));
+        assert_eq!(Color::parse(blue), Ok(Color::new(0.0, 0.0, 1.0, 1.0)));
+    }
+
+    #[test]
+    fn test_parse_hsl() {
+        let color = Color::parse("hsl(180, 0.5, 0.4)").unwrap();
+        assert!((color.r - 0.2).abs() < 1e-6);
+        assert!((color.g - 0.6).abs() < 1e-6);
+        assert!((color.b - 0.6).abs() < 1e-6);
+        assert_eq!(color.a, 1.0);
+    }
+
+    #[test]
+    fn test_parse_hsluv() {
+        let color_hsluv = Color::parse("hsluv(240, 80, 70)").unwrap();
+        let color_hex = Color::parse("#60b2ef").unwrap();
+        assert!((color_hsluv.r - color_hex.r).abs() < 1e-2);
+        assert!((color_hsluv.g - color_hex.g).abs() < 1e-2);
+        assert!((color_hsluv.b - color_hex.b).abs() < 1e-2);
+        assert_eq!(color_hsluv.a, 1.0);
+    }
+
+    #[test]
+    fn test_parse_invalid_color() {
+        let result = Color::parse("invalidcolor");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_whitespace_trim() {
+        let color = Color::parse("  #ff00ff  ").unwrap();
+        assert_eq!(color.r, 1.0);
+        assert_eq!(color.g, 0.0);
+        assert_eq!(color.b, 1.0);
+        assert_eq!(color.a, 1.0);
     }
 }
