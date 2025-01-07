@@ -9,6 +9,7 @@ theming = { path = "../theming" }
 dirs = "^5"
 toml = { workspace = true, optional = true }
 serde = { workspace = true, optional = true }
+dashmap = "6.1.0"
 
 [features]
 default = ["serde"]
