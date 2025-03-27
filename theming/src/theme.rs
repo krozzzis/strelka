@@ -56,8 +56,8 @@ pub struct Theme {
 
 impl Theme {
     #[cfg(feature = "load")]
-    pub async fn from_file(path: impl AsRef<Path>) -> Result<Theme, String> {
-        let text = tokio::fs::read_to_string(path)
+    pub async fn from_file(path: impl AsRef<async_std::path::Path>) -> Result<Theme, String> {
+        let text = async_std::fs::read_to_string(path)
             .await
             .map_err(|e| e.to_string())?;
         let theme: Theme = toml::from_str(&text).map_err(|e| e.to_string())?;

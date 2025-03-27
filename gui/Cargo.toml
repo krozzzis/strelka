@@ -11,15 +11,11 @@ path = "src/main.rs"
 
 [dependencies]
 rfd = "^0.15"
-crossbeam = { workspace = true }
-action = { path = "../action" }
 core = { path = "../core" }
-plugin = { path = "../plugin" }
 theming = { path = "../theming" }
-state = { path = "../state" }
 config = { path = "../config" }
 widget = { path = "../widget" }
 iced = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
-tokio = { workspace = true }
+async-std = { workspace = true }

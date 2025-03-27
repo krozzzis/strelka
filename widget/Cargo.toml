@@ -6,13 +6,9 @@ license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
 [dependencies]
-action = { path = "../action" }
 core = { path = "../core" }
-theming = { path = "../theming", features = ["tokio"] }
-state = { path = "../state" }
-plugin = { path = "../plugin" }
+theming = { path = "../theming" }
 lazy_static = { workspace = true }
-tokio = { workspace = true }
 iced = { workspace = true }
 iced_aw = { workspace = true }
 log = { workspace = true }

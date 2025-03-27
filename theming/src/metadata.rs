@@ -16,7 +16,7 @@ pub struct ThemeMetadata<'a> {
 impl<'a> ThemeMetadata<'a> {
     #[cfg(feature = "load")]
     pub async fn from_file(path: &Path) -> Result<Self, ()> {
-        let file_content = tokio::fs::read_to_string(path).await.map_err(|_| ())?;
+        let file_content = async_std::fs::read_to_string(path).await.map_err(|_| ())?;
         let metadata = toml::from_str(&file_content).map_err(|_| ())?;
         Ok(metadata)
     }

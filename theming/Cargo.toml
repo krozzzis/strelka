@@ -8,10 +8,10 @@ authors = ["Nikita Shumov"]
 [dependencies]
 core = { path = "../core", features = ["iced", "serde"] }
 iced = { workspace = true, optional = true }
+async-std = { workspace = true }
 async-stream = { version = "^0.3", optional = true }
 futures-core = { version = "^0.3", optional = true }
 serde = { workspace = true, optional = true }
-tokio = { workspace = true, optional = true }
 toml = { workspace = true, optional = true }
 lazy_static = { workspace = true }
 log = { workspace = true }
@@ -21,6 +21,5 @@ default = ["iced", "load"]
 iced = ["dep:iced"]
 load = ["serde", "async", "toml"]
 serde = ["dep:serde"]
-tokio = ["dep:tokio"]
 toml = ["dep:toml"]
-async = ["dep:futures-core", "dep:async-stream", "tokio"]
+async = ["dep:futures-core", "dep:async-stream"]

@@ -1,10 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "gui", "theming", "widget", "plugin", "state", "config", "action"]
-
-[profile.dev-opt]
-inherits = "dev"
-opt_level = 1
+members = ["core", "gui", "theming", "widget", "config"]
 
 [profile.release]
 debug = true
@@ -19,18 +15,17 @@ strip = true
 log = "^0.4"
 env_logger = "^0.11"
 lazy_static = "^1.5"
-crossbeam = { version = "^0.8" }
-tokio = { version = "^1.40", features = ["fs", "io-util", "sync"] }
 serde = { version = "^1", features = ["derive"] }
 toml = { version = "^0.8" }
-iced_aw = { version = "0.11.0" }
-iced = { version = "0.13.0", features = [
+async-std = { version = "1.13" }
+iced_aw = { version = "0.12.0" }
+iced = { version = "0.13.1", features = [
   "advanced",
   "canvas",
   "lazy",
   "svg",
   "image",
-  "tokio",
+  "async-std",
   "wgpu",
   "tiny-skia",
 ]}

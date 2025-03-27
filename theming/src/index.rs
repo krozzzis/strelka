@@ -47,43 +47,44 @@ impl ThemeIndex {
         self.metadata.keys()
     }
 
-    /// Loads themes from a directory, parsing metadata for each theme.
-    pub async fn load_from_directory(path: impl AsRef<Path>) -> Result<Self, std::io::Error> {
-        let path = path.as_ref();
-        if path.is_dir() {
-            let mut dirs = tokio::fs::read_dir(path).await?;
-            let mut index = ThemeIndex::new();
-
-            // Process each subdirectory
-            while let Ok(Some(dir_entry)) = dirs.next_entry().await {
-                if dir_entry.file_type().await?.is_dir() {
-                    let metadata_file_path = {
-                        let mut path = dir_entry.path();
-                        path.push("metadata.toml");
-                        path
-                    };
-
-                    // Parse metadata from TOML file
-                    let metadata_content = tokio::fs::read_to_string(metadata_file_path).await?;
-                    let metadata: ThemeMetadata = ThemeMetadata {
-                        path: Some(Cow::Owned(dir_entry.path())),
-                        ..toml::from_str(&metadata_content).map_err(|e| {
-                            std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
-                        })?
-                    };
-
-                    index.add(metadata.id.clone(), metadata);
-                }
-            }
-
-            Ok(index)
-        } else {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::NotFound,
-                "Given path is not a directory",
-            ))
-        }
-    }
+    // Loads themes from a directory, parsing metadata for each theme.
+    // pub async fn load_from_directory(path: impl AsRef<Path>) -> Result<Self, std::io::Error> {
+    //     let path = path.as_ref();
+    //     if path.is_dir() {
+    //         let mut dirs = async_std::fs::read_dir(path).await?;
+    //         let mut index = ThemeIndex::new();
+    //
+    //         // Process each subdirectory
+    //         while let Ok(Some(dir_entry)) = dirs.next_entry().await {
+    //             if dir_entry.file_type().await?.is_dir() {
+    //                 let metadata_file_path = {
+    //                     let mut path = dir_entry.path();
+    //                     path.push("metadata.toml");
+    //                     path
+    //                 };
+    //
+    //                 // Parse metadata from TOML file
+    //                 let metadata_content =
+    //                     async_std::fs::read_to_string(metadata_file_path).await?;
+    //                 let metadata: ThemeMetadata = ThemeMetadata {
+    //                     path: Some(Cow::Owned(dir_entry.path())),
+    //                     ..toml::from_str(&metadata_content).map_err(|e| {
+    //                         std::io::Error::new(std::io::ErrorKind::InvalidData, e.to_string())
+    //                     })?
+    //                 };
+    //
+    //                 index.add(metadata.id.clone(), metadata);
+    //             }
+    //         }
+    //
+    //         Ok(index)
+    //     } else {
+    //         Err(std::io::Error::new(
+    //             std::io::ErrorKind::NotFound,
+    //             "Given path is not a directory",
+    //         ))
+    //     }
+    // }
 }
 
 #[cfg(test)]
