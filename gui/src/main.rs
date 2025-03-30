@@ -3,15 +3,16 @@
 use config::{AppConfig, GuiConfig, InterfaceMode};
 use iced::{
     keyboard::{on_key_press, Key},
-    widget::text,
+    widget::{center, column},
     window::{close, drag, get_oldest, maximize, minimize},
     Element, Settings, Subscription, Task,
 };
 
 use log::info;
 use theming::Theme;
+use widget::{button::Button, container::background};
 
-use core::{smol_str::SmolStr, Modifiers};
+use core::{smol_str::SmolStr, Color, Modifiers};
 
 static DEFAULT_THEME: &str = "core.dark";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
@@ -41,14 +42,37 @@ impl App {
                 theme_id: SmolStr::new(DEFAULT_THEME),
                 theme: Theme::default(),
                 interface_mode: InterfaceMode::Simplified,
-                scale_factor: 0.8,
+                scale_factor: 1.0,
             },
         };
 
-        let app = Self {
-            config,
-            theme: theming::FALLBACK,
-        };
+        let mut theme = Theme::new();
+        theme.insert("text.color", Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF));
+        theme.insert(
+            "button.active.background",
+            Color::new_hex(0x19, 0x19, 0x19, 0xFF),
+        );
+        theme.insert("button.active.text", Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF));
+        theme.insert("button.active.border", 10.0);
+        theme.insert(
+            "button.hover.background",
+            Color::new_hex(0x1D, 0x1D, 0x1D, 0xFF),
+        );
+        theme.insert("button.hover.text", Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF));
+        theme.insert(
+            "button.selected.background",
+            Color::new_hex(0x00, 0x00, 0x00, 0x00),
+        );
+        theme.insert(
+            "button.selected.text",
+            Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF),
+        );
+        theme.insert(
+            "container.background",
+            Color::new_hex(0x1D, 0x1D, 0x1D, 0xFF),
+        );
+
+        let app = Self { config, theme };
 
         info!("App constructor done");
         (app, Task::batch(startup_tasks))
@@ -82,11 +106,15 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, Theme> {
-        text("Hello").into()
+        background(center(column!(
+            Button::new("Button1").on_press(AppMessage::None),
+            iced::widget::Button::new("Button2").on_press(AppMessage::None),
+        )))
+        .into()
     }
 
     fn scale_factor(&self) -> f64 {
-        self.config.gui.scale_factor
+        self.config.gui.scale_factor as f64
     }
 
     fn theme(&self) -> Theme {

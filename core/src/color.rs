@@ -42,8 +42,18 @@ impl Color {
         b: 0.0,
         a: 0.0,
     };
+
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self { r, g, b, a }
+    }
+
+    pub const fn new_hex(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self {
+            r: r as f32 / 255.0,
+            g: g as f32 / 255.0,
+            b: b as f32 / 255.0,
+            a: a as f32 / 255.0,
+        }
     }
 
     fn parse(input: &str) -> Result<Self, String> {

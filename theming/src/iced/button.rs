@@ -1,3 +1,5 @@
+use core::{smol_str::SmolStr, Color};
+
 use iced::widget::button::{Catalog, Status, Style, StyleFn};
 
 use crate::Theme;
@@ -17,14 +19,14 @@ impl Catalog for Theme {
 pub fn primary(theme: &Theme, status: Status) -> Style {
     match status {
         Status::Hovered | Status::Pressed => Style {
-            background: Some(theme.primary_button.hover.background.into()),
-            text_color: theme.primary_button.hover.text.into(),
+            background: Some(theme.get_color_or_default(&SmolStr::new_static("button.hover.background"), Color::WHITE).into()),
+            text_color: theme.get_color_or_default(&SmolStr::new_static("button.hover.text"), Color::BLACK).into(),
             ..Default::default()
         },
 
         Status::Disabled | Status::Active => Style {
-            background: Some(theme.primary_button.active.background.into()),
-            text_color: theme.primary_button.active.text.into(),
+            background: Some(theme.get_color_or_default(&SmolStr::new_static("button.active.background"), Color::WHITE).into()),
+            text_color: theme.get_color_or_default(&SmolStr::new_static("button.active.text"), Color::BLACK).into(),
             ..Default::default()
         },
     }
@@ -33,14 +35,14 @@ pub fn primary(theme: &Theme, status: Status) -> Style {
 pub fn secondary(theme: &Theme, status: Status) -> Style {
     match status {
         Status::Hovered | Status::Pressed => Style {
-            background: Some(theme.secondary_button.hover.background.into()),
-            text_color: theme.secondary_button.hover.text.into(),
+            background: Some(theme.get_color_or_default(&SmolStr::new_static("secondary_button.hover.background"), Color::WHITE).into()),
+            text_color: theme.get_color_or_default(&SmolStr::new_static("secondary_button.hover.text"), Color::BLACK).into(),
             ..Default::default()
         },
 
         Status::Disabled | Status::Active => Style {
-            background: Some(theme.secondary_button.active.background.into()),
-            text_color: theme.secondary_button.active.text.into(),
+            background: Some(theme.get_color_or_default(&SmolStr::new_static("secondary_button.active.background"), Color::WHITE).into()),
+            text_color: theme.get_color_or_default(&SmolStr::new_static("secondary_button.active.text"), Color::BLACK).into(),
             ..Default::default()
         },
     }
@@ -49,14 +51,14 @@ pub fn secondary(theme: &Theme, status: Status) -> Style {
 pub fn text(theme: &Theme, status: Status) -> Style {
     match status {
         Status::Hovered | Status::Pressed => Style {
-            background: Some(theme.text_button.hover.background.into()),
-            text_color: theme.text_button.hover.text.into(),
+            background: Some(theme.get_color_or_default(&SmolStr::new_static("text_button.hover.background"), Color::WHITE).into()),
+            text_color: theme.get_color_or_default(&SmolStr::new_static("text_button.hover.text"), Color::BLACK).into(),
             ..Default::default()
         },
 
         Status::Disabled | Status::Active => Style {
-            background: Some(theme.text_button.active.background.into()),
-            text_color: theme.text_button.active.text.into(),
+            background: Some(theme.get_color_or_default(&SmolStr::new_static("text_button.active.background"), Color::WHITE).into()),
+            text_color: theme.get_color_or_default(&SmolStr::new_static("text_button.active.text"), Color::BLACK).into(),
             ..Default::default()
         },
     }

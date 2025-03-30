@@ -27,7 +27,7 @@ impl Config {
         self.data.insert(key, value);
     }
 
-    pub fn get_integer(&self, key: &Key) -> Option<i64> {
+    pub fn get_integer(&self, key: &Key) -> Option<i32> {
         if let Some(value) = self.get_value(key) {
             match value.value() {
                 Value::Integer(result) => Some(*result),
@@ -38,7 +38,7 @@ impl Config {
         }
     }
 
-    pub fn get_float(&self, key: &Key) -> Option<f64> {
+    pub fn get_float(&self, key: &Key) -> Option<f32> {
         if let Some(value) = self.get_value(key) {
             match value.value() {
                 Value::Float(result) => Some(*result),

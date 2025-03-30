@@ -1,458 +1,487 @@
-use iced::{widget::Button, Element};
+use core::smol_str::SmolStr;
 
+use iced::{
+    advanced::{
+        graphics::geometry::{self, Frame},
+        layout, mouse,
+        renderer::{self},
+        widget::{tree, Operation, Tree},
+        Clipboard, Layout, Shell, Widget,
+    },
+    event, touch,
+    widget::canvas::{self, path::Builder, Fill, Stroke},
+    Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
+};
 use theming::Theme;
-
-use crate::icon::Icon;
+use theming::{Border, Color, Font, Margin};
 
 pub fn primary_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
-) -> Button<'a, Message, Theme> {
-    Button::new(content).style(theming::iced::button::primary)
+) -> iced::widget::Button<'a, Message, Theme> {
+    iced::widget::Button::new(content).style(theming::iced::button::primary)
 }
 
 pub fn secondary_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
-) -> Button<'a, Message, Theme> {
-    Button::new(content).style(theming::iced::button::secondary)
+) -> iced::widget::Button<'a, Message, Theme> {
+    iced::widget::Button::new(content).style(theming::iced::button::secondary)
 }
 
 pub fn text_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
-) -> Button<'a, Message, Theme> {
-    Button::new(content).style(theming::iced::button::secondary)
+) -> iced::widget::Button<'a, Message, Theme> {
+    iced::widget::Button::new(content).style(theming::iced::button::secondary)
 }
 
-pub fn icon_button<'a, Message>(icon: Icon) -> a::Button<'a, Message, iced::Renderer> {
-    a::Button::new(icon.svg().width(36.0).height(36.0)).padding(0)
+#[derive(Debug, Clone)]
+pub struct Style {
+    pub background: Color,
+    pub margin: Margin,
+    pub border: Border,
+    pub font: Font,
 }
 
-pub mod a {
-    use iced::{
-        advanced::{
-            graphics::geometry::{self, Frame},
-            layout, mouse,
-            renderer::{self},
-            widget::{tree, Operation, Tree},
-            Clipboard, Layout, Shell, Widget,
-        },
-        event, touch,
-        widget::canvas::{self, path::Builder, Fill, Stroke},
-        Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
-    };
-    use theming::{Border, Color, Font, Margin, Theme};
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+struct State {
+    is_pressed: bool,
+}
 
-    #[derive(Debug, Clone)]
-    pub struct Style {
-        pub background: Color,
-        pub margin: Margin,
-        pub border: Border,
-        pub font: Font,
-    }
+pub struct Button<'a, Message, Renderer> {
+    content: Element<'a, Message, Theme, Renderer>,
+    padding: Padding,
+    selected: bool,
+    height: Length,
+    width: Length,
+    on_press: Option<Message>,
+}
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-    struct State {
-        is_pressed: bool,
-    }
-
-    pub struct Button<'a, Message, Renderer> {
-        content: Element<'a, Message, Theme, Renderer>,
-        padding: Padding,
-        selected: bool,
-        height: Length,
-        width: Length,
-        on_press: Option<Message>,
-    }
-
-    impl<'a, Message, Renderer: iced::advanced::Renderer> Button<'a, Message, Renderer> {
-        pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
-            let content = content.into();
-            let content_size = content.as_widget().size_hint();
-            Self {
-                content,
-                selected: false,
-                padding: Padding::new(5.0),
-                height: content_size.height.fluid(),
-                width: content_size.width.fluid(),
-                on_press: None,
-            }
-        }
-
-        pub fn height(mut self, value: impl Into<Length>) -> Self {
-            self.height = value.into();
-            self
-        }
-
-        pub fn width(mut self, value: impl Into<Length>) -> Self {
-            self.width = value.into();
-            self
-        }
-
-        pub fn padding(mut self, value: impl Into<Padding>) -> Self {
-            self.padding = value.into();
-            self
-        }
-
-        pub fn selected(mut self, selected: bool) -> Self {
-            self.selected = selected;
-            self
-        }
-
-        pub fn on_press(mut self, message: Message) -> Self {
-            self.on_press = Some(message);
-            self
-        }
-
-        pub fn on_press_maybe(mut self, message: Option<Message>) -> Self {
-            self.on_press = message;
-            self
+impl<'a, Message, Renderer: iced::advanced::Renderer> Button<'a, Message, Renderer> {
+    pub fn new(content: impl Into<Element<'a, Message, Theme, Renderer>>) -> Self {
+        let content = content.into();
+        let content_size = content.as_widget().size_hint();
+        Self {
+            content,
+            selected: false,
+            padding: Padding::new(5.0),
+            height: content_size.height.fluid(),
+            width: content_size.width.fluid(),
+            on_press: None,
         }
     }
 
-    impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> for Button<'a, Message, Renderer>
-    where
-        Message: Clone + 'a,
-        Renderer: geometry::Renderer,
-    {
-        fn tag(&self) -> tree::Tag {
-            tree::Tag::of::<State>()
-        }
+    pub fn height(mut self, value: impl Into<Length>) -> Self {
+        self.height = value.into();
+        self
+    }
 
-        fn state(&self) -> tree::State {
-            tree::State::new(State::default())
-        }
+    pub fn width(mut self, value: impl Into<Length>) -> Self {
+        self.width = value.into();
+        self
+    }
 
-        fn size(&self) -> Size<Length> {
-            Size::new(self.width, self.height)
-        }
+    pub fn padding(mut self, value: impl Into<Padding>) -> Self {
+        self.padding = value.into();
+        self
+    }
 
-        fn children(&self) -> Vec<Tree> {
-            vec![Tree::new(&self.content)]
-        }
+    pub fn selected(mut self, selected: bool) -> Self {
+        self.selected = selected;
+        self
+    }
 
-        fn diff(&self, tree: &mut Tree) {
-            tree.diff_children(std::slice::from_ref(&self.content));
-        }
+    pub fn on_press(mut self, message: Message) -> Self {
+        self.on_press = Some(message);
+        self
+    }
 
-        fn layout(
-            &self,
-            tree: &mut Tree,
-            renderer: &Renderer,
-            limits: &layout::Limits,
-        ) -> layout::Node {
-            layout::padded(limits, self.width, self.height, self.padding, |limits| {
-                self.content
-                    .as_widget()
-                    .layout(&mut tree.children[0], renderer, limits)
-            })
-        }
+    pub fn on_press_maybe(mut self, message: Option<Message>) -> Self {
+        self.on_press = message;
+        self
+    }
+}
 
-        fn operate(
-            &self,
-            tree: &mut Tree,
-            layout: Layout<'_>,
-            renderer: &Renderer,
-            operation: &mut dyn Operation,
-        ) {
-            operation.container(None, layout.bounds(), &mut |operation| {
-                self.content.as_widget().operate(
-                    &mut tree.children[0],
-                    layout.children().next().unwrap(),
-                    renderer,
-                    operation,
-                );
-            });
-        }
+impl<'a, Message, Renderer> Widget<Message, Theme, Renderer> for Button<'a, Message, Renderer>
+where
+    Message: Clone + 'a,
+    Renderer: geometry::Renderer,
+{
+    fn tag(&self) -> tree::Tag {
+        tree::Tag::of::<State>()
+    }
 
-        fn on_event(
-            &mut self,
-            tree: &mut Tree,
-            event: Event,
-            layout: Layout<'_>,
-            cursor: mouse::Cursor,
-            renderer: &Renderer,
-            clipboard: &mut dyn Clipboard,
-            shell: &mut Shell<'_, Message>,
-            viewport: &Rectangle,
-        ) -> event::Status {
-            if let event::Status::Captured = self.content.as_widget_mut().on_event(
+    fn state(&self) -> tree::State {
+        tree::State::new(State::default())
+    }
+
+    fn size(&self) -> Size<Length> {
+        Size::new(self.width, self.height)
+    }
+
+    fn children(&self) -> Vec<Tree> {
+        vec![Tree::new(&self.content)]
+    }
+
+    fn diff(&self, tree: &mut Tree) {
+        tree.diff_children(std::slice::from_ref(&self.content));
+    }
+
+    fn layout(
+        &self,
+        tree: &mut Tree,
+        renderer: &Renderer,
+        limits: &layout::Limits,
+    ) -> layout::Node {
+        layout::padded(limits, self.width, self.height, self.padding, |limits| {
+            self.content
+                .as_widget()
+                .layout(&mut tree.children[0], renderer, limits)
+        })
+    }
+
+    fn operate(
+        &self,
+        tree: &mut Tree,
+        layout: Layout<'_>,
+        renderer: &Renderer,
+        operation: &mut dyn Operation,
+    ) {
+        operation.container(None, layout.bounds(), &mut |operation| {
+            self.content.as_widget().operate(
                 &mut tree.children[0],
-                event.clone(),
                 layout.children().next().unwrap(),
-                cursor,
                 renderer,
-                clipboard,
-                shell,
-                viewport,
-            ) {
-                return event::Status::Captured;
-            }
+                operation,
+            );
+        });
+    }
 
-            match event {
-                Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
-                | Event::Touch(touch::Event::FingerPressed { .. }) => {
-                    let bounds = layout.bounds();
-
-                    if cursor.is_over(bounds) {
-                        let state = tree.state.downcast_mut::<State>();
-
-                        state.is_pressed = true;
-
-                        return event::Status::Captured;
-                    }
-                }
-                Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
-                | Event::Touch(touch::Event::FingerLifted { .. }) => {
-                    let state = tree.state.downcast_mut::<State>();
-
-                    if state.is_pressed {
-                        state.is_pressed = false;
-
-                        if let Some(on_press) = self.on_press.clone() {
-                            if cursor.is_over(layout.bounds()) {
-                                shell.publish(on_press);
-                            }
-                        }
-
-                        return event::Status::Captured;
-                    }
-                }
-                Event::Touch(touch::Event::FingerLost { .. }) => {
-                    let state = tree.state.downcast_mut::<State>();
-
-                    state.is_pressed = false;
-                }
-                _ => {}
-            }
-
-            event::Status::Ignored
-        }
-
-        fn mouse_interaction(
-            &self,
-            _tree: &Tree,
-            layout: Layout<'_>,
-            cursor: mouse::Cursor,
-            _viewport: &Rectangle,
-            _renderer: &Renderer,
-        ) -> mouse::Interaction {
-            let is_mouse_over = cursor.is_over(layout.bounds());
-
-            if is_mouse_over && self.on_press.is_some() {
-                mouse::Interaction::Pointer
-            } else {
-                mouse::Interaction::default()
-            }
-        }
-
-        fn draw(
-            &self,
-            tree: &Tree,
-            renderer: &mut Renderer,
-            theme: &Theme,
-            style_: &renderer::Style,
-            layout: Layout<'_>,
-            cursor: mouse::Cursor,
-            viewport: &Rectangle,
+    fn on_event(
+        &mut self,
+        tree: &mut Tree,
+        event: Event,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        renderer: &Renderer,
+        clipboard: &mut dyn Clipboard,
+        shell: &mut Shell<'_, Message>,
+        viewport: &Rectangle,
+    ) -> event::Status {
+        if let event::Status::Captured = self.content.as_widget_mut().on_event(
+            &mut tree.children[0],
+            event.clone(),
+            layout.children().next().unwrap(),
+            cursor,
+            renderer,
+            clipboard,
+            shell,
+            viewport,
         ) {
-            let is_mouse_over = cursor.is_over(layout.bounds());
+            return event::Status::Captured;
+        }
 
-            let status = if is_mouse_over {
-                let state = tree.state.downcast_ref::<State>();
+        match event {
+            Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerPressed { .. }) => {
+                let bounds = layout.bounds();
+
+                if cursor.is_over(bounds) {
+                    let state = tree.state.downcast_mut::<State>();
+
+                    state.is_pressed = true;
+
+                    return event::Status::Captured;
+                }
+            }
+            Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
+            | Event::Touch(touch::Event::FingerLifted { .. }) => {
+                let state = tree.state.downcast_mut::<State>();
+
                 if state.is_pressed {
-                    Status::Pressed
-                } else {
-                    Status::Hovered
+                    state.is_pressed = false;
+
+                    if let Some(on_press) = self.on_press.clone() {
+                        if cursor.is_over(layout.bounds()) {
+                            shell.publish(on_press);
+                        }
+                    }
+
+                    return event::Status::Captured;
                 }
+            }
+            Event::Touch(touch::Event::FingerLost { .. }) => {
+                let state = tree.state.downcast_mut::<State>();
+
+                state.is_pressed = false;
+            }
+            _ => {}
+        }
+
+        event::Status::Ignored
+    }
+
+    fn mouse_interaction(
+        &self,
+        _tree: &Tree,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        _viewport: &Rectangle,
+        _renderer: &Renderer,
+    ) -> mouse::Interaction {
+        let is_mouse_over = cursor.is_over(layout.bounds());
+
+        if is_mouse_over && self.on_press.is_some() {
+            mouse::Interaction::Pointer
+        } else {
+            mouse::Interaction::default()
+        }
+    }
+
+    fn draw(
+        &self,
+        tree: &Tree,
+        renderer: &mut Renderer,
+        theme: &Theme,
+        style_: &renderer::Style,
+        layout: Layout<'_>,
+        cursor: mouse::Cursor,
+        viewport: &Rectangle,
+    ) {
+        let is_mouse_over = cursor.is_over(layout.bounds());
+
+        let status = if is_mouse_over {
+            let state = tree.state.downcast_ref::<State>();
+            if state.is_pressed {
+                Status::Pressed
             } else {
-                Status::Active
-            };
+                Status::Hovered
+            }
+        } else {
+            Status::Active
+        };
 
-            let style = if self.selected {
-                Style {
-                    background: theme.tab.selected.background,
-                    border: theme.tab.selected.border.clone(),
-                    margin: theme.tab.selected.margin,
-                    font: theme.tab.selected.font.clone(),
-                }
-            } else {
-                match status {
-                    Status::Active => Style {
-                        background: theme.tab.active.background,
-                        border: theme.tab.active.border.clone(),
-                        margin: theme.tab.active.margin,
-                        font: theme.tab.active.font.clone(),
-                    },
-                    Status::Hovered => Style {
-                        background: theme.tab.hover.background,
-                        border: theme.tab.hover.border.clone(),
-                        margin: theme.tab.hover.margin,
-                        font: theme.tab.hover.font.clone(),
-                    },
-                    Status::Pressed => Style {
-                        background: theme.tab.hover.background,
-                        border: theme.tab.hover.border.clone(),
-                        margin: theme.tab.hover.margin,
-                        font: theme.tab.hover.font.clone(),
-                    },
-                }
-            };
-
-            let radius = style.border.radius.clone();
-
-            // Calculate the total widget bounds including border and negative radius offsets
-            let border_width = style.border.width;
-            let left_offset = if radius.bottom_left < 0.0 {
-                radius.bottom_left.abs()
-            } else {
-                0.0
-            };
-            let right_offset = if radius.bottom_right < 0.0 {
-                radius.bottom_left.abs()
-            } else {
-                0.0
-            };
-
-            let widget_bounds = Size::new(
-                layout.bounds().width + border_width * 2.0 + left_offset + right_offset,
-                layout.bounds().height + border_width * 2.0,
-            );
-
-            // Calculate the content area bounds accounting for margins
-            let content_origin = Point::new(left_offset + style.margin.left, style.margin.top);
-
-            let content_bounds = Rectangle::new(
-                content_origin,
-                Size::new(
-                    layout.bounds().width - style.margin.left - style.margin.right,
-                    layout.bounds().height - style.margin.top - style.margin.bottom,
+        let style = if self.selected {
+            Style {
+                background: theme.get_color_or_default(
+                    &SmolStr::new_static("button.selected.background"),
+                    Color::WHITE,
                 ),
-            );
-
-            // Draw the button shape
-            let mut frame = Frame::new(renderer, widget_bounds);
-            let mut builder = Builder::new();
-
-            // Top line
-            builder.move_to(Point::new(
-                content_bounds.x + radius.top_left,
-                content_bounds.y,
-            ));
-            builder.line_to(Point::new(
-                content_bounds.x + content_bounds.width - radius.top_right,
-                content_bounds.y,
-            ));
-
-            // Top right arc
-            builder.arc_to(
-                Point::new(content_bounds.x + content_bounds.width, content_bounds.y),
-                Point::new(
-                    content_bounds.x + content_bounds.width,
-                    content_bounds.y + content_bounds.height - radius.bottom_right.abs(),
+                border: Border::with_radius(
+                    theme.get_float_or_default(&SmolStr::new_static("button.selected.border"), 4.0)
+                        as f32,
                 ),
-                radius.top_right.abs(),
-            );
-
-            // Bottom right arc
-            builder.arc_to(
-                Point::new(
-                    content_bounds.x + content_bounds.width,
-                    content_bounds.y + content_bounds.height,
+                margin: Margin::new(
+                    theme.get_float_or_default(&SmolStr::new_static("button.selected.margin"), 0.0)
+                        as f32,
                 ),
-                Point::new(
-                    content_bounds.x + content_bounds.width - radius.bottom_right,
-                    content_bounds.y + content_bounds.height,
-                ),
-                radius.bottom_right.abs(),
-            );
+                font: Font::SANS_SERIF,
+            }
+        } else {
+            match status {
+                Status::Active => Style {
+                    background: theme.get_color_or_default(
+                        &SmolStr::new_static("button.active.background"),
+                        Color::WHITE,
+                    ),
+                    border: Border::with_radius(
+                        theme
+                            .get_float_or_default(&SmolStr::new_static("button.active.border"), 4.0)
+                            as f32,
+                    ),
+                    margin: Margin::new(
+                        theme
+                            .get_float_or_default(&SmolStr::new_static("button.active.margin"), 0.0)
+                            as f32,
+                    ),
+                    font: Font::SANS_SERIF,
+                },
+                Status::Hovered => Style {
+                    background: theme.get_color_or_default(
+                        &SmolStr::new_static("button.hover.background"),
+                        Color::WHITE,
+                    ),
+                    border: Border::with_radius(
+                        theme.get_float_or_default(&SmolStr::new_static("button.hover.border"), 4.0)
+                            as f32,
+                    ),
+                    margin: Margin::new(
+                        theme.get_float_or_default(&SmolStr::new_static("button.hover.margin"), 0.0)
+                            as f32,
+                    ),
+                    font: Font::SANS_SERIF,
+                },
+                Status::Pressed => Style {
+                    background: theme.get_color_or_default(
+                        &SmolStr::new_static("button.hover.background"),
+                        Color::WHITE,
+                    ),
+                    border: Border::with_radius(
+                        theme.get_float_or_default(&SmolStr::new_static("button.hover.border"), 4.0)
+                            as f32,
+                    ),
+                    margin: Margin::new(
+                        theme.get_float_or_default(&SmolStr::new_static("button.hover.margin"), 0.0)
+                            as f32,
+                    ),
+                    font: Font::SANS_SERIF,
+                },
+            }
+        };
 
-            // Bottom line
-            builder.line_to(Point::new(
-                content_bounds.x + radius.bottom_left,
+        let radius = style.border.radius.clone();
+
+        // Calculate the total widget bounds including border and negative radius offsets
+        let border_width = style.border.width;
+        let left_offset = if radius.bottom_left < 0.0 {
+            radius.bottom_left.abs()
+        } else {
+            0.0
+        };
+        let right_offset = if radius.bottom_right < 0.0 {
+            radius.bottom_left.abs()
+        } else {
+            0.0
+        };
+
+        let widget_bounds = Size::new(
+            layout.bounds().width + border_width * 2.0 + left_offset + right_offset,
+            layout.bounds().height + border_width * 2.0,
+        );
+
+        // Calculate the content area bounds accounting for margins
+        let content_origin = Point::new(left_offset + style.margin.left, style.margin.top);
+
+        let content_bounds = Rectangle::new(
+            content_origin,
+            Size::new(
+                layout.bounds().width - style.margin.left - style.margin.right,
+                layout.bounds().height - style.margin.top - style.margin.bottom,
+            ),
+        );
+
+        // Draw the button shape
+        let mut frame = Frame::new(renderer, widget_bounds);
+        let mut builder = Builder::new();
+
+        // Top line
+        builder.move_to(Point::new(
+            content_bounds.x + radius.top_left,
+            content_bounds.y,
+        ));
+        builder.line_to(Point::new(
+            content_bounds.x + content_bounds.width - radius.top_right,
+            content_bounds.y,
+        ));
+
+        // Top right arc
+        builder.arc_to(
+            Point::new(content_bounds.x + content_bounds.width, content_bounds.y),
+            Point::new(
+                content_bounds.x + content_bounds.width,
+                content_bounds.y + content_bounds.height - radius.bottom_right.abs(),
+            ),
+            radius.top_right.abs(),
+        );
+
+        // Bottom right arc
+        builder.arc_to(
+            Point::new(
+                content_bounds.x + content_bounds.width,
                 content_bounds.y + content_bounds.height,
-            ));
+            ),
+            Point::new(
+                content_bounds.x + content_bounds.width - radius.bottom_right,
+                content_bounds.y + content_bounds.height,
+            ),
+            radius.bottom_right.abs(),
+        );
 
-            // Bottom left arc
-            builder.arc_to(
-                Point::new(content_bounds.x, content_bounds.y + content_bounds.height),
-                Point::new(
-                    content_bounds.x,
-                    content_bounds.y + content_bounds.height - radius.bottom_left.abs(),
-                ),
-                radius.bottom_left.abs(),
-            );
+        // Bottom line
+        builder.line_to(Point::new(
+            content_bounds.x + radius.bottom_left,
+            content_bounds.y + content_bounds.height,
+        ));
 
-            // Top left arc
-            builder.arc_to(
-                Point::new(content_bounds.x, content_bounds.y),
-                Point::new(content_bounds.x + radius.top_left, content_bounds.y),
-                radius.top_left.abs(),
-            );
+        // Bottom left arc
+        builder.arc_to(
+            Point::new(content_bounds.x, content_bounds.y + content_bounds.height),
+            Point::new(
+                content_bounds.x,
+                content_bounds.y + content_bounds.height - radius.bottom_left.abs(),
+            ),
+            radius.bottom_left.abs(),
+        );
 
-            let path = builder.build();
+        // Top left arc
+        builder.arc_to(
+            Point::new(content_bounds.x, content_bounds.y),
+            Point::new(content_bounds.x + radius.top_left, content_bounds.y),
+            radius.top_left.abs(),
+        );
 
-            // Draw background
-            frame.fill(
-                &path,
-                Fill {
-                    style: canvas::Style::Solid(style.background.into()),
-                    ..Default::default()
-                },
-            );
+        let path = builder.build();
 
-            // Draw border
-            frame.stroke(
-                &path,
-                Stroke {
-                    style: canvas::Style::Solid(style.border.color.into()),
-                    width: border_width,
-                    ..Default::default()
-                },
-            );
+        // Draw background
+        frame.fill(
+            &path,
+            Fill {
+                style: canvas::Style::Solid(style.background.into()),
+                ..Default::default()
+            },
+        );
 
-            let content_layout = layout.children().next().unwrap();
+        // Draw border
+        frame.stroke(
+            &path,
+            Stroke {
+                style: canvas::Style::Solid(style.border.color.into()),
+                width: border_width,
+                ..Default::default()
+            },
+        );
 
-            // Draw the frame with proper translation
-            let geometry = frame.into_geometry();
-            renderer.with_translation(
-                Vector::new(
-                    layout.bounds().x - content_bounds.x,
-                    layout.bounds().y - content_bounds.y,
-                ),
-                |renderer| {
-                    renderer.draw_geometry(geometry);
-                },
-            );
+        let content_layout = layout.children().next().unwrap();
 
-            // Draw the content
-            self.content.as_widget().draw(
-                &tree.children[0],
-                renderer,
-                theme,
-                &renderer::Style {
-                    text_color: style_.text_color,
-                },
-                content_layout,
-                cursor,
-                viewport,
-            );
-        }
+        // Draw the frame with proper translation
+        let geometry = frame.into_geometry();
+        renderer.with_translation(
+            Vector::new(
+                layout.bounds().x - content_bounds.x,
+                layout.bounds().y - content_bounds.y,
+            ),
+            |renderer| {
+                renderer.draw_geometry(geometry);
+            },
+        );
+
+        // Draw the content
+        self.content.as_widget().draw(
+            &tree.children[0],
+            renderer,
+            theme,
+            &renderer::Style {
+                text_color: style_.text_color,
+            },
+            content_layout,
+            cursor,
+            viewport,
+        );
     }
+}
 
-    impl<'a, Message, Renderer> From<Button<'a, Message, Renderer>>
-        for Element<'a, Message, Theme, Renderer>
-    where
-        Message: Clone + 'a,
-        Renderer: geometry::Renderer + 'a,
-    {
-        fn from(button: Button<'a, Message, Renderer>) -> Self {
-            Self::new(button)
-        }
+impl<'a, Message, Renderer> From<Button<'a, Message, Renderer>>
+    for Element<'a, Message, Theme, Renderer>
+where
+    Message: Clone + 'a,
+    Renderer: geometry::Renderer + 'a,
+{
+    fn from(button: Button<'a, Message, Renderer>) -> Self {
+        Self::new(button)
     }
+}
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-    pub enum Status {
-        Active,
-        Hovered,
-        Pressed,
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Status {
+    Active,
+    Hovered,
+    Pressed,
 }

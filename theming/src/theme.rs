@@ -1,67 +1,47 @@
-use std::{borrow::Cow, path::Path};
+use core::{smol_str::SmolStr, value::Value, Color};
+use std::{collections::HashMap, path::PathBuf};
 
-use crate::styles::{
-    button::Button, context_menu::ContextMenu, editor::Editor, file_explorer::FileExplorer,
-    generic::Generic, list::List, list_item::ListItem, notification::Notification,
-    notification_list::NotificationList, tab::Tab, tab_bar::TabBar,
-};
+use iced::daemon::{Appearance, DefaultStyle};
 
-#[cfg(feature = "iced")]
-use iced::application::{Appearance, DefaultStyle};
-
-#[cfg(feature = "load")]
-use serde::{Deserialize, Serialize};
-
-pub const FALLBACK: Theme = Theme {
-    primary_button: Button::FALLBACK,
-    secondary_button: Button::FALLBACK,
-    text_button: Button::FALLBACK,
-    tab: Tab::FALLBACK,
-    tab_bar: TabBar::FALLBACK,
-    list_item: ListItem::FALLBACK,
-    list: List::FALLBACK,
-    editor: Editor::FALLBACK,
-    notification: Notification::FALLBACK,
-    notification_list: NotificationList::FALLBACK,
-    context_menu: ContextMenu::FALLBACK,
-    file_explorer: FileExplorer::FALLBACK,
-    generic: Generic::FALLBACK,
-};
-
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
+#[derive(Debug, Default, Clone)]
 pub struct Theme {
-    // Buttons
-    pub primary_button: Button,
-    pub secondary_button: Button,
-    pub text_button: Button,
-
-    // Tabs
-    pub tab: Tab,
-    pub tab_bar: TabBar,
-
-    // List
-    pub list_item: ListItem,
-    pub list: List,
-
-    // Notifications
-    pub notification: Notification,
-    pub notification_list: NotificationList,
-
-    pub editor: Editor,
-    pub context_menu: ContextMenu,
-    pub file_explorer: FileExplorer,
-    pub generic: Generic,
+    stylesheet: HashMap<SmolStr, Value>,
 }
 
 impl Theme {
-    #[cfg(feature = "load")]
-    pub async fn from_file(path: impl AsRef<async_std::path::Path>) -> Result<Theme, String> {
-        let text = async_std::fs::read_to_string(path)
-            .await
-            .map_err(|e| e.to_string())?;
-        let theme: Theme = toml::from_str(&text).map_err(|e| e.to_string())?;
-        Ok(theme)
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn insert(&mut self, key: impl Into<SmolStr>, value: impl Into<Value>) {
+        self.stylesheet.insert(key.into(), value.into());
+    }
+
+    pub fn get(&self, key: &SmolStr) -> Option<&Value> {
+        self.stylesheet.get(key)
+    }
+    pub fn get_integer_or_default(&self, key: &SmolStr, default: i32) -> i32 {
+        self.get(key).and_then(Value::as_integer).unwrap_or(default)
+    }
+
+    pub fn get_float_or_default(&self, key: &SmolStr, default: f32) -> f32 {
+        self.get(key).and_then(Value::as_float).unwrap_or(default)
+    }
+
+    pub fn get_boolean_or_default(&self, key: &SmolStr, default: bool) -> bool {
+        self.get(key).and_then(Value::as_boolean).unwrap_or(default)
+    }
+
+    pub fn get_color_or_default(&self, key: &SmolStr, default: Color) -> Color {
+        self.get(key).and_then(Value::as_color).unwrap_or(default)
+    }
+
+    pub fn get_path_or_default<'a>(&'a self, key: &SmolStr, default: &'a PathBuf) -> &'a PathBuf {
+        self.get(key).and_then(Value::as_path).unwrap_or(default)
+    }
+
+    pub fn get_string_or_default<'a>(&'a self, key: &SmolStr, default: &'a SmolStr) -> &'a SmolStr {
+        self.get(key).and_then(Value::as_string).unwrap_or(default)
     }
 }
 
@@ -69,20 +49,8 @@ impl Theme {
 impl DefaultStyle for Theme {
     fn default_style(&self) -> Appearance {
         Appearance {
-            background_color: self.generic.background.into(),
-            text_color: self.generic.text.into(),
+            background_color: self.get_color_or_default(&SmolStr::new_static("background.color"), Color::WHITE).into(),
+            text_color: self.get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK).into(),
         }
     }
-}
-
-impl Default for Theme {
-    fn default() -> Self {
-        FALLBACK
-    }
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Info<'a> {
-    pub name: Cow<'a, str>,
-    pub description: Cow<'a, str>,
 }
