@@ -1,8 +1,4 @@
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Margin {
     pub left: f32,
     pub top: f32,

@@ -9,10 +9,10 @@ use iced::{
 };
 
 use log::info;
-use theming::Theme;
+use theming::{stylesheet::StyleSheet, Theme};
 use widget::{button::Button, container::background};
 
-use core::{smol_str::SmolStr, Color, Modifiers};
+use core::{smol_str::SmolStr, Modifiers};
 
 static DEFAULT_THEME: &str = "core.dark";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
@@ -30,12 +30,13 @@ pub enum AppMessage {
     WindowMaximize,
     WindowMinimize,
     WindowCollapse,
+    SetTheme(Theme),
     None,
 }
 
 impl App {
     fn new() -> (Self, Task<AppMessage>) {
-        let startup_tasks = Vec::new();
+        let mut startup_tasks = Vec::new();
 
         let config = AppConfig {
             gui: GuiConfig {
@@ -46,33 +47,19 @@ impl App {
             },
         };
 
-        let mut theme = Theme::new();
-        theme.insert("text.color", Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF));
-        theme.insert(
-            "button.active.background",
-            Color::new_hex(0x19, 0x19, 0x19, 0xFF),
-        );
-        theme.insert("button.active.text", Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF));
-        theme.insert("button.active.border", 10.0);
-        theme.insert(
-            "button.hover.background",
-            Color::new_hex(0x1D, 0x1D, 0x1D, 0xFF),
-        );
-        theme.insert("button.hover.text", Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF));
-        theme.insert(
-            "button.selected.background",
-            Color::new_hex(0x00, 0x00, 0x00, 0x00),
-        );
-        theme.insert(
-            "button.selected.text",
-            Color::new_hex(0xDD, 0xDD, 0xDD, 0xFF),
-        );
-        theme.insert(
-            "container.background",
-            Color::new_hex(0x1D, 0x1D, 0x1D, 0xFF),
-        );
+        let app = Self {
+            config,
+            theme: Theme::default(),
+        };
 
-        let app = Self { config, theme };
+        let task = Task::perform(StyleSheet::load("./themes/dark/theme.kdl"), |stylesheet| {
+            if let Ok(stylesheet) = stylesheet {
+                AppMessage::SetTheme(Theme::from_stylesheet(stylesheet))
+            } else {
+                AppMessage::None
+            }
+        });
+        startup_tasks.push(task);
 
         info!("App constructor done");
         (app, Task::batch(startup_tasks))
@@ -87,6 +74,10 @@ impl App {
 
         match message {
             AppMessage::None => {}
+
+            AppMessage::SetTheme(theme) => {
+                self.theme = theme;
+            }
 
             AppMessage::OnKeyPress(key, modifiers) => {
                 if let Some(message) = self.on_key_press(key, modifiers) {
@@ -114,7 +105,7 @@ impl App {
     }
 
     fn scale_factor(&self) -> f64 {
-        self.config.gui.scale_factor as f64
+        self.config.gui.scale_factor
     }
 
     fn theme(&self) -> Theme {

@@ -1,17 +1,10 @@
 use std::borrow::Cow;
 
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Font {
     pub family: Cow<'static, str>,
-    #[serde(default)]
     pub weight: Weight,
-    #[serde(default)]
     pub style: Style,
-    #[serde(default)]
     pub size: f32,
 }
 
@@ -36,7 +29,6 @@ impl Default for Font {
 }
 
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Weight {
     Light,
     #[default]
@@ -46,7 +38,6 @@ pub enum Weight {
 }
 
 #[derive(Debug, Default, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Style {
     #[default]
     Normal,

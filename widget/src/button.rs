@@ -12,7 +12,7 @@ use iced::{
     widget::canvas::{self, path::Builder, Fill, Stroke},
     Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
 };
-use theming::Theme;
+use theming::{stylesheet::ButtonStyle, Theme};
 use theming::{Border, Color, Font, Margin};
 
 pub fn primary_button<'a, Message>(
@@ -266,64 +266,42 @@ where
                     Color::WHITE,
                 ),
                 border: Border::with_radius(
-                    theme.get_float_or_default(&SmolStr::new_static("button.selected.border"), 4.0)
-                        as f32,
+                    theme.get_float_or_default(&SmolStr::new_static("button.selected.border"), 4.0),
                 ),
                 margin: Margin::new(
-                    theme.get_float_or_default(&SmolStr::new_static("button.selected.margin"), 0.0)
-                        as f32,
+                    theme.get_float_or_default(&SmolStr::new_static("button.selected.margin"), 0.0),
                 ),
                 font: Font::SANS_SERIF,
             }
         } else {
             match status {
-                Status::Active => Style {
-                    background: theme.get_color_or_default(
-                        &SmolStr::new_static("button.active.background"),
-                        Color::WHITE,
-                    ),
-                    border: Border::with_radius(
-                        theme
-                            .get_float_or_default(&SmolStr::new_static("button.active.border"), 4.0)
-                            as f32,
-                    ),
-                    margin: Margin::new(
-                        theme
-                            .get_float_or_default(&SmolStr::new_static("button.active.margin"), 0.0)
-                            as f32,
-                    ),
-                    font: Font::SANS_SERIF,
-                },
-                Status::Hovered => Style {
-                    background: theme.get_color_or_default(
-                        &SmolStr::new_static("button.hover.background"),
-                        Color::WHITE,
-                    ),
-                    border: Border::with_radius(
-                        theme.get_float_or_default(&SmolStr::new_static("button.hover.border"), 4.0)
-                            as f32,
-                    ),
-                    margin: Margin::new(
-                        theme.get_float_or_default(&SmolStr::new_static("button.hover.margin"), 0.0)
-                            as f32,
-                    ),
-                    font: Font::SANS_SERIF,
-                },
-                Status::Pressed => Style {
-                    background: theme.get_color_or_default(
-                        &SmolStr::new_static("button.hover.background"),
-                        Color::WHITE,
-                    ),
-                    border: Border::with_radius(
-                        theme.get_float_or_default(&SmolStr::new_static("button.hover.border"), 4.0)
-                            as f32,
-                    ),
-                    margin: Margin::new(
-                        theme.get_float_or_default(&SmolStr::new_static("button.hover.margin"), 0.0)
-                            as f32,
-                    ),
-                    font: Font::SANS_SERIF,
-                },
+                Status::Active => {
+                    let style: ButtonStyle = theme.get_style("button.active");
+                    Style {
+                        background: style.background,
+                        border: Border::with_radius(style.border_radius),
+                        margin: Margin::new(0.0),
+                        font: Font::SANS_SERIF,
+                    }
+                }
+                Status::Hovered => {
+                    let style: ButtonStyle = theme.get_style("button.hover");
+                    Style {
+                        background: style.background,
+                        border: Border::with_radius(style.border_radius),
+                        margin: Margin::new(0.0),
+                        font: Font::SANS_SERIF,
+                    }
+                }
+                Status::Pressed => {
+                    let style: ButtonStyle = theme.get_style("button.selected");
+                    Style {
+                        background: style.background,
+                        border: Border::with_radius(style.border_radius),
+                        margin: Margin::new(0.0),
+                        font: Font::SANS_SERIF,
+                    }
+                }
             }
         };
 

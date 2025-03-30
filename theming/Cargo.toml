@@ -9,17 +9,9 @@ authors = ["Nikita Shumov"]
 core = { path = "../core", features = ["iced", "serde"] }
 iced = { workspace = true, optional = true }
 async-std = { workspace = true }
-async-stream = { version = "^0.3", optional = true }
-futures-core = { version = "^0.3", optional = true }
-serde = { workspace = true, optional = true }
-toml = { workspace = true, optional = true }
-lazy_static = { workspace = true }
+kdl = { version = "^6.3" }
 log = { workspace = true }
 
 [features]
-default = ["iced", "load"]
+default = ["iced"]
 iced = ["dep:iced"]
-load = ["serde", "async", "toml"]
-serde = ["dep:serde"]
-toml = ["dep:toml"]
-async = ["dep:futures-core", "dep:async-stream"]

@@ -20,10 +20,7 @@ pub fn transparent(theme: &Theme) -> Style {
     Style {
         text_color: Some(
             theme
-                .get_color_or_default(
-                    &SmolStr::new_static("text.color"),
-                    Color::BLACK,
-                )
+                .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
                 .into(),
         ),
         background: None,
@@ -35,18 +32,12 @@ pub fn background(theme: &Theme) -> Style {
     Style {
         text_color: Some(
             theme
-                .get_color_or_default(
-                    &SmolStr::new_static("text.color"),
-                    Color::BLACK,
-                )
+                .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
                 .into(),
         ),
         background: Some(
             theme
-                .get_color_or_default(
-                    &SmolStr::new_static("container.background"),
-                    Color::WHITE,
-                )
+                .get_color_or_default(&SmolStr::new_static("container.background"), Color::WHITE)
                 .into(),
         ),
         ..Default::default()
@@ -57,18 +48,12 @@ pub fn background2(theme: &Theme) -> Style {
     Style {
         text_color: Some(
             theme
-                .get_color_or_default(
-                    &SmolStr::new_static("text.color"),
-                    Color::BLACK,
-                )
+                .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
                 .into(),
         ),
         background: Some(
             theme
-                .get_color_or_default(
-                    &SmolStr::new_static("container.background2"),
-                    Color::WHITE,
-                )
+                .get_color_or_default(&SmolStr::new_static("container.background2"), Color::WHITE)
                 .into(),
         ),
         ..Default::default()

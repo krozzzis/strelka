@@ -1,11 +1,13 @@
 use core::{smol_str::SmolStr, value::Value, Color};
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 
 use iced::daemon::{Appearance, DefaultStyle};
 
+use crate::stylesheet::{StyleConverter, StyleSheet};
+
 #[derive(Debug, Default, Clone)]
 pub struct Theme {
-    stylesheet: HashMap<SmolStr, Value>,
+    stylesheet: StyleSheet,
 }
 
 impl Theme {
@@ -13,13 +15,18 @@ impl Theme {
         Default::default()
     }
 
-    pub fn insert(&mut self, key: impl Into<SmolStr>, value: impl Into<Value>) {
-        self.stylesheet.insert(key.into(), value.into());
+    pub fn from_stylesheet(stylesheet: StyleSheet) -> Self {
+        Self { stylesheet }
     }
 
-    pub fn get(&self, key: &SmolStr) -> Option<&Value> {
-        self.stylesheet.get(key)
+    pub fn get(&self, path: &str) -> Option<&Value> {
+        self.stylesheet.get_value(path)
     }
+
+    pub fn get_style<T: StyleConverter>(&self, path: &str) -> T {
+        self.stylesheet.get_style(path)
+    }
+
     pub fn get_integer_or_default(&self, key: &SmolStr, default: i32) -> i32 {
         self.get(key).and_then(Value::as_integer).unwrap_or(default)
     }
@@ -49,8 +56,12 @@ impl Theme {
 impl DefaultStyle for Theme {
     fn default_style(&self) -> Appearance {
         Appearance {
-            background_color: self.get_color_or_default(&SmolStr::new_static("background.color"), Color::WHITE).into(),
-            text_color: self.get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK).into(),
+            background_color: self
+                .get_color_or_default(&SmolStr::new_static("background.color"), Color::WHITE)
+                .into(),
+            text_color: self
+                .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
+                .into(),
         }
     }
 }

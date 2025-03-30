@@ -3,8 +3,8 @@ mod font;
 #[cfg(feature = "iced")]
 pub mod iced;
 mod margin;
-pub mod metadata;
 mod padding;
+pub mod stylesheet;
 mod theme;
 
 pub use border::*;

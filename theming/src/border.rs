@@ -1,9 +1,6 @@
-use serde::{Deserialize, Serialize};
-
 use crate::Color;
 
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Radius {
     pub top_left: f32,
     pub top_right: f32,
@@ -64,7 +61,7 @@ impl From<Radius> for iced::border::Radius {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Border {
     pub radius: Radius,
     pub color: Color,

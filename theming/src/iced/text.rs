@@ -9,7 +9,11 @@ impl Catalog for Theme {
 
     fn default<'a>() -> Self::Class<'a> {
         Box::new(|theme: &Theme| Style {
-            color: Some(theme.get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK).into()),
+            color: Some(
+                theme
+                    .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
+                    .into(),
+            ),
         })
     }
 
