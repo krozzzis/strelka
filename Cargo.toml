@@ -2,6 +2,12 @@
 resolver = "2"
 members = ["core", "gui", "theming", "widget", "config"]
 
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
 [profile.release]
 debug = true
 

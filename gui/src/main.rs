@@ -1,6 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use config::{AppConfig, GuiConfig, InterfaceMode};
 use iced::{
     keyboard::{on_key_press, Key},
     widget::{center, column},
@@ -9,12 +8,15 @@ use iced::{
 };
 
 use log::info;
+use std::path::PathBuf;
 use theming::{stylesheet::StyleSheet, Theme};
+
+use config::{AppConfig, GuiConfig, InterfaceMode};
+use core::{smol_str::SmolStr, Modifiers};
 use widget::{button::Button, container::background};
 
-use core::{smol_str::SmolStr, Modifiers};
-
 static DEFAULT_THEME: &str = "core.dark";
+static THEME_PATH: &str = "./themes/dark/theme.kdl";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
@@ -31,6 +33,7 @@ pub enum AppMessage {
     WindowMinimize,
     WindowCollapse,
     SetTheme(Theme),
+    LoadTheme(PathBuf),
     None,
 }
 
@@ -52,13 +55,7 @@ impl App {
             theme: Theme::default(),
         };
 
-        let task = Task::perform(StyleSheet::load("./themes/dark/theme.kdl"), |stylesheet| {
-            if let Ok(stylesheet) = stylesheet {
-                AppMessage::SetTheme(Theme::from_stylesheet(stylesheet))
-            } else {
-                AppMessage::None
-            }
-        });
+        let task = Task::done(AppMessage::LoadTheme(THEME_PATH.into()));
         startup_tasks.push(task);
 
         info!("App constructor done");
@@ -77,6 +74,16 @@ impl App {
 
             AppMessage::SetTheme(theme) => {
                 self.theme = theme;
+            }
+
+            AppMessage::LoadTheme(path) => {
+                return Task::perform(StyleSheet::load(path), |stylesheet| {
+                    if let Ok(stylesheet) = stylesheet {
+                        AppMessage::SetTheme(Theme::from_stylesheet(stylesheet))
+                    } else {
+                        AppMessage::None
+                    }
+                });
             }
 
             AppMessage::OnKeyPress(key, modifiers) => {
@@ -136,6 +143,10 @@ impl App {
             } else {
                 Modifiers::None
             };
+
+            if *c == *SmolStr::new_static("r") {
+                return Some(AppMessage::LoadTheme(THEME_PATH.into()))
+            }
         }
         None
     }
