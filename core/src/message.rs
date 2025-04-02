@@ -1,6 +1,4 @@
-use std::sync::Arc;
-
-use crate::{smol_str::SmolStr, Theme};
+use crate::{smol_str::SmolStr, theme::Theme};
 
 #[derive(Debug, Clone)]
 pub enum Message {
@@ -16,5 +14,5 @@ pub enum CommandMessage {
 
 #[derive(Debug, Clone)]
 pub enum ThemeMessage {
-    SetTheme(Arc<dyn Theme>),
+    SetTheme(Theme),
 }

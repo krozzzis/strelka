@@ -105,8 +105,6 @@ impl StyleSheet {
         let mut stylesheet = StyleSheet::new();
         stylesheet.parse_kdl_document(&doc)?;
 
-        // println!("{stylesheet:#?}");
-
         Ok(stylesheet)
     }
 
@@ -222,7 +220,7 @@ impl Default for ButtonStyle {
 }
 
 impl StyleConverter for ButtonStyle {
-    fn from_theme(theme: &impl strelka_core::Theme, path: &str) -> Self {
+    fn from_theme(theme: &impl strelka_core::GenericTheme, path: &str) -> Self {
         let mut style = ButtonStyle::default();
 
         // Try to get background either as direct property or from child node

@@ -6,11 +6,12 @@ pub mod pane;
 pub mod value;
 pub mod message;
 pub mod theme;
+pub mod command;
 
 pub use color::*;
 pub use hotkey::*;
 pub use message::*;
-pub use theme::Theme;
+pub use theme::*;
 
 pub use smol_str;
 

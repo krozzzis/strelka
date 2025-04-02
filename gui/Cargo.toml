@@ -15,6 +15,7 @@ strelka_core = { path = "../core" }
 theming = { path = "../theming" }
 config = { path = "../config" }
 widget = { path = "../widget" }
+command = { path = "../command" }
 iced = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }

@@ -1,5 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
+use command::ThemeLoadCommand;
 use iced::{
     keyboard::{on_key_press, Key},
     widget::{center, column},
@@ -8,20 +8,21 @@ use iced::{
 };
 
 use log::info;
-use std::path::PathBuf;
-use theming::{stylesheet::StyleSheet, Theme};
+use theming::Theme;
+use std::sync::Arc;
 
 use config::{AppConfig, GuiConfig, InterfaceMode};
-use strelka_core::{smol_str::SmolStr, Modifiers};
+use strelka_core::{command::CommandRegistry, smol_str::SmolStr, Message, Modifiers, ThemeMessage};
+use strelka_core::{CommandMessage, GenericTheme, Theme as CoreTheme};
 use widget::{button::Button, container::background};
 
 static DEFAULT_THEME: &str = "core.dark";
-static THEME_PATH: &str = "./themes/dark/theme.kdl";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
     config: AppConfig,
-    theme: Theme,
+    theme: CoreTheme,
+    commands: CommandRegistry,
 }
 
 #[derive(Debug, Clone)]
@@ -32,8 +33,7 @@ pub enum AppMessage {
     WindowMaximize,
     WindowMinimize,
     WindowCollapse,
-    SetTheme(Theme),
-    LoadTheme(PathBuf),
+    CoreMessage(Message),
     None,
 }
 
@@ -44,18 +44,25 @@ impl App {
         let config = AppConfig {
             gui: GuiConfig {
                 theme_id: SmolStr::new(DEFAULT_THEME),
-                theme: Theme::default(),
                 interface_mode: InterfaceMode::Simplified,
                 scale_factor: 1.0,
             },
         };
 
+        let commands = CommandRegistry::new();
+        commands.register("load_theme", ThemeLoadCommand::new());
+
         let app = Self {
             config,
-            theme: Theme::default(),
+            commands,
+            theme: CoreTheme {
+                inner: Arc::new(Theme::default()),
+            },
         };
 
-        let task = Task::done(AppMessage::LoadTheme(THEME_PATH.into()));
+        let task = Task::done(AppMessage::CoreMessage(Message::Command(
+            CommandMessage::CallCommand(SmolStr::new_static("load_theme"), Vec::new()),
+        )));
         startup_tasks.push(task);
 
         info!("App constructor done");
@@ -66,25 +73,26 @@ impl App {
         String::from("Strelka")
     }
 
+    fn handle_theme_message(&mut self, message: &ThemeMessage) -> Task<AppMessage> {
+        match message {
+            ThemeMessage::SetTheme(theme) => {
+                self.theme = theme.clone();
+            }
+        }
+        Task::none()
+    }
+
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
         info!("Handling message: {message:?}");
 
         match message {
             AppMessage::None => {}
 
-            AppMessage::SetTheme(theme) => {
-                self.theme = theme;
-            }
-
-            AppMessage::LoadTheme(path) => {
-                return Task::perform(StyleSheet::load(path), |stylesheet| {
-                    if let Ok(stylesheet) = stylesheet {
-                        AppMessage::SetTheme(Theme::from_stylesheet(stylesheet))
-                    } else {
-                        AppMessage::None
-                    }
-                });
-            }
+            AppMessage::CoreMessage(message) => match message {
+                Message::Command(_command_message) => todo!(),
+                Message::Theme(theme_message) => return self.handle_theme_message(&theme_message),
+                Message::None => {}
+            },
 
             AppMessage::OnKeyPress(key, modifiers) => {
                 if let Some(message) = self.on_key_press(key, modifiers) {
@@ -115,7 +123,7 @@ impl App {
         self.config.gui.scale_factor
     }
 
-    fn theme(&self) -> Theme {
+    fn theme(&self) -> CoreTheme {
         self.theme.clone()
     }
 
@@ -134,7 +142,7 @@ impl App {
     ) -> Option<AppMessage> {
         info!("Key press listener started");
         if let Key::Character(c) = key {
-            let modifier = if modifiers.control() && modifiers.alt() {
+            let _modifier = if modifiers.control() && modifiers.alt() {
                 Modifiers::CtrlAlt
             } else if modifiers.control() {
                 Modifiers::Ctrl
@@ -145,7 +153,9 @@ impl App {
             };
 
             if *c == *SmolStr::new_static("r") {
-                return Some(AppMessage::LoadTheme(THEME_PATH.into()));
+                return Some(AppMessage::CoreMessage(Message::Command(
+                    CommandMessage::CallCommand(SmolStr::new_static("load_theme"), Vec::new()),
+                )));
             }
         }
         None

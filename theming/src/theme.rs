@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::PathBuf};
 use strelka_core::{
-    smol_str::SmolStr, theme::StyleConverter, value::Value, Color, Theme as CoreTheme,
+    smol_str::SmolStr, value::Value, Color, GenericTheme,
 };
 
 use iced::daemon::{Appearance, DefaultStyle};
@@ -50,7 +50,7 @@ impl Theme {
     }
 }
 
-impl CoreTheme for Theme {
+impl GenericTheme for Theme {
     fn get_color(&self, key: &SmolStr) -> Option<Color> {
         self.get(key.as_str()).and_then(Value::as_color)
     }

@@ -3,9 +3,10 @@ use crate::value::Value;
 use crate::Color;
 use std::collections::HashMap;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 /// Theme trait that defines the interface for stylesheets
-pub trait Theme: Debug + Send + Sync {
+pub trait GenericTheme: Debug + Send + Sync {
     /// Get a color value from the theme
     fn get_color(&self, key: &SmolStr) -> Option<Color>;
 
@@ -42,5 +43,10 @@ pub trait Theme: Debug + Send + Sync {
 }
 
 pub trait StyleConverter: Default {
-    fn from_theme(theme: &impl Theme, path: &str) -> Self;
+    fn from_theme(theme: &impl GenericTheme, path: &str) -> Self;
+}
+
+#[derive(Debug, Clone)]
+pub struct Theme {
+    pub inner: Arc<dyn GenericTheme>,
 }
