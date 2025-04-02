@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use theming::{stylesheet::StyleSheet, Theme};
 
 use config::{AppConfig, GuiConfig, InterfaceMode};
-use core::{smol_str::SmolStr, Modifiers};
+use strelka_core::{smol_str::SmolStr, Modifiers};
 use widget::{button::Button, container::background};
 
 static DEFAULT_THEME: &str = "core.dark";
@@ -145,7 +145,7 @@ impl App {
             };
 
             if *c == *SmolStr::new_static("r") {
-                return Some(AppMessage::LoadTheme(THEME_PATH.into()))
+                return Some(AppMessage::LoadTheme(THEME_PATH.into()));
             }
         }
         None

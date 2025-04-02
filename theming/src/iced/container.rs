@@ -1,4 +1,4 @@
-use core::{smol_str::SmolStr, Color};
+use strelka_core::{smol_str::SmolStr, Color};
 
 use iced::widget::container::{Catalog, Style, StyleFn};
 

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "gui", "theming", "widget", "config"]
+members = ["core", "gui", "theming", "widget", "config", "command"]
 
 [profile.dev]
 opt-level = 1
@@ -22,8 +22,9 @@ log = "^0.4"
 env_logger = "^0.11"
 lazy_static = "^1.5"
 serde = { version = "^1", features = ["derive"] }
-toml = { version = "^0.8" }
-async-std = { version = "1.13" }
+async-std = { version = "1.13", features = ["attributes"] }
+anyhow = { version = "^1" }
+async-trait = { version = "0.1" }
 iced_aw = { version = "0.12.0" }
 iced = { version = "0.13.1", features = [
   "advanced",

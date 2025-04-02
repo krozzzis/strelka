@@ -6,7 +6,7 @@ license = "BSD-3-Clause"
 authors = ["Nikita Shumov"]
 
 [dependencies]
-core = { path = "../core", features = ["iced", "serde"] }
+strelka_core = { path = "../core", features = ["iced", "serde"] }
 iced = { workspace = true, optional = true }
 async-std = { workspace = true }
 kdl = { version = "^6.3" }

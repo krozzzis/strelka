@@ -1,5 +1,5 @@
-use core::{smol_str::SmolStr, value::Value, Color};
-use std::{collections::HashMap, time::Duration};
+use std::collections::HashMap;
+use strelka_core::{smol_str::SmolStr, theme::StyleConverter, value::Value, Color};
 
 use kdl::{KdlDocument, KdlNode, KdlValue};
 
@@ -16,6 +16,10 @@ impl StyleNode {
 
     pub fn property(&self, key: &str) -> Option<&Value> {
         self.properties.get(key)
+    }
+
+    pub fn get_properties(&self) -> &HashMap<SmolStr, Value> {
+        &self.properties
     }
 
     pub fn child(&self, name: &str) -> Option<&StyleNode> {
@@ -183,8 +187,7 @@ impl StyleSheet {
         Ok(Value::Color(Color::new_hex(r, g, b, a)))
     }
 
-    // Получение стиля для конкретного элемента
-    pub fn get_style<T: StyleConverter>(&self, path: &str) -> T {
+    pub fn get_node(&self, path: &str) -> Option<&StyleNode> {
         let parts: Vec<&str> = path.split('.').collect();
         let mut current = &self.root;
 
@@ -193,16 +196,12 @@ impl StyleSheet {
                 current = node;
             } else {
                 // Если узел не найден, используем текущий
-                break;
+                return None;
             }
         }
 
-        T::from_style_node(current)
+        Some(current)
     }
-}
-
-pub trait StyleConverter: Default {
-    fn from_style_node(node: &StyleNode) -> Self;
 }
 
 #[derive(Debug, Clone)]
@@ -223,34 +222,21 @@ impl Default for ButtonStyle {
 }
 
 impl StyleConverter for ButtonStyle {
-    fn from_style_node(node: &StyleNode) -> Self {
+    fn from_theme(theme: &impl strelka_core::Theme, path: &str) -> Self {
         let mut style = ButtonStyle::default();
 
         // Try to get background either as direct property or from child node
-        if let Some(background) = node.property("background").and_then(|v| v.as_color()) {
+        if let Some(background) = theme.get_color(&SmolStr::new(format!("{path}.background"))) {
             style.background = background;
-        } else if let Some(bg_node) = node.child("background") {
-            if let Some(bg_color) = bg_node.property("value0").and_then(|v| v.as_color()) {
-                style.background = bg_color;
-            }
         }
-
         // Try to get text_color either as direct property or from child node
-        if let Some(text_color) = node.property("text_color").and_then(|v| v.as_color()) {
+        if let Some(text_color) = theme.get_color(&SmolStr::new(format!("{path}.text"))) {
             style.text_color = text_color;
-        } else if let Some(text_node) = node.child("text") {
-            if let Some(text_color) = text_node.property("value0").and_then(|v| v.as_color()) {
-                style.text_color = text_color;
-            }
         }
 
         // Try to get border_radius either as direct property or from child node
-        if let Some(border_radius) = node.property("border_radius").and_then(|v| v.as_float()) {
-            style.border_radius = border_radius;
-        } else if let Some(border_node) = node.child("border_radius") {
-            if let Some(radius) = border_node.property("value0").and_then(|v| v.as_float()) {
-                style.border_radius = radius;
-            }
+        if let Some(radius) = theme.get_float(&SmolStr::new(format!("{path}.border_radius"))) {
+            style.border_radius = radius;
         }
 
         style

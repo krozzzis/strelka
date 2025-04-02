@@ -1,9 +1,11 @@
-use core::{smol_str::SmolStr, value::Value, Color};
-use std::path::PathBuf;
+use std::{collections::HashMap, path::PathBuf};
+use strelka_core::{
+    smol_str::SmolStr, theme::StyleConverter, value::Value, Color, Theme as CoreTheme,
+};
 
 use iced::daemon::{Appearance, DefaultStyle};
 
-use crate::stylesheet::{StyleConverter, StyleSheet};
+use crate::stylesheet::StyleSheet;
 
 #[derive(Debug, Default, Clone)]
 pub struct Theme {
@@ -21,10 +23,6 @@ impl Theme {
 
     pub fn get(&self, path: &str) -> Option<&Value> {
         self.stylesheet.get_value(path)
-    }
-
-    pub fn get_style<T: StyleConverter>(&self, path: &str) -> T {
-        self.stylesheet.get_style(path)
     }
 
     pub fn get_integer_or_default(&self, key: &SmolStr, default: i32) -> i32 {
@@ -49,6 +47,34 @@ impl Theme {
 
     pub fn get_string_or_default<'a>(&'a self, key: &SmolStr, default: &'a SmolStr) -> &'a SmolStr {
         self.get(key).and_then(Value::as_string).unwrap_or(default)
+    }
+}
+
+impl CoreTheme for Theme {
+    fn get_color(&self, key: &SmolStr) -> Option<Color> {
+        self.get(key.as_str()).and_then(Value::as_color)
+    }
+
+    fn get_float(&self, key: &SmolStr) -> Option<f32> {
+        self.get(key.as_str()).and_then(Value::as_float)
+    }
+
+    fn get_string(&self, key: &SmolStr) -> Option<SmolStr> {
+        self.get(key.as_str()).and_then(Value::as_string).cloned()
+    }
+
+    fn get_bool(&self, key: &SmolStr) -> Option<bool> {
+        self.get(key.as_str()).and_then(Value::as_boolean)
+    }
+
+    fn get_style_properties(&self, path: &str) -> HashMap<String, Value> {
+        let mut properties = HashMap::new();
+        if let Some(node) = self.stylesheet.get_node(path) {
+            for (key, value) in node.get_properties() {
+                properties.insert(key.to_string(), value.clone());
+            }
+        }
+        properties
     }
 }
 

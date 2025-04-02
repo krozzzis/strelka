@@ -1,4 +1,4 @@
-use core::ThemeId;
+use strelka_core::ThemeId;
 
 use theming::Theme;
 

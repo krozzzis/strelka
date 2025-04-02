@@ -11,7 +11,7 @@ path = "src/main.rs"
 
 [dependencies]
 rfd = "^0.15"
-core = { path = "../core" }
+strelka_core = { path = "../core" }
 theming = { path = "../theming" }
 config = { path = "../config" }
 widget = { path = "../widget" }

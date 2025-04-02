@@ -1,4 +1,4 @@
-use core::smol_str::SmolStr;
+use strelka_core::{smol_str::SmolStr, theme::StyleConverter};
 
 use iced::{
     advanced::{
@@ -276,7 +276,7 @@ where
         } else {
             match status {
                 Status::Active => {
-                    let style: ButtonStyle = theme.get_style("button.active");
+                    let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.active");
                     Style {
                         background: style.background,
                         border: Border::with_radius(style.border_radius),
@@ -285,7 +285,7 @@ where
                     }
                 }
                 Status::Hovered => {
-                    let style: ButtonStyle = theme.get_style("button.hover");
+                    let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.hover");
                     Style {
                         background: style.background,
                         border: Border::with_radius(style.border_radius),
@@ -294,7 +294,7 @@ where
                     }
                 }
                 Status::Pressed => {
-                    let style: ButtonStyle = theme.get_style("button.selected");
+                    let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.selected");
                     Style {
                         background: style.background,
                         border: Border::with_radius(style.border_radius),

@@ -162,6 +162,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.97"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
+
+[[package]]
 name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -214,6 +220,16 @@ dependencies = [
  "serde_repr",
  "url",
  "zbus 5.5.0",
+]
+
+[[package]]
+name = "async-attributes"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3203e79f4dd9bdda415ed03cf14dae5a2bf775c683a00f94e9cd1faf0f596e5"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -385,6 +401,7 @@ version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "730294c1c08c2e0f85759590518f6333f0d5a0a766a27d519c1b244c3dfd8a24"
 dependencies = [
+ "async-attributes",
  "async-channel 1.9.0",
  "async-global-executor",
  "async-io",
@@ -751,6 +768,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "command"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "async-trait",
+ "futures",
+ "strelka_core",
+]
+
+[[package]]
 name = "concurrent-queue"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -763,24 +791,10 @@ dependencies = [
 name = "config"
 version = "0.1.0"
 dependencies = [
- "core",
  "dashmap",
  "dirs 5.0.1",
- "serde",
+ "strelka_core",
  "theming",
- "toml",
-]
-
-[[package]]
-name = "core"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "iced_core",
- "nom",
- "palette",
- "serde",
- "smol_str 0.3.2",
 ]
 
 [[package]]
@@ -1684,11 +1698,11 @@ version = "0.1.0"
 dependencies = [
  "async-std",
  "config",
- "core",
  "env_logger",
  "iced",
  "log",
  "rfd",
+ "strelka_core",
  "theming",
  "widget",
 ]
@@ -3848,15 +3862,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_spanned"
-version = "0.6.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "sha1"
 version = "0.10.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4046,6 +4051,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
+name = "strelka_core"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "iced_core",
+ "nom",
+ "palette",
+ "serde",
+ "smol_str 0.3.2",
+]
+
+[[package]]
 name = "strict-num"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4150,10 +4167,10 @@ name = "theming"
 version = "0.1.0"
 dependencies = [
  "async-std",
- "core",
  "iced",
  "kdl",
  "log",
+ "strelka_core",
 ]
 
 [[package]]
@@ -4252,25 +4269,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
-name = "toml"
-version = "0.8.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd87a5cdd6ffab733b2f74bc4fd7ee5fff6634124999ac278c35fc78c6120148"
-dependencies = [
- "serde",
- "serde_spanned",
- "toml_datetime",
- "toml_edit",
-]
-
-[[package]]
 name = "toml_datetime"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0dd7358ecb8fc2f8d014bf86f6f638ce72ba252a2c3a2572f2a795f1d23efb41"
-dependencies = [
- "serde",
-]
 
 [[package]]
 name = "toml_edit"
@@ -4279,8 +4281,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17b4795ff5edd201c7cd6dca065ae59972ce77d1b80fa0a84d94950ece7d1474"
 dependencies = [
  "indexmap",
- "serde",
- "serde_spanned",
  "toml_datetime",
  "winnow 0.7.4",
 ]
@@ -4855,11 +4855,11 @@ checksum = "dd7cf3379ca1aac9eea11fba24fd7e315d621f8dfe35c8d7d2be8b793726e07d"
 name = "widget"
 version = "0.1.0"
 dependencies = [
- "core",
  "iced",
  "iced_aw",
  "lazy_static",
  "log",
+ "strelka_core",
  "theming",
 ]
 
