@@ -5,6 +5,9 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
 
+#[cfg(feature = "iced")]
+use iced_winit::{Appearance, DefaultStyle};
+
 /// Theme trait that defines the interface for stylesheets
 pub trait GenericTheme: Debug + Send + Sync {
     /// Get a color value from the theme
@@ -43,10 +46,26 @@ pub trait GenericTheme: Debug + Send + Sync {
 }
 
 pub trait StyleConverter: Default {
-    fn from_theme(theme: &impl GenericTheme, path: &str) -> Self;
+    fn from_theme(theme: &Theme, path: &str) -> Self;
 }
 
 #[derive(Debug, Clone)]
 pub struct Theme {
     pub inner: Arc<dyn GenericTheme>,
+}
+
+#[cfg(feature = "iced")]
+impl DefaultStyle for Theme {
+    fn default_style(&self) -> Appearance {
+        Appearance {
+            background_color: self
+                .inner
+                .get_color_or_default(&SmolStr::new_static("background.color"), Color::WHITE)
+                .into(),
+            text_color: self
+                .inner
+                .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
+                .into(),
+        }
+    }
 }

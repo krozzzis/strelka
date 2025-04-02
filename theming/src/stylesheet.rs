@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use strelka_core::{smol_str::SmolStr, theme::StyleConverter, value::Value, Color};
+use strelka_core::{smol_str::SmolStr, theme::StyleConverter, value::Value, Color, Theme};
 
 use kdl::{KdlDocument, KdlNode, KdlValue};
 
@@ -220,20 +220,26 @@ impl Default for ButtonStyle {
 }
 
 impl StyleConverter for ButtonStyle {
-    fn from_theme(theme: &impl strelka_core::GenericTheme, path: &str) -> Self {
+    fn from_theme(theme: &Theme, path: &str) -> Self {
         let mut style = ButtonStyle::default();
 
         // Try to get background either as direct property or from child node
-        if let Some(background) = theme.get_color(&SmolStr::new(format!("{path}.background"))) {
+        if let Some(background) = theme
+            .inner
+            .get_color(&SmolStr::new(format!("{path}.background")))
+        {
             style.background = background;
         }
         // Try to get text_color either as direct property or from child node
-        if let Some(text_color) = theme.get_color(&SmolStr::new(format!("{path}.text"))) {
+        if let Some(text_color) = theme.inner.get_color(&SmolStr::new(format!("{path}.text"))) {
             style.text_color = text_color;
         }
 
         // Try to get border_radius either as direct property or from child node
-        if let Some(radius) = theme.get_float(&SmolStr::new(format!("{path}.border_radius"))) {
+        if let Some(radius) = theme
+            .inner
+            .get_float(&SmolStr::new(format!("{path}.border_radius")))
+        {
             style.border_radius = radius;
         }
 

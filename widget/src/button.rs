@@ -1,4 +1,4 @@
-use strelka_core::{smol_str::SmolStr, theme::StyleConverter};
+use strelka_core::{smol_str::SmolStr, theme::StyleConverter, Theme};
 
 use iced::{
     advanced::{
@@ -12,25 +12,25 @@ use iced::{
     widget::canvas::{self, path::Builder, Fill, Stroke},
     Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
 };
-use theming::{stylesheet::ButtonStyle, Theme};
+use theming::stylesheet::ButtonStyle;
 use theming::{Border, Color, Font, Margin};
 
 pub fn primary_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
 ) -> iced::widget::Button<'a, Message, Theme> {
-    iced::widget::Button::new(content).style(theming::iced::button::primary)
+    iced::widget::Button::new(content).style(strelka_core::iced::button::primary)
 }
 
 pub fn secondary_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
 ) -> iced::widget::Button<'a, Message, Theme> {
-    iced::widget::Button::new(content).style(theming::iced::button::secondary)
+    iced::widget::Button::new(content).style(strelka_core::iced::button::secondary)
 }
 
 pub fn text_button<'a, Message>(
     content: impl Into<Element<'a, Message, Theme>>,
 ) -> iced::widget::Button<'a, Message, Theme> {
-    iced::widget::Button::new(content).style(theming::iced::button::secondary)
+    iced::widget::Button::new(content).style(strelka_core::iced::button::secondary)
 }
 
 #[derive(Debug, Clone)]
@@ -261,15 +261,19 @@ where
 
         let style = if self.selected {
             Style {
-                background: theme.get_color_or_default(
+                background: theme.inner.get_color_or_default(
                     &SmolStr::new_static("button.selected.background"),
                     Color::WHITE,
                 ),
                 border: Border::with_radius(
-                    theme.get_float_or_default(&SmolStr::new_static("button.selected.border"), 4.0),
+                    theme
+                        .inner
+                        .get_float_or_default(&SmolStr::new_static("button.selected.border"), 4.0),
                 ),
                 margin: Margin::new(
-                    theme.get_float_or_default(&SmolStr::new_static("button.selected.margin"), 0.0),
+                    theme
+                        .inner
+                        .get_float_or_default(&SmolStr::new_static("button.selected.margin"), 0.0),
                 ),
                 font: Font::SANS_SERIF,
             }

@@ -1,7 +1,5 @@
 use std::{collections::HashMap, path::PathBuf};
-use strelka_core::{
-    smol_str::SmolStr, value::Value, Color, GenericTheme,
-};
+use strelka_core::{smol_str::SmolStr, value::Value, Color, GenericTheme};
 
 use iced::daemon::{Appearance, DefaultStyle};
 
@@ -75,19 +73,5 @@ impl GenericTheme for Theme {
             }
         }
         properties
-    }
-}
-
-#[cfg(feature = "iced")]
-impl DefaultStyle for Theme {
-    fn default_style(&self) -> Appearance {
-        Appearance {
-            background_color: self
-                .get_color_or_default(&SmolStr::new_static("background.color"), Color::WHITE)
-                .into(),
-            text_color: self
-                .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
-                .into(),
-        }
     }
 }

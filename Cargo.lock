@@ -4061,6 +4061,8 @@ dependencies = [
  "async-trait",
  "futures",
  "iced_core",
+ "iced_widget",
+ "iced_winit",
  "nom",
  "palette",
  "serde",

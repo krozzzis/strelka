@@ -1,12 +1,14 @@
 pub mod buffer;
 pub mod color;
+pub mod command;
 pub mod document;
 pub mod hotkey;
-pub mod pane;
-pub mod value;
+#[cfg(feature = "iced")]
+pub mod iced;
 pub mod message;
+pub mod pane;
 pub mod theme;
-pub mod command;
+pub mod value;
 
 pub use color::*;
 pub use hotkey::*;

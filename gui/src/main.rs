@@ -8,8 +8,8 @@ use iced::{
 };
 
 use log::info;
-use theming::Theme;
 use std::sync::Arc;
+use theming::Theme;
 
 use config::{AppConfig, GuiConfig, InterfaceMode};
 use strelka_core::{command::CommandRegistry, smol_str::SmolStr, Message, Modifiers, ThemeMessage};
@@ -111,7 +111,7 @@ impl App {
         Task::none()
     }
 
-    fn view(&self) -> Element<AppMessage, Theme> {
+    fn view(&self) -> Element<AppMessage, CoreTheme> {
         background(center(column!(
             Button::new("Button1").on_press(AppMessage::None),
             iced::widget::Button::new("Button2").on_press(AppMessage::None),

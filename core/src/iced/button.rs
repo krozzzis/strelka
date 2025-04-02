@@ -1,8 +1,6 @@
-use strelka_core::{smol_str::SmolStr, Color};
+use crate::{smol_str::SmolStr, Color, Theme};
 
-use iced::widget::button::{Catalog, Status, Style, StyleFn};
-
-use crate::Theme;
+use iced_widget::button::{Catalog, Status, Style, StyleFn};
 
 impl Catalog for Theme {
     type Class<'a> = StyleFn<'a, Theme>;
@@ -21,6 +19,7 @@ pub fn primary(theme: &Theme, status: Status) -> Style {
         Status::Hovered | Status::Pressed => Style {
             background: Some(
                 theme
+                    .inner
                     .get_color_or_default(
                         &SmolStr::new_static("button.hover.background"),
                         Color::WHITE,
@@ -28,6 +27,7 @@ pub fn primary(theme: &Theme, status: Status) -> Style {
                     .into(),
             ),
             text_color: theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("button.hover.text"), Color::BLACK)
                 .into(),
             ..Default::default()
@@ -36,6 +36,7 @@ pub fn primary(theme: &Theme, status: Status) -> Style {
         Status::Disabled | Status::Active => Style {
             background: Some(
                 theme
+                    .inner
                     .get_color_or_default(
                         &SmolStr::new_static("button.active.background"),
                         Color::WHITE,
@@ -43,6 +44,7 @@ pub fn primary(theme: &Theme, status: Status) -> Style {
                     .into(),
             ),
             text_color: theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("button.active.text"), Color::BLACK)
                 .into(),
             ..Default::default()
@@ -55,6 +57,7 @@ pub fn secondary(theme: &Theme, status: Status) -> Style {
         Status::Hovered | Status::Pressed => Style {
             background: Some(
                 theme
+                    .inner
                     .get_color_or_default(
                         &SmolStr::new_static("secondary_button.hover.background"),
                         Color::WHITE,
@@ -62,6 +65,7 @@ pub fn secondary(theme: &Theme, status: Status) -> Style {
                     .into(),
             ),
             text_color: theme
+                .inner
                 .get_color_or_default(
                     &SmolStr::new_static("secondary_button.hover.text"),
                     Color::BLACK,
@@ -73,6 +77,7 @@ pub fn secondary(theme: &Theme, status: Status) -> Style {
         Status::Disabled | Status::Active => Style {
             background: Some(
                 theme
+                    .inner
                     .get_color_or_default(
                         &SmolStr::new_static("secondary_button.active.background"),
                         Color::WHITE,
@@ -80,6 +85,7 @@ pub fn secondary(theme: &Theme, status: Status) -> Style {
                     .into(),
             ),
             text_color: theme
+                .inner
                 .get_color_or_default(
                     &SmolStr::new_static("secondary_button.active.text"),
                     Color::BLACK,
@@ -95,6 +101,7 @@ pub fn text(theme: &Theme, status: Status) -> Style {
         Status::Hovered | Status::Pressed => Style {
             background: Some(
                 theme
+                    .inner
                     .get_color_or_default(
                         &SmolStr::new_static("text_button.hover.background"),
                         Color::WHITE,
@@ -102,6 +109,7 @@ pub fn text(theme: &Theme, status: Status) -> Style {
                     .into(),
             ),
             text_color: theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("text_button.hover.text"), Color::BLACK)
                 .into(),
             ..Default::default()
@@ -110,6 +118,7 @@ pub fn text(theme: &Theme, status: Status) -> Style {
         Status::Disabled | Status::Active => Style {
             background: Some(
                 theme
+                    .inner
                     .get_color_or_default(
                         &SmolStr::new_static("text_button.active.background"),
                         Color::WHITE,
@@ -117,6 +126,7 @@ pub fn text(theme: &Theme, status: Status) -> Style {
                     .into(),
             ),
             text_color: theme
+                .inner
                 .get_color_or_default(
                     &SmolStr::new_static("text_button.active.text"),
                     Color::BLACK,

@@ -1,8 +1,6 @@
-use strelka_core::{smol_str::SmolStr, Color};
+use crate::{smol_str::SmolStr, Color, Theme};
 
-use iced::widget::container::{Catalog, Style, StyleFn};
-
-use crate::Theme;
+use iced_widget::container::{Catalog, Style, StyleFn};
 
 impl Catalog for Theme {
     type Class<'a> = StyleFn<'a, Theme>;
@@ -20,6 +18,7 @@ pub fn transparent(theme: &Theme) -> Style {
     Style {
         text_color: Some(
             theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
                 .into(),
         ),
@@ -32,11 +31,13 @@ pub fn background(theme: &Theme) -> Style {
     Style {
         text_color: Some(
             theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
                 .into(),
         ),
         background: Some(
             theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("container.background"), Color::WHITE)
                 .into(),
         ),
@@ -48,11 +49,13 @@ pub fn background2(theme: &Theme) -> Style {
     Style {
         text_color: Some(
             theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
                 .into(),
         ),
         background: Some(
             theme
+                .inner
                 .get_color_or_default(&SmolStr::new_static("container.background2"), Color::WHITE)
                 .into(),
         ),
