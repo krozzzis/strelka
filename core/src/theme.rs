@@ -5,9 +5,6 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-#[cfg(feature = "iced")]
-use iced_winit::{Appearance, DefaultStyle};
-
 /// Theme trait that defines the interface for stylesheets
 pub trait GenericTheme: Debug + Send + Sync {
     /// Get a color value from the theme
@@ -54,10 +51,35 @@ pub struct Theme {
     pub inner: Arc<dyn GenericTheme>,
 }
 
+#[derive(Debug, Clone)]
+pub struct DefaultTheme {}
+
+impl GenericTheme for DefaultTheme {
+    fn get_color(&self, _key: &SmolStr) -> Option<Color> {
+        None
+    }
+
+    fn get_float(&self, _key: &SmolStr) -> Option<f32> {
+        None
+    }
+
+    fn get_string(&self, _key: &SmolStr) -> Option<SmolStr> {
+        None
+    }
+
+    fn get_bool(&self, _key: &SmolStr) -> Option<bool> {
+        None
+    }
+
+    fn get_style_properties(&self, _path: &str) -> HashMap<String, Value> {
+        HashMap::new()
+    }
+}
+
 #[cfg(feature = "iced")]
-impl DefaultStyle for Theme {
-    fn default_style(&self) -> Appearance {
-        Appearance {
+impl iced_core::theme::Base for Theme {
+    fn base(&self) -> iced_core::theme::Style {
+        iced_core::theme::Style {
             background_color: self
                 .inner
                 .get_color_or_default(&SmolStr::new_static("background.color"), Color::WHITE)
@@ -66,6 +88,14 @@ impl DefaultStyle for Theme {
                 .inner
                 .get_color_or_default(&SmolStr::new_static("text.color"), Color::BLACK)
                 .into(),
+        }
+    }
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            inner: Arc::new(DefaultTheme {}),
         }
     }
 }

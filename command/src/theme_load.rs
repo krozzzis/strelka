@@ -3,15 +3,15 @@ use std::sync::Arc;
 
 use anyhow::{Error, Result};
 use async_trait::async_trait;
+use strelka_core::Theme as CoreTheme;
 use strelka_core::command::{Command, CommandArgs};
 use strelka_core::{Message, ThemeMessage};
 use theming::Theme;
-use strelka_core::Theme as CoreTheme;
 use theming::stylesheet::StyleSheet;
 
 static DEFAULT_THEME_PATH: &str = "./themes/dark/theme.kdl";
 
-// Example async command implementation
+#[derive(Default)]
 pub struct ThemeLoadCommand {}
 
 impl ThemeLoadCommand {

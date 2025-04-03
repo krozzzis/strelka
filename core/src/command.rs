@@ -1,10 +1,10 @@
-use anyhow::{Result, anyhow};
-use async_std::sync::RwLock;
-use async_trait::async_trait;
+use crate::smol_str::SmolStr;
 use crate::Message;
+use anyhow::{anyhow, Result};
+use async_trait::async_trait;
+use smol::lock::RwLock;
 use std::collections::HashMap;
 use std::sync::Arc;
-use crate::smol_str::SmolStr;
 
 /// The context passed to commands when they are executed
 #[derive(Debug, Clone)]

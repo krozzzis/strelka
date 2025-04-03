@@ -1,7 +1,7 @@
 use std::{collections::HashMap, path::PathBuf};
 use strelka_core::{smol_str::SmolStr, value::Value, Color, GenericTheme};
 
-use iced::daemon::{Appearance, DefaultStyle};
+// use iced::daemon::{Appearance, DefaultStyle};
 
 use crate::stylesheet::StyleSheet;
 

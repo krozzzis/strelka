@@ -22,17 +22,19 @@ log = "^0.4"
 env_logger = "^0.11"
 lazy_static = "^1.5"
 serde = { version = "^1", features = ["derive"] }
-async-std = { version = "1.13", features = ["attributes"] }
+smol = { version = "^2" }
 anyhow = { version = "^1" }
 async-trait = { version = "0.1" }
-iced_aw = { version = "0.12.0" }
-iced = { version = "0.13.1", features = [
+# iced_aw = { version = "0.12.0" }
+iced = { git = "https://github.com/iced-rs/iced", features = [
   "advanced",
   "canvas",
   "lazy",
   "svg",
   "image",
-  "async-std",
+  "smol",
   "wgpu",
   "tiny-skia",
 ]}
+iced_core = { git = "https://github.com/iced-rs/iced" }
+iced_widget = { git = "https://github.com/iced-rs/iced" }

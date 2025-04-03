@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 use strelka_core::{smol_str::SmolStr, theme::StyleConverter, value::Value, Color, Theme};
 
 use kdl::{KdlDocument, KdlNode, KdlValue};
@@ -93,14 +93,11 @@ impl StyleSheet {
     }
 
     // Загрузка темы из KDL файла
-    pub async fn load<P: AsRef<async_std::path::Path>>(path: P) -> Result<Self, String> {
-        let content = async_std::fs::read_to_string(path)
+    pub async fn load<P: AsRef<Path>>(path: P) -> Result<Self, String> {
+        let content = smol::fs::read_to_string(path)
             .await
             .map_err(|e| e.to_string())?;
-        let doc: KdlDocument = async_std::task::spawn_blocking(move || {
-            content.parse().map_err(|e: kdl::KdlError| e.to_string())
-        })
-        .await?;
+        let doc: KdlDocument = content.parse().map_err(|e: kdl::KdlError| e.to_string())?;
 
         let mut stylesheet = StyleSheet::new();
         stylesheet.parse_kdl_document(&doc)?;

@@ -1,0 +1,26 @@
+button {
+  active {
+    background "#f91919"
+    text_color "#dddddd"
+    border_radius 10.0
+  }
+  hover {
+    background "#1dfd1d"
+    text_color "#dddddd"
+    border_radius 10.0
+  }
+  selected {
+    background "#f0f000"
+    text_color "#dddddd"
+    border_radius 10.0
+  }
+}
+
+text {
+  color "#dddddd"
+}
+
+container {
+  background "#1d1d1d"
+  background2 "#191919"
+}

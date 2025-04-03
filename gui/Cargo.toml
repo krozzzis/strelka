@@ -19,4 +19,4 @@ command = { path = "../command" }
 iced = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
-async-std = { workspace = true }
+smol = { workspace = true }

@@ -1,4 +1,4 @@
-use strelka_core::{smol_str::SmolStr, theme::StyleConverter, Theme};
+use strelka_core::{theme::StyleConverter, Theme};
 
 use iced::{
     advanced::{
@@ -8,9 +8,9 @@ use iced::{
         widget::{tree, Operation, Tree},
         Clipboard, Layout, Shell, Widget,
     },
-    event, touch,
+    touch,
     widget::canvas::{self, path::Builder, Fill, Stroke},
-    Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
+    window, Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
 };
 use theming::stylesheet::ButtonStyle;
 use theming::{Border, Color, Font, Margin};
@@ -49,10 +49,10 @@ struct State {
 pub struct Button<'a, Message, Renderer> {
     content: Element<'a, Message, Theme, Renderer>,
     padding: Padding,
-    selected: bool,
     height: Length,
     width: Length,
     on_press: Option<Message>,
+    status: Option<Status>,
 }
 
 impl<'a, Message, Renderer: iced::advanced::Renderer> Button<'a, Message, Renderer> {
@@ -61,11 +61,11 @@ impl<'a, Message, Renderer: iced::advanced::Renderer> Button<'a, Message, Render
         let content_size = content.as_widget().size_hint();
         Self {
             content,
-            selected: false,
-            padding: Padding::new(5.0),
+            padding: Padding::new(5.0).left(10.0).right(10.0),
             height: content_size.height.fluid(),
             width: content_size.width.fluid(),
             on_press: None,
+            status: None,
         }
     }
 
@@ -81,11 +81,6 @@ impl<'a, Message, Renderer: iced::advanced::Renderer> Button<'a, Message, Render
 
     pub fn padding(mut self, value: impl Into<Padding>) -> Self {
         self.padding = value.into();
-        self
-    }
-
-    pub fn selected(mut self, selected: bool) -> Self {
-        self.selected = selected;
         self
     }
 
@@ -155,57 +150,63 @@ where
         });
     }
 
-    fn on_event(
+    fn update(
         &mut self,
         tree: &mut Tree,
-        event: Event,
+        event: &Event,
         layout: Layout<'_>,
         cursor: mouse::Cursor,
         renderer: &Renderer,
         clipboard: &mut dyn Clipboard,
         shell: &mut Shell<'_, Message>,
         viewport: &Rectangle,
-    ) -> event::Status {
-        if let event::Status::Captured = self.content.as_widget_mut().on_event(
+    ) {
+        self.content.as_widget_mut().update(
             &mut tree.children[0],
-            event.clone(),
+            event,
             layout.children().next().unwrap(),
             cursor,
             renderer,
             clipboard,
             shell,
             viewport,
-        ) {
-            return event::Status::Captured;
+        );
+
+        if shell.is_event_captured() {
+            return;
         }
 
         match event {
             Event::Mouse(mouse::Event::ButtonPressed(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerPressed { .. }) => {
-                let bounds = layout.bounds();
+                if self.on_press.is_some() {
+                    let bounds = layout.bounds();
 
-                if cursor.is_over(bounds) {
-                    let state = tree.state.downcast_mut::<State>();
+                    if cursor.is_over(bounds) {
+                        let state = tree.state.downcast_mut::<State>();
 
-                    state.is_pressed = true;
+                        state.is_pressed = true;
 
-                    return event::Status::Captured;
+                        shell.capture_event();
+                    }
                 }
             }
             Event::Mouse(mouse::Event::ButtonReleased(mouse::Button::Left))
             | Event::Touch(touch::Event::FingerLifted { .. }) => {
-                let state = tree.state.downcast_mut::<State>();
+                if let Some(on_press) = &self.on_press {
+                    let state = tree.state.downcast_mut::<State>();
 
-                if state.is_pressed {
-                    state.is_pressed = false;
+                    if state.is_pressed {
+                        state.is_pressed = false;
 
-                    if let Some(on_press) = self.on_press.clone() {
-                        if cursor.is_over(layout.bounds()) {
-                            shell.publish(on_press);
+                        let bounds = layout.bounds();
+
+                        if cursor.is_over(bounds) {
+                            shell.publish(on_press.clone());
                         }
-                    }
 
-                    return event::Status::Captured;
+                        shell.capture_event();
+                    }
                 }
             }
             Event::Touch(touch::Event::FingerLost { .. }) => {
@@ -216,7 +217,25 @@ where
             _ => {}
         }
 
-        event::Status::Ignored
+        let current_status = if self.on_press.is_none() {
+            Status::Disabled
+        } else if cursor.is_over(layout.bounds()) {
+            let state = tree.state.downcast_ref::<State>();
+
+            if state.is_pressed {
+                Status::Pressed
+            } else {
+                Status::Hovered
+            }
+        } else {
+            Status::Active
+        };
+
+        if let Event::Window(window::Event::RedrawRequested(_now)) = event {
+            self.status = Some(current_status);
+        } else if self.status.is_some_and(|status| status != current_status) {
+            shell.request_redraw();
+        }
     }
 
     fn mouse_interaction(
@@ -259,52 +278,41 @@ where
             Status::Active
         };
 
-        let style = if self.selected {
-            Style {
-                background: theme.inner.get_color_or_default(
-                    &SmolStr::new_static("button.selected.background"),
-                    Color::WHITE,
-                ),
-                border: Border::with_radius(
-                    theme
-                        .inner
-                        .get_float_or_default(&SmolStr::new_static("button.selected.border"), 4.0),
-                ),
-                margin: Margin::new(
-                    theme
-                        .inner
-                        .get_float_or_default(&SmolStr::new_static("button.selected.margin"), 0.0),
-                ),
-                font: Font::SANS_SERIF,
+        let style = match status {
+            Status::Active => {
+                let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.active");
+                Style {
+                    background: style.background,
+                    border: Border::with_radius(style.border_radius),
+                    margin: Margin::new(0.0),
+                    font: Font::SANS_SERIF,
+                }
             }
-        } else {
-            match status {
-                Status::Active => {
-                    let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.active");
-                    Style {
-                        background: style.background,
-                        border: Border::with_radius(style.border_radius),
-                        margin: Margin::new(0.0),
-                        font: Font::SANS_SERIF,
-                    }
+            Status::Hovered => {
+                let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.hover");
+                Style {
+                    background: style.background,
+                    border: Border::with_radius(style.border_radius),
+                    margin: Margin::new(0.0),
+                    font: Font::SANS_SERIF,
                 }
-                Status::Hovered => {
-                    let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.hover");
-                    Style {
-                        background: style.background,
-                        border: Border::with_radius(style.border_radius),
-                        margin: Margin::new(0.0),
-                        font: Font::SANS_SERIF,
-                    }
+            }
+            Status::Pressed => {
+                let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.selected");
+                Style {
+                    background: style.background,
+                    border: Border::with_radius(style.border_radius),
+                    margin: Margin::new(0.0),
+                    font: Font::SANS_SERIF,
                 }
-                Status::Pressed => {
-                    let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.selected");
-                    Style {
-                        background: style.background,
-                        border: Border::with_radius(style.border_radius),
-                        margin: Margin::new(0.0),
-                        font: Font::SANS_SERIF,
-                    }
+            }
+            Status::Disabled => {
+                let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.disabled");
+                Style {
+                    background: style.background,
+                    border: Border::with_radius(style.border_radius),
+                    margin: Margin::new(0.0),
+                    font: Font::SANS_SERIF,
                 }
             }
         };
@@ -466,4 +474,5 @@ pub enum Status {
     Active,
     Hovered,
     Pressed,
+    Disabled,
 }

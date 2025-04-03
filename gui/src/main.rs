@@ -13,7 +13,7 @@ use theming::Theme;
 
 use config::{AppConfig, GuiConfig, InterfaceMode};
 use strelka_core::{command::CommandRegistry, smol_str::SmolStr, Message, Modifiers, ThemeMessage};
-use strelka_core::{CommandMessage, GenericTheme, Theme as CoreTheme};
+use strelka_core::{CommandMessage, Theme as CoreTheme};
 use widget::{button::Button, container::background};
 
 static DEFAULT_THEME: &str = "core.dark";
@@ -22,7 +22,7 @@ static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 pub struct App {
     config: AppConfig,
     theme: CoreTheme,
-    commands: CommandRegistry,
+    commands: Arc<CommandRegistry>,
 }
 
 #[derive(Debug, Clone)]
@@ -50,11 +50,11 @@ impl App {
         };
 
         let commands = CommandRegistry::new();
-        commands.register("load_theme", ThemeLoadCommand::new());
+        let _ = smol::block_on(commands.register("load_theme", ThemeLoadCommand::new()));
 
         let app = Self {
             config,
-            commands,
+            commands: Arc::new(commands),
             theme: CoreTheme {
                 inner: Arc::new(Theme::default()),
             },
@@ -73,13 +73,35 @@ impl App {
         String::from("Strelka")
     }
 
-    fn handle_theme_message(&mut self, message: &ThemeMessage) -> Task<AppMessage> {
+    fn handle_theme_message(&mut self, message: ThemeMessage) -> Task<AppMessage> {
         match message {
             ThemeMessage::SetTheme(theme) => {
                 self.theme = theme.clone();
+                println!("Set theme: {theme:?}");
             }
         }
         Task::none()
+    }
+
+    fn handle_command_message(&mut self, message: CommandMessage) -> Task<AppMessage> {
+        match message {
+            CommandMessage::CallCommand(command, args) => {
+                let commands = self.commands.clone();
+                Task::perform(
+                    async move {
+                        let output = commands
+                            .execute(&command, strelka_core::command::CommandArgs { args })
+                            .await;
+                        if let Ok(cmd) = output {
+                            AppMessage::CoreMessage(cmd)
+                        } else {
+                            AppMessage::None
+                        }
+                    },
+                    |msg| msg,
+                )
+            }
+        }
     }
 
     fn update(&mut self, message: AppMessage) -> Task<AppMessage> {
@@ -89,8 +111,10 @@ impl App {
             AppMessage::None => {}
 
             AppMessage::CoreMessage(message) => match message {
-                Message::Command(_command_message) => todo!(),
-                Message::Theme(theme_message) => return self.handle_theme_message(&theme_message),
+                Message::Command(command_message) => {
+                    return self.handle_command_message(command_message)
+                }
+                Message::Theme(theme_message) => return self.handle_theme_message(theme_message),
                 Message::None => {}
             },
 
@@ -154,7 +178,7 @@ impl App {
 
             if *c == *SmolStr::new_static("r") {
                 return Some(AppMessage::CoreMessage(Message::Command(
-                    CommandMessage::CallCommand(SmolStr::new_static("load_theme"), Vec::new()),
+                    CommandMessage::CallCommand(SmolStr::new_static("load_theme"), vec![String::from("./themes/light/theme.kdl")]),
                 )));
             }
         }
