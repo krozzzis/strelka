@@ -1,6 +1,6 @@
 use crate::Color;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Radius {
     pub top_left: f32,
     pub top_right: f32,

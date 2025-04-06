@@ -4,7 +4,7 @@ use iced::{
     keyboard::{on_key_press, Key},
     widget::{center, column},
     window::{close, drag, get_oldest, maximize, minimize},
-    Element, Settings, Subscription, Task,
+    Element, Length, Settings, Subscription, Task,
 };
 
 use log::info;
@@ -45,7 +45,7 @@ impl App {
             gui: GuiConfig {
                 theme_id: SmolStr::new(DEFAULT_THEME),
                 interface_mode: InterfaceMode::Simplified,
-                scale_factor: 1.0,
+                scale_factor: 2.5,
             },
         };
 
@@ -136,10 +136,21 @@ impl App {
     }
 
     fn view(&self) -> Element<AppMessage, CoreTheme> {
-        background(center(column!(
-            Button::new("Button1").on_press(AppMessage::None),
-            iced::widget::Button::new("Button2").on_press(AppMessage::None),
-        )))
+        background(center(
+            column!(
+                Button::new("Button1")
+                    .on_press(AppMessage::None)
+                    .width(Length::Fixed(80.0))
+                    .height(Length::Fixed(40.0))
+                    .padding(8.0),
+                Button::new("Button1")
+                    .on_press(AppMessage::None)
+                    .width(Length::Fixed(80.0))
+                    .height(Length::Fixed(40.0))
+                    .padding(8.0),
+            )
+            .spacing(10.0),
+        ))
         .into()
     }
 
@@ -178,7 +189,10 @@ impl App {
 
             if *c == *SmolStr::new_static("r") {
                 return Some(AppMessage::CoreMessage(Message::Command(
-                    CommandMessage::CallCommand(SmolStr::new_static("load_theme"), vec![String::from("./themes/light/theme.kdl")]),
+                    CommandMessage::CallCommand(
+                        SmolStr::new_static("load_theme"),
+                        vec![String::from("./themes/light/theme.kdl")],
+                    ),
                 )));
             }
         }
