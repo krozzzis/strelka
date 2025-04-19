@@ -1,7 +1,5 @@
 use std::path::PathBuf;
-use strelka_core::smol_str::SmolStr;
-use strelka_core::value::Value;
-use strelka_core::Color;
+use strelka_core::{smol_str::SmolStr, Color, Value};
 
 use dashmap::mapref::one::Ref;
 use dashmap::DashMap;

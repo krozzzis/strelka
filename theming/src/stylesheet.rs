@@ -1,5 +1,5 @@
 use std::{collections::HashMap, path::Path};
-use strelka_core::{smol_str::SmolStr, theme::StyleConverter, value::Value, Color, Theme};
+use strelka_core::{smol_str::SmolStr, theme::StyleConverter, Color, Theme, Value};
 
 use kdl::{KdlDocument, KdlNode, KdlValue};
 

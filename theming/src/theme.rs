@@ -1,5 +1,5 @@
 use std::{collections::HashMap, path::PathBuf};
-use strelka_core::{smol_str::SmolStr, value::Value, Color, GenericTheme};
+use strelka_core::{smol_str::SmolStr, Color, GenericTheme, Value};
 
 // use iced::daemon::{Appearance, DefaultStyle};
 

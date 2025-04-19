@@ -13,7 +13,7 @@ use theming::Theme;
 
 use config::{AppConfig, GuiConfig, InterfaceMode};
 use strelka_core::{command::CommandRegistry, smol_str::SmolStr, Message, Modifiers, ThemeMessage};
-use strelka_core::{CommandMessage, Theme as CoreTheme};
+use strelka_core::{node::parse_kdl_document, CommandMessage, Theme as CoreTheme};
 use widget::{button::Button, container::background};
 
 static DEFAULT_THEME: &str = "core.dark";
@@ -40,6 +40,16 @@ pub enum AppMessage {
 impl App {
     fn new() -> (Self, Task<AppMessage>) {
         let mut startup_tasks = Vec::new();
+
+        let doc_test = r#"
+    a b j=50 {
+        c 10
+        d 20
+    }
+        "#;
+        let doc: kdl::KdlDocument = doc_test.parse().unwrap();
+        let a = parse_kdl_document(&doc);
+        println!("{a:?}");
 
         let config = AppConfig {
             gui: GuiConfig {

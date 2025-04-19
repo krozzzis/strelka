@@ -38,3 +38,4 @@ iced = { git = "https://github.com/iced-rs/iced", features = [
 ]}
 iced_core = { git = "https://github.com/iced-rs/iced" }
 iced_widget = { git = "https://github.com/iced-rs/iced" }
+kdl = { version = "^6.3" }

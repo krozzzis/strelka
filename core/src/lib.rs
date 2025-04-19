@@ -6,14 +6,17 @@ pub mod hotkey;
 #[cfg(feature = "iced")]
 pub mod iced;
 pub mod message;
+pub mod node;
 pub mod pane;
 pub mod theme;
-pub mod value;
+mod value;
 
 pub use color::*;
 pub use hotkey::*;
 pub use message::*;
+pub use node::Node;
 pub use theme::*;
+pub use value::Value;
 
 pub use smol_str;
 
