@@ -79,11 +79,14 @@ pub fn parse_kdl_document(document: &KdlDocument) -> Result<Node, String> {
     for node in document.nodes() {
         let name = node.name().value().to_string();
         println!("{name}");
+
         let child = parse_kdl_node(node)?;
-        if document.nodes().length() == 1 {
+
+        if document.nodes().len() == 1 {
             root = child;
+        } else {
+            root.add_child(name.into(), child);
         }
-        root.add_child(name.into(), child);
     }
     Ok(root)
 }
