@@ -72,8 +72,8 @@ impl StyleSheet {
         let mut current_node = &self.root;
 
         // Navigate to the node that should contain our property
-        for i in 0..parts.len() - 1 {
-            current_node = current_node.child(parts[i])?;
+        for part in parts.iter().take(parts.len() - 1) {
+            current_node = current_node.child(part)?;
         }
 
         // First try to get it as a direct property
