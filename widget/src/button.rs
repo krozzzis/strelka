@@ -621,7 +621,6 @@ pub fn add_superellipse_to_builder(
     bounds: Rectangle,
     params: SuperellipseParams,
 ) {
-    println!("{params:?}");
     let points = generate_superellipse_points(bounds, params);
 
     if points.is_empty() {
@@ -633,7 +632,6 @@ pub fn add_superellipse_to_builder(
 
     // Add points with line segments
     for point in points.iter().skip(1) {
-        println!("{point:?}");
         builder.line_to(*point);
     }
 
