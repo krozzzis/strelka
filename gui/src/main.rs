@@ -14,10 +14,7 @@ use log::info;
 use std::sync::Arc;
 use theming::Theme;
 
-use strelka_core::{
-    command::CommandRegistry, smol_str::SmolStr, DataTree, Message, Modifiers, NodeDeserialize,
-    ThemeMessage,
-};
+use strelka_core::{command::CommandRegistry, smol_str::SmolStr, Message, Modifiers, ThemeMessage};
 use strelka_core::{CommandMessage, Theme as CoreTheme};
 use widget::{button::Button, container::background};
 
@@ -218,6 +215,7 @@ fn main() -> iced::Result {
     iced::application(boot, App::update, App::view)
         .subscription(App::subscription)
         .theme(App::theme)
+        .title(App::title)
         .scale_factor(App::scale_factor)
         .settings(Settings {
             antialiasing: true,
