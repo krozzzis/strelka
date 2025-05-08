@@ -96,7 +96,7 @@ fn parse_kdl_node(node: &KdlNode) -> Result<Node, String> {
         }
     }
 
-    while let Some(doc) = node.children() {
+    for doc in node.children() {
         for node in doc.nodes() {
             let name = node.name().value();
 
@@ -107,4 +107,8 @@ fn parse_kdl_node(node: &KdlNode) -> Result<Node, String> {
         }
     }
     Ok(root)
+}
+
+pub trait NodeDeserialize: Sized {
+    fn deserialize_from_node(node: &Node) -> Result<Self, Box<dyn std::error::Error>>;
 }

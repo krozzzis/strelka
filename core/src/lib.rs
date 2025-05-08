@@ -16,7 +16,7 @@ pub use color::*;
 pub use data_tree::DataTree;
 pub use hotkey::*;
 pub use message::*;
-pub use node::Node;
+pub use node::{Node, NodeDeserialize};
 pub use theme::*;
 pub use value::Value;
 

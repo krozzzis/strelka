@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["core", "gui", "theming", "widget", "config", "command"]
+members = ["core", "gui", "theming", "widget", "command"]
 
 [profile.dev]
 opt-level = 1
@@ -28,6 +28,7 @@ async-trait = { version = "0.1" }
 # iced_aw = { version = "0.12.0" }
 iced = { git = "https://github.com/iced-rs/iced", features = [
   "advanced",
+  "debug",
   "canvas",
   "lazy",
   "svg",

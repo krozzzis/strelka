@@ -1,5 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod config;
+
 use command::ThemeLoadCommand;
+use config::{load_config, ApplicationConfig};
 use iced::{
     keyboard::{on_key_press, Key},
     widget::{center, column},
@@ -11,8 +14,10 @@ use log::info;
 use std::sync::Arc;
 use theming::Theme;
 
-use config::{AppConfig, GuiConfig, InterfaceMode};
-use strelka_core::{command::CommandRegistry, smol_str::SmolStr, Message, Modifiers, ThemeMessage};
+use strelka_core::{
+    command::CommandRegistry, smol_str::SmolStr, DataTree, Message, Modifiers, NodeDeserialize,
+    ThemeMessage,
+};
 use strelka_core::{CommandMessage, Theme as CoreTheme};
 use widget::{button::Button, container::background};
 
@@ -20,7 +25,7 @@ static DEFAULT_THEME: &str = "core.dark";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
 
 pub struct App {
-    config: AppConfig,
+    config: ApplicationConfig,
     theme: CoreTheme,
     commands: Arc<CommandRegistry>,
 }
@@ -38,16 +43,8 @@ pub enum AppMessage {
 }
 
 impl App {
-    fn new() -> (Self, Task<AppMessage>) {
+    fn new(config: ApplicationConfig) -> (Self, Task<AppMessage>) {
         let mut startup_tasks = Vec::new();
-
-        let config = AppConfig {
-            gui: GuiConfig {
-                theme_id: SmolStr::new(DEFAULT_THEME),
-                interface_mode: InterfaceMode::Simplified,
-                scale_factor: 2.5,
-            },
-        };
 
         let commands = CommandRegistry::new();
         let _ = smol::block_on(commands.register("load_theme", ThemeLoadCommand::new()));
@@ -154,7 +151,7 @@ impl App {
     }
 
     fn scale_factor(&self) -> f64 {
-        self.config.gui.scale_factor
+        self.config.scale_factor.into()
     }
 
     fn theme(&self) -> CoreTheme {
@@ -201,6 +198,8 @@ impl App {
 
 fn main() -> iced::Result {
     env_logger::init();
+    let config = load_config();
+    println!("{config:#?}");
 
     iced::application(App::title, App::update, App::view)
         .subscription(App::subscription)
@@ -212,9 +211,9 @@ fn main() -> iced::Result {
         })
         .window(iced::window::Settings {
             icon: iced::window::icon::from_file_data(APP_ICON, None).ok(),
-            decorations: false,
+            decorations: config.decorations,
             ..Default::default()
         })
         .centered()
-        .run_with(App::new)
+        .run_with(move || App::new(config))
 }

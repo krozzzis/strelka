@@ -19,6 +19,10 @@ impl DataTree {
         Self { root: Node::new() }
     }
 
+    pub fn with_root(root: Node) -> Self {
+        Self { root }
+    }
+
     pub fn from_text(text: &str) -> Result<Self, String> {
         let document: KdlDocument = text
             .parse()
@@ -37,7 +41,6 @@ impl DataTree {
         &mut self.root
     }
 
-    // Получение значения по пути в точечной нотации (например "ui.button.color")
     pub fn get_value(&self, path: &str) -> Option<&Value> {
         let parts: Vec<&str> = path.split('.').collect();
         self.get_value_by_parts(&parts)
@@ -72,7 +75,6 @@ impl DataTree {
         None
     }
 
-    // Получение узла по пути в точечной нотации
     pub fn get_node(&self, path: &str) -> Option<&Node> {
         if path.is_empty() {
             return Some(&self.root);
@@ -92,7 +94,6 @@ impl DataTree {
         Some(current)
     }
 
-    // Получение или создание узла по пути в точечной нотации
     pub fn get_or_create_node(&mut self, path: &str) -> &mut Node {
         if path.is_empty() {
             return &mut self.root;
@@ -108,7 +109,6 @@ impl DataTree {
         current
     }
 
-    // Установка значения по пути в точечной нотации
     pub fn set_value(&mut self, path: &str, value: Value) -> Result<(), String> {
         let parts: Vec<&str> = path.split('.').collect();
         if parts.is_empty() {
@@ -120,12 +120,10 @@ impl DataTree {
 
         let mut current = &mut self.root;
 
-        // Навигация по дереву до предпоследнего элемента
         for &part in node_path {
             current = current.get_or_create_child(part);
         }
 
-        // Устанавливаем значение в последний элемент
         current.set_property(SmolStr::new(value_key), value);
 
         Ok(())
