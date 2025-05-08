@@ -90,6 +90,10 @@ impl iced_core::theme::Base for Theme {
                 .into(),
         }
     }
+
+    fn palette(&self) -> Option<iced_core::theme::Palette> {
+        None
+    }
 }
 
 impl Default for Theme {

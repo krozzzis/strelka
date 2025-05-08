@@ -196,12 +196,26 @@ impl App {
     }
 }
 
+struct AppBoot {
+    config: ApplicationConfig,
+}
+
+impl iced::application::Boot<App, AppMessage> for AppBoot {
+    fn boot(&self) -> (App, Task<AppMessage>) {
+        App::new(self.config.clone())
+    }
+}
+
 fn main() -> iced::Result {
     env_logger::init();
-    let config = load_config();
-    println!("{config:#?}");
 
-    iced::application(App::title, App::update, App::view)
+    let config = load_config();
+
+    let boot = AppBoot {
+        config: config.clone(),
+    };
+
+    iced::application(boot, App::update, App::view)
         .subscription(App::subscription)
         .theme(App::theme)
         .scale_factor(App::scale_factor)
@@ -215,5 +229,5 @@ fn main() -> iced::Result {
             ..Default::default()
         })
         .centered()
-        .run_with(move || App::new(config))
+        .run()
 }

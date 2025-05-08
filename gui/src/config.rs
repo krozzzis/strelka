@@ -3,7 +3,7 @@ use strelka_core::{DataTree, Node, NodeDeserialize, Value};
 
 pub const APPLICATION_CONFIG_NODE: &'static str = "application";
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ApplicationConfig {
     pub scale_factor: f32,
     pub decorations: bool,
