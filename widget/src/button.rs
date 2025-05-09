@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use strelka_core::{theme::StyleConverter, Theme};
 
 use iced::{
@@ -11,16 +9,21 @@ use iced::{
         Clipboard, Layout, Shell, Widget,
     },
     touch,
-    widget::canvas::{self, path::Builder, Fill},
-    window, Element, Event, Length, Padding, Point, Rectangle, Size, Vector,
+    widget::{
+        canvas::{self, path::Builder, Fill},
+        text::IntoFragment,
+    },
+    window, Alignment, Element, Event, Length, Padding, Point, Rectangle, Renderer, Size, Vector,
 };
 use theming::{stylesheet::ButtonStyle, Radius};
 use theming::{Border, Color, Font, Margin};
 
-pub fn primary_button<'a, Message>(
-    content: impl Into<Element<'a, Message, Theme>>,
-) -> iced::widget::Button<'a, Message, Theme> {
-    iced::widget::Button::new(content).style(strelka_core::iced::button::primary)
+pub fn primary_button<'a, Message>(text: impl IntoFragment<'a>) -> Button<'a, Message, Renderer> {
+    Button::new(
+        iced::widget::text(text)
+            .align_x(Alignment::Center)
+            .align_y(Alignment::Center),
+    )
 }
 
 pub fn secondary_button<'a, Message>(
@@ -41,7 +44,6 @@ pub struct Style {
     pub margin: Margin,
     pub border: Border,
     pub font: Font,
-    pub superellipse: Option<SuperellipseParams>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -284,74 +286,38 @@ where
         let style = match status {
             Status::Active => {
                 let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.active");
-                let params = if style.superellipse {
-                    Some(SuperellipseParams {
-                        n: style.exponent,
-                        corner_radius: Radius::new(style.border_radius),
-                    })
-                } else {
-                    None
-                };
                 Style {
                     background: style.background,
                     border: Border::with_radius(style.border_radius),
                     margin: Margin::new(0.0),
                     font: Font::SANS_SERIF,
-                    superellipse: params,
                 }
             }
             Status::Hovered => {
                 let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.hover");
-                let params = if style.superellipse {
-                    Some(SuperellipseParams {
-                        n: style.exponent,
-                        corner_radius: Radius::new(style.border_radius),
-                    })
-                } else {
-                    None
-                };
                 Style {
                     background: style.background,
                     border: Border::with_radius(style.border_radius),
                     margin: Margin::new(0.0),
                     font: Font::SANS_SERIF,
-                    superellipse: params,
                 }
             }
             Status::Pressed => {
                 let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.selected");
-                let params = if style.superellipse {
-                    Some(SuperellipseParams {
-                        n: style.exponent,
-                        corner_radius: Radius::new(style.border_radius),
-                    })
-                } else {
-                    None
-                };
                 Style {
                     background: style.background,
                     border: Border::with_radius(style.border_radius),
                     margin: Margin::new(0.0),
                     font: Font::SANS_SERIF,
-                    superellipse: params,
                 }
             }
             Status::Disabled => {
                 let style: ButtonStyle = ButtonStyle::from_theme(theme, "button.disabled");
-                let params = if style.superellipse {
-                    Some(SuperellipseParams {
-                        n: style.exponent,
-                        corner_radius: Radius::new(style.border_radius),
-                    })
-                } else {
-                    None
-                };
                 Style {
                     background: style.background,
                     border: Border::with_radius(style.border_radius),
                     margin: Margin::new(0.0),
                     font: Font::SANS_SERIF,
-                    superellipse: params,
                 }
             }
         };
@@ -403,65 +369,61 @@ where
         let mut frame = Frame::new(renderer, widget_bounds);
         let mut builder = Builder::new();
 
-        if let Some(params) = style.superellipse {
-            add_superellipse_to_builder(&mut builder, content_bounds, params);
-        } else {
-            // Top line
-            builder.move_to(Point::new(
-                content_bounds.x + radius.top_left,
-                content_bounds.y,
-            ));
-            builder.line_to(Point::new(
-                content_bounds.x + content_bounds.width - radius.top_right,
-                content_bounds.y,
-            ));
+        // Top line
+        builder.move_to(Point::new(
+            content_bounds.x + radius.top_left,
+            content_bounds.y,
+        ));
+        builder.line_to(Point::new(
+            content_bounds.x + content_bounds.width - radius.top_right,
+            content_bounds.y,
+        ));
 
-            // Top right arc
-            builder.arc_to(
-                Point::new(content_bounds.x + content_bounds.width, content_bounds.y),
-                Point::new(
-                    content_bounds.x + content_bounds.width,
-                    content_bounds.y + content_bounds.height - radius.bottom_right.abs(),
-                ),
-                radius.top_right.abs(),
-            );
+        // Top right arc
+        builder.arc_to(
+            Point::new(content_bounds.x + content_bounds.width, content_bounds.y),
+            Point::new(
+                content_bounds.x + content_bounds.width,
+                content_bounds.y + content_bounds.height - radius.bottom_right.abs(),
+            ),
+            radius.top_right.abs(),
+        );
 
-            // Bottom right arc
-            builder.arc_to(
-                Point::new(
-                    content_bounds.x + content_bounds.width,
-                    content_bounds.y + content_bounds.height,
-                ),
-                Point::new(
-                    content_bounds.x + content_bounds.width - radius.bottom_right,
-                    content_bounds.y + content_bounds.height,
-                ),
-                radius.bottom_right.abs(),
-            );
-
-            // Bottom line
-            builder.line_to(Point::new(
-                content_bounds.x + radius.bottom_left,
+        // Bottom right arc
+        builder.arc_to(
+            Point::new(
+                content_bounds.x + content_bounds.width,
                 content_bounds.y + content_bounds.height,
-            ));
+            ),
+            Point::new(
+                content_bounds.x + content_bounds.width - radius.bottom_right,
+                content_bounds.y + content_bounds.height,
+            ),
+            radius.bottom_right.abs(),
+        );
 
-            // Bottom left arc
-            builder.arc_to(
-                Point::new(content_bounds.x, content_bounds.y + content_bounds.height),
-                Point::new(
-                    content_bounds.x,
-                    content_bounds.y + content_bounds.height - radius.bottom_left.abs(),
-                ),
-                radius.bottom_left.abs(),
-            );
+        // Bottom line
+        builder.line_to(Point::new(
+            content_bounds.x + radius.bottom_left,
+            content_bounds.y + content_bounds.height,
+        ));
 
-            // Top left arc
-            builder.arc_to(
-                Point::new(content_bounds.x, content_bounds.y),
-                Point::new(content_bounds.x + radius.top_left, content_bounds.y),
-                radius.top_left.abs(),
-            );
-        }
+        // Bottom left arc
+        builder.arc_to(
+            Point::new(content_bounds.x, content_bounds.y + content_bounds.height),
+            Point::new(
+                content_bounds.x,
+                content_bounds.y + content_bounds.height - radius.bottom_left.abs(),
+            ),
+            radius.bottom_left.abs(),
+        );
+
+        // Top left arc
+        builder.arc_to(
+            Point::new(content_bounds.x, content_bounds.y),
+            Point::new(content_bounds.x + radius.top_left, content_bounds.y),
+            radius.top_left.abs(),
+        );
 
         let path = builder.build();
 
@@ -530,152 +492,4 @@ pub enum Status {
     Hovered,
     Pressed,
     Disabled,
-}
-
-/// Helper function to generate points along a superellipse path with consistent corner radius
-pub fn generate_superellipse_points(bounds: Rectangle, params: SuperellipseParams) -> Vec<Point> {
-    let width = bounds.width;
-    let height = bounds.height;
-    let n = params.n;
-
-    let top_left_radius = params.corner_radius.top_left;
-    let top_right_radius = params.corner_radius.top_right;
-    let bottom_right_radius = params.corner_radius.bottom_right;
-    let bottom_left_radius = params.corner_radius.bottom_left;
-
-    // Calculate rectangle edges
-    let left = bounds.x;
-    let top = bounds.y;
-    let right = bounds.x + width;
-    let bottom = bounds.y + height;
-
-    let top_left_segments = calculate_superellipse_segments(params.corner_radius.top_left, n);
-    let top_right_segments = calculate_superellipse_segments(params.corner_radius.top_right, n);
-    let bottom_right_segments =
-        calculate_superellipse_segments(params.corner_radius.bottom_right, n);
-    let bottom_left_segments = calculate_superellipse_segments(params.corner_radius.bottom_left, n);
-
-    // Create points array with capacity
-    let mut points = Vec::with_capacity(
-        top_left_segments + top_right_segments + bottom_right_segments + bottom_left_segments,
-    );
-
-    // Top-left corner
-    points.push(Point::new(left, top + top_left_radius));
-    for i in 1..top_left_segments - 1 {
-        let t = (i as f32 / (top_left_segments - 1) as f32) * PI / 2.0 + PI;
-        let x = left
-            + top_left_radius
-            + top_left_radius * (t.cos().abs().powf(2.0 / n) * t.cos().signum());
-        let y = top
-            + top_left_radius
-            + top_left_radius * (t.sin().abs().powf(2.0 / n) * t.sin().signum());
-        points.push(Point::new(x, y));
-    }
-    points.push(Point::new(left + top_left_radius, top));
-
-    // Top-right corner
-    points.push(Point::new(right - top_right_radius, top));
-    for i in 1..top_right_segments - 1 {
-        let t = (i as f32 / (top_right_segments - 1) as f32) * PI / 2.0 + PI * 3.0 / 2.0;
-        let x = right - top_right_radius
-            + top_right_radius * (t.cos().abs().powf(2.0 / n) * t.cos().signum());
-        let y = top
-            + top_right_radius
-            + top_right_radius * (t.sin().abs().powf(2.0 / n) * t.sin().signum());
-        points.push(Point::new(x, y));
-    }
-    points.push(Point::new(right, top + top_right_radius));
-
-    // Bottom-right corner
-    points.push(Point::new(right, bottom - bottom_right_radius));
-    for i in 1..bottom_right_segments - 1 {
-        let t = (i as f32 / (bottom_right_segments) as f32) * PI / 2.0;
-        let x = right - bottom_right_radius
-            + bottom_right_radius * (t.cos().abs().powf(2.0 / n) * t.cos().signum());
-        let y = bottom - bottom_right_radius
-            + bottom_right_radius * (t.sin().abs().powf(2.0 / n) * t.sin().signum());
-        points.push(Point::new(x, y));
-    }
-    points.push(Point::new(right - bottom_right_radius, bottom));
-
-    // Bottom-left corner
-    points.push(Point::new(left + bottom_left_radius, bottom));
-    for i in 1..bottom_left_segments - 1 {
-        let t = (i as f32 / (bottom_left_segments - 1) as f32) * PI / 2.0 + PI / 2.0;
-        let x = left
-            + bottom_left_radius
-            + bottom_left_radius * (t.cos().abs().powf(2.0 / n) * t.cos().signum());
-        let y = bottom - bottom_left_radius
-            + bottom_left_radius * (t.sin().abs().powf(2.0 / n) * t.sin().signum());
-        points.push(Point::new(x, y));
-    }
-    points.push(Point::new(left, bottom - bottom_left_radius));
-
-    points
-}
-
-/// Add superellipse path to a Builder with consistent corner radius
-pub fn add_superellipse_to_builder(
-    builder: &mut Builder,
-    bounds: Rectangle,
-    params: SuperellipseParams,
-) {
-    let points = generate_superellipse_points(bounds, params);
-
-    if points.is_empty() {
-        return;
-    }
-
-    // Start the path
-    builder.move_to(points[0]);
-
-    // Add points with line segments
-    for point in points.iter().skip(1) {
-        builder.line_to(*point);
-    }
-
-    builder.line_to(points[0]);
-}
-
-/// Calculate optimal number of segments for superellipse corners based on corner radius
-pub fn calculate_superellipse_segments(corner_radius: f32, n: f32) -> usize {
-    // Base number of segments - more segments for larger corners
-    let base_segments = (corner_radius * 0.5).max(8.0);
-
-    // Adjust segments based on n parameter
-    // Lower n values (sharper corners) need more segments for smoothness
-    let n_factor = if n < 1.0 {
-        // For squarish corners (n < 1), increase segments
-        2.0 / n.max(0.1)
-    } else if n > 2.0 {
-        // For very rounded corners (n > 2), we can use fewer segments
-        0.8
-    } else {
-        // For normal roundness (1 <= n <= 2), standard segments
-        1.0
-    };
-
-    // Calculate final segment count, ensuring minimum of 4 segments per corner
-    let segments = (base_segments * n_factor).round() as usize;
-    segments.max(4)
-}
-
-/// Struct to define superellipse parameters
-#[derive(Debug, Clone, Copy)]
-pub struct SuperellipseParams {
-    /// Exponent that controls the "squircle" shape - values between 2.0 and 6.0 work well
-    /// 2.0 is a perfect circle, higher values make it more square-like with rounded corners
-    pub n: f32,
-    /// Explicit corner radius to use (if None, will use an appropriate auto value)
-    pub corner_radius: Radius,
-}
-
-impl Default for SuperellipseParams {
-    fn default() -> Self {
-        Self {
-            n: 5.0,
-            corner_radius: Radius::default(),
-        }
-    }
 }

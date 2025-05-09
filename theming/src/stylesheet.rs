@@ -204,8 +204,6 @@ pub struct ButtonStyle {
     pub background: Color,
     pub text_color: Color,
     pub border_radius: f32,
-    pub exponent: f32,
-    pub superellipse: bool,
 }
 
 impl Default for ButtonStyle {
@@ -214,8 +212,6 @@ impl Default for ButtonStyle {
             background: Color::new(0.2, 0.2, 0.2, 1.0),
             text_color: Color::WHITE,
             border_radius: 4.0,
-            exponent: 5.0,
-            superellipse: false,
         }
     }
 }
@@ -242,22 +238,6 @@ impl StyleConverter for ButtonStyle {
             .get_float(&SmolStr::new(format!("{path}.border_radius")))
         {
             style.border_radius = radius;
-        }
-
-        // Try to get exponent
-        if let Some(exponent) = theme
-            .inner
-            .get_float(&SmolStr::new(format!("{path}.exponent")))
-        {
-            style.exponent = exponent;
-        }
-
-        // Try to get superellipse
-        if let Some(value) = theme
-            .inner
-            .get_bool(&SmolStr::new(format!("{path}.superellipse")))
-        {
-            style.superellipse = value;
         }
 
         style

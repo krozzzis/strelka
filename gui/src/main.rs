@@ -16,7 +16,10 @@ use theming::Theme;
 
 use strelka_core::{command::CommandRegistry, smol_str::SmolStr, Message, Modifiers, ThemeMessage};
 use strelka_core::{CommandMessage, Theme as CoreTheme};
-use widget::{button::Button, container::background};
+use widget::{
+    button::{primary_button, Button},
+    container::background,
+};
 
 static DEFAULT_THEME: &str = "core.dark";
 static APP_ICON: &[u8] = include_bytes!("../../contrib/icon.ico");
@@ -131,12 +134,11 @@ impl App {
     fn view(&self) -> Element<AppMessage, CoreTheme> {
         background(center(
             column!(
-                Button::new("Button1")
+                primary_button("Button1")
                     .on_press(AppMessage::None)
-                    .width(Length::Fixed(80.0))
-                    .height(Length::Fixed(40.0))
-                    .padding(8.0),
-                Button::new("Button1")
+                    .width(Length::Fixed(120.0))
+                    .height(Length::Fixed(60.0)),
+                primary_button("Button2")
                     .on_press(AppMessage::None)
                     .width(Length::Fixed(80.0))
                     .height(Length::Fixed(40.0))

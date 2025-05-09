@@ -3,21 +3,16 @@ button {
     background "#f91919"
     text_color "#dddddd"
     border_radius 15.0
-    superellipse #false
   }
   hover {
     background "#1dfd1d"
     text_color "#dddddd"
     border_radius 15.0
-    exponent 2.0
-    superellipse #true
   }
   selected {
     background "#f0f000"
     text_color "#dddddd"
     border_radius 10.0
-    exponent 2.0
-    superellipse #true
   }
 }
 
