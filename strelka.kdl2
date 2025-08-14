@@ -1,0 +1,3 @@
+application {
+    scale_factor 2.0
+}

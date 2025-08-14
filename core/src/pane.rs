@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::document::DocumentId;
+pub type DocumentId = usize;
 
 pub type PaneId = usize;
 

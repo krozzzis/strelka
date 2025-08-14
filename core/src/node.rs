@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use crate::{smol_str::SmolStr, Value};
-use kdl::{KdlDocument, KdlNode, KdlValue};
 
 #[derive(Debug, Clone, Default)]
 pub struct Node {
@@ -54,59 +53,6 @@ impl Node {
     pub fn get_name(&self) -> &SmolStr {
         &self.name
     }
-}
-
-pub fn parse_kdl_document(document: &KdlDocument) -> Result<Node, String> {
-    let mut root = Node::new();
-    for node in document.nodes() {
-        let name = node.name().value();
-
-        let mut child = parse_kdl_node(node)?;
-        child.name = SmolStr::new(name);
-
-        if document.nodes().len() == 1 {
-            root = child;
-        } else {
-            root.add_child(child);
-        }
-    }
-    Ok(root)
-}
-
-fn parse_kdl_value(value: &KdlValue) -> Value {
-    match value {
-        KdlValue::String(value) => Value::String(value.into()),
-        KdlValue::Integer(value) => Value::Integer(*value as i32),
-        KdlValue::Float(value) => Value::Float(*value as f32),
-        KdlValue::Bool(value) => Value::Boolean(*value),
-        KdlValue::Null => Value::String(String::from("Null").into()),
-    }
-}
-
-fn parse_kdl_node(node: &KdlNode) -> Result<Node, String> {
-    let mut root = Node::new();
-    for entry in node.entries() {
-        if let Some(key) = entry.name() {
-            let prop_name: SmolStr = key.value().into();
-            let value = parse_kdl_value(entry.value());
-            root.set_property(prop_name, value);
-        } else if root.get_value().is_none() {
-            let value = parse_kdl_value(entry.value());
-            root.set_value(value);
-        }
-    }
-
-    for doc in node.children() {
-        for node in doc.nodes() {
-            let name = node.name().value();
-
-            let mut child = parse_kdl_node(node)?;
-            child.name = SmolStr::new(name);
-
-            root.add_child(child);
-        }
-    }
-    Ok(root)
 }
 
 pub trait NodeDeserialize: Sized {

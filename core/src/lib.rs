@@ -1,8 +1,6 @@
 pub mod buffer;
 pub mod color;
 pub mod command;
-pub mod data_tree;
-pub mod document;
 pub mod hotkey;
 #[cfg(feature = "iced")]
 pub mod iced;
@@ -13,7 +11,6 @@ pub mod theme;
 mod value;
 
 pub use color::*;
-pub use data_tree::DataTree;
 pub use hotkey::*;
 pub use message::*;
 pub use node::{Node, NodeDeserialize};

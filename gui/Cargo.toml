@@ -19,4 +19,6 @@ iced = { workspace = true }
 log = { workspace = true }
 env_logger = { workspace = true }
 smol = { workspace = true }
-kdl = { workspace = true }
+serde = { workspace = true }
+ron = { workspace = true }
+

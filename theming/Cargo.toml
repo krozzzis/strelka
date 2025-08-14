@@ -9,7 +9,8 @@ authors = ["Nikita Shumov"]
 strelka_core = { path = "../core", features = ["iced", "serde"] }
 iced = { workspace = true, optional = true }
 smol = { workspace = true }
-kdl = { workspace = true }
+ron = { workspace = true }
+serde = { workspace = true }
 log = { workspace = true }
 
 [features]

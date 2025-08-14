@@ -1,0 +1,49 @@
+(
+    root: (
+        properties: {},
+        children: {
+            "button": (
+                properties: {},
+                children: {
+                    "active": (
+                        properties: {
+                            "background": "#191919",
+                            "text_color": "#dddddd",
+                            "border_radius": 10.0,
+                        },
+                        children: {},
+                    ),
+                    "hover": (
+                        properties: {
+                            "background": "#1d1d1d",
+                            "text_color": "#dddddd",
+                            "border_radius": 10.0,
+                        },
+                        children: {},
+                    ),
+                    "selected": (
+                        properties: {
+                            "background": "#00000000",
+                            "text_color": "#dddddd",
+                            "border_radius": 10.0,
+                        },
+                        children: {},
+                    ),
+                },
+            ),
+            "text": (
+                properties: {
+                    "color": "#dddddd",
+                },
+                children: {},
+            ),
+            "container": (
+                properties: {
+                    "background": "#1d1d1d",
+                    "background2": "#191919",
+                },
+                children: {},
+            ),
+        },
+    ),
+)

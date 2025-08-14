@@ -25,6 +25,7 @@ serde = { version = "^1", features = ["derive"] }
 smol = { version = "^2" }
 anyhow = { version = "^1" }
 async-trait = { version = "0.1" }
+ron = { version = "^0.8", features = ["integer128"] }
 # iced_aw = { version = "0.12.0" }
 iced = { git = "https://github.com/iced-rs/iced", features = [
   "advanced",
@@ -39,4 +40,3 @@ iced = { git = "https://github.com/iced-rs/iced", features = [
 ]}
 iced_core = { git = "https://github.com/iced-rs/iced" }
 iced_widget = { git = "https://github.com/iced-rs/iced" }
-kdl = { version = "^6.3" }

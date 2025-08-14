@@ -186,7 +186,7 @@ impl App {
                 return Some(AppMessage::CoreMessage(Message::Command(
                     CommandMessage::CallCommand(
                         SmolStr::new_static("load_theme"),
-                        vec![String::from("./themes/light/theme.kdl")],
+                        vec![String::from("./themes/light/theme.ron")],
                     ),
                 )));
             }

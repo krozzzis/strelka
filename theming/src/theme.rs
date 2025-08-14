@@ -1,11 +1,10 @@
 use std::{collections::HashMap, path::PathBuf};
 use strelka_core::{smol_str::SmolStr, Color, GenericTheme, Value};
-
-// use iced::daemon::{Appearance, DefaultStyle};
+use serde::{Deserialize, Serialize};
 
 use crate::stylesheet::StyleSheet;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Theme {
     stylesheet: StyleSheet,
 }

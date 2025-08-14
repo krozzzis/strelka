@@ -9,7 +9,7 @@ use strelka_core::{Message, ThemeMessage};
 use theming::Theme;
 use theming::stylesheet::StyleSheet;
 
-static DEFAULT_THEME_PATH: &str = "./themes/dark/theme.kdl";
+static DEFAULT_THEME_PATH: &str = "./themes/dark/theme.ron";
 
 #[derive(Default)]
 pub struct ThemeLoadCommand {}
