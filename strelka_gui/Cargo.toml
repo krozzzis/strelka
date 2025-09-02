@@ -1,0 +1,12 @@
+[package]
+name = "strelka_gui"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { workspace = true }
+iced = { git = "https://github.com/iced-rs/iced.git", features = ["tokio"] }
+crossbeam-channel = { workspace = true }
+tracing = { workspace = true }
+strelka_core = { path = "../strelka_core" }
+smol_str = { workspace = true }
