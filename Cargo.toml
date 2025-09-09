@@ -1,14 +1,6 @@
-[package]
-name = "strelka"
-version = "0.1.0"
-edition = "2024"
-
 [workspace]
 members = ["strelka_core", "strelka_gui"]
-
-[[bin]]
-name = "strelka"
-path = "strelka_gui/src/main.rs"
+resolver = "3"
 
 [profile.release]
 opt-level = 2
@@ -24,7 +16,6 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = true
-# Additional size optimizations
 overflow-checks = false
 debug = false
 
@@ -33,5 +24,7 @@ debug = false
 crossbeam-channel = "0.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tokio = { version = "1.47", features = ["rt-multi-thread", "macros"] }
+tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "fs"] }
 smol_str = "0.2"
+dashmap = "6.1"
+ropey = "1.6"

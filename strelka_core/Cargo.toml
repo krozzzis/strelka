@@ -8,3 +8,5 @@ tokio = { workspace = true }
 crossbeam-channel = { workspace = true }
 tracing = { workspace = true }
 smol_str = { workspace = true }
+dashmap = { workspace = true }
+ropey = { workspace = true }

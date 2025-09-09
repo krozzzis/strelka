@@ -9,4 +9,3 @@ iced = { git = "https://github.com/iced-rs/iced.git", features = ["tokio"] }
 crossbeam-channel = { workspace = true }
 tracing = { workspace = true }
 strelka_core = { path = "../strelka_core" }
-smol_str = { workspace = true }
