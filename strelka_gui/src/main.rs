@@ -1,79 +1,77 @@
+mod message;
 mod screen;
 
-use crossbeam_channel::{unbounded, Sender, Receiver};
-
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use iced::{Element, Task};
-use iced::widget::{container, row, text};
-use strelka_core::{Core, CoreCommand};
-use iced::widget::column;
+use strelka_core::Core;
 
-use screen::{Screen, BufferView};
+use message::Message;
+use screen::{BufferView, FileExplorer, Screen, ScreenMessage};
 
-struct Strelka<'a> {
+struct Strelka {
     core: Arc<Core>,
-    screen: Box<dyn Screen<'a, Message>>,
+    screen: Screen,
 }
 
-impl Strelka<'_> {
+impl Strelka {
     fn new() -> (Self, Task<Message>) {
-        let (cmd_tx, cmd_rx) = unbounded();
-        let (event_tx, event_rx) = unbounded();
+        let core = Arc::new(Core::new());
+        let mut tasks = Vec::new();
 
-        let core = Arc::new(Core::new(cmd_rx, event_tx.clone()));
-
-        let open_tasks = std::fs::read_dir(".")
-            .unwrap()
-            .filter_map(|entry| entry.ok())
-            .filter(|entry| entry.file_type().map(|ft| ft.is_file()).unwrap_or(false))
-            .map(|entry| {
-                let path = entry.path();
-                let cmd = CoreCommand {
-                    action: strelka_core::CoreAction::OpenFile(path),
-                };
-                Message::CoreCommand(cmd)
-            })
-            .collect::<Vec<_>>();
-
-        let task = Task::batch(open_tasks.into_iter().map(Task::done));
+        let explorer = FileExplorer::new("./");
+        let init = explorer
+            .init(&core)
+            .map(|e| Message::Screen(ScreenMessage::FileExplorer(e)));
+        tasks.push(init);
 
         (
             Self {
                 core,
-                screen: Box::new(BufferView::new(1) )
+                screen: Screen::FileExplorer(explorer),
             },
-            
-            task
+            Task::batch(tasks),
         )
     }
 
     fn update(&mut self, message: Message) -> Task<Message> {
+        println!("Message: {message:?}");
         match message {
             Message::CoreCommand(cmd) => {
                 let core = self.core.clone();
-                Task::perform(async move {
-                    core.handle_command(cmd).await
-                }, |_| Message::None)
+                Task::perform(async move { core.handle_command(cmd).await }, |_| {
+                    Message::None
+                })
+            }
+            Message::SetScreen(screen) => {
+                self.screen = *screen;
+                self.screen.init(&self.core)
+            }
+            Message::Screen(screen_event) => match screen_event {
+                ScreenMessage::BufferView(e) => {
+                    if let Screen::BufferView(state) = &mut self.screen {
+                        state.update(&self.core, e)
+                    } else {
+                        Task::none()
+                    }
+                }
+                ScreenMessage::FileExplorer(e) => {
+                    if let Screen::FileExplorer(state) = &mut self.screen {
+                        state.update(&self.core, e)
+                    } else {
+                        Task::none()
+                    }
+                }
             },
             Message::None => Task::none(),
         }
     }
 
     fn view(&self) -> Element<'_, Message> {
-        self.screen.view(self.core.clone()).map(|_| Message::None)
+        self.screen.view(&self.core)
     }
-
-}
-
-#[derive(Debug, Clone)]
-enum Message {
-    CoreCommand(CoreCommand),
-    None,
 }
 
 pub fn main() -> iced::Result {
-    iced::application(Strelka::new, Strelka::update, Strelka::view)
-        .run()
+    iced::application(Strelka::new, Strelka::update, Strelka::view).run()
 }
