@@ -8,8 +8,8 @@ use std::sync::Arc;
 
 use iced::{Element, Task};
 
-use strelka_core::Core;
 use crate::message::Message;
+use strelka_core::Core;
 
 #[derive(Debug)]
 pub enum ScreenMessage {

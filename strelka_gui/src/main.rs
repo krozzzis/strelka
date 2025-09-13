@@ -1,23 +1,31 @@
+mod header_bar;
 mod message;
 mod screen;
 
 use std::sync::Arc;
 
+use iced::widget::column;
 use iced::{Element, Task};
 use strelka_core::Core;
 
-use message::Message;
+use crate::header_bar::header_bar;
+use message::{Message, WindowMessage};
 use screen::{BufferView, FileExplorer, Screen, ScreenMessage};
 
 struct Strelka {
     core: Arc<Core>,
     screen: Screen,
+    window_id: Option<iced::window::Id>,
 }
 
 impl Strelka {
     fn new() -> (Self, Task<Message>) {
         let core = Arc::new(Core::new());
         let mut tasks = Vec::new();
+
+        let obtain_id = iced::window::get_latest()
+            .map(|id| Message::SetWindowId(id.expect("Cannot get window id")));
+        tasks.push(obtain_id);
 
         let explorer = FileExplorer::new("./");
         let init = explorer
@@ -28,6 +36,7 @@ impl Strelka {
         (
             Self {
                 core,
+                window_id: None,
                 screen: Screen::FileExplorer(explorer),
             },
             Task::batch(tasks),
@@ -63,15 +72,42 @@ impl Strelka {
                     }
                 }
             },
+            Message::Window(msg) => {
+                if let Some(window_id) = self.window_id {
+                    match msg {
+                        WindowMessage::Close => iced::window::close(window_id),
+                        WindowMessage::ToggleMaximize => iced::window::toggle_maximize(window_id),
+                        WindowMessage::Collapse => iced::window::minimize(window_id, true),
+                        WindowMessage::DragStart => iced::window::drag(window_id),
+                        _ => Task::none(),
+                    }
+                } else {
+                    Task::none()
+                }
+            }
+            Message::SetWindowId(id) => {
+                self.window_id = Some(id);
+                Task::none()
+            }
             Message::None => Task::none(),
         }
     }
 
     fn view(&self) -> Element<'_, Message> {
-        self.screen.view(&self.core)
+        column![
+            header_bar().map(|e| Message::Window(e)),
+            self.screen.view(&self.core),
+        ]
+        .into()
+    }
+
+    fn title(&self) -> String {
+        String::from("Strelka")
     }
 }
 
 pub fn main() -> iced::Result {
-    iced::application(Strelka::new, Strelka::update, Strelka::view).run()
+    iced::application(Strelka::new, Strelka::update, Strelka::view)
+        .title(Strelka::title)
+        .run()
 }
