@@ -1,11 +1,11 @@
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use dashmap::DashMap;
 use tokio::fs;
 
-pub type BufferId = u64;
+use strelka_api::BufferId;
+use strelka_api::message::{CoreAction, CoreCommand, CoreEvent};
 
 #[derive(Debug)]
 pub struct Core {
@@ -47,29 +47,6 @@ impl Core {
 
         None
     }
-}
-
-#[derive(Debug, Clone)]
-pub enum CoreEvent {
-    DocumentOpened(BufferId),
-    None,
-}
-
-#[derive(Debug, Clone)]
-pub struct CoreCommand {
-    pub action: CoreAction,
-}
-
-impl CoreCommand {
-    pub fn new(action: CoreAction) -> Self {
-        Self { action }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum CoreAction {
-    InsertText(BufferId, Arc<String>),
-    OpenFile(PathBuf),
 }
 
 #[derive(Debug, Clone)]

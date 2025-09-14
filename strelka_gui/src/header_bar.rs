@@ -1,7 +1,7 @@
 use iced::widget::{MouseArea, Space, Stack, button, container, row, text};
 use iced::{Alignment, Element, Length};
 
-use crate::message::WindowMessage;
+use strelka_api::message::WindowMessage;
 
 pub fn header_bar<'a>() -> Element<'a, WindowMessage> {
     // Кнопки управления

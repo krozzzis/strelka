@@ -10,3 +10,5 @@ tracing = { workspace = true }
 smol_str = { workspace = true }
 dashmap = { workspace = true }
 ropey = { workspace = true }
+
+strelka_api = { path = "../strelka_api" }

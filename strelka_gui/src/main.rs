@@ -6,10 +6,12 @@ use std::sync::Arc;
 
 use iced::widget::column;
 use iced::{Element, Task};
+
+use strelka_api::message::WindowMessage;
 use strelka_core::Core;
 
 use crate::header_bar::header_bar;
-use message::{Message, WindowMessage};
+use message::Message;
 use screen::{BufferView, FileExplorer, Screen, ScreenMessage};
 
 struct Strelka {

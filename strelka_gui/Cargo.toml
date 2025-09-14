@@ -8,4 +8,6 @@ tokio = { workspace = true }
 iced = { git = "https://github.com/iced-rs/iced.git", features = ["tokio"] }
 crossbeam-channel = { workspace = true }
 tracing = { workspace = true }
+
 strelka_core = { path = "../strelka_core" }
+strelka_api = { path = "../strelka_api" }

@@ -4,7 +4,8 @@ use std::sync::{Arc, RwLock};
 use iced::widget::{button, column, container, text};
 use iced::{Element, Task};
 
-use strelka_core::{Core, CoreAction, CoreCommand, CoreEvent};
+use strelka_api::message::{CoreAction, CoreCommand, CoreEvent};
+use strelka_core::Core;
 
 use crate::BufferView;
 use crate::message::Message;

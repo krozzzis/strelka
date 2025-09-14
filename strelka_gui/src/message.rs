@@ -1,6 +1,5 @@
-use strelka_core::CoreCommand;
-
 use crate::screen::{Screen, ScreenMessage};
+use strelka_api::message::{CoreCommand, WindowMessage};
 
 #[derive(Debug)]
 pub enum Message {
@@ -10,13 +9,4 @@ pub enum Message {
     Window(WindowMessage),
     SetWindowId(iced::window::Id),
     None,
-}
-
-#[derive(Debug, Clone)]
-pub enum WindowMessage {
-    Close,
-    ToggleMaximize,
-    Collapse,
-    DragStart,
-    DragEnd,
 }

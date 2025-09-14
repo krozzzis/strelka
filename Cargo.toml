@@ -1,5 +1,5 @@
 [workspace]
-members = ["strelka_core", "strelka_gui"]
+members = [ "strelka_api","strelka_core", "strelka_gui"]
 resolver = "3"
 
 [profile.release]

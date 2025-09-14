@@ -3,7 +3,8 @@ use std::sync::Arc;
 use iced::widget::text_editor;
 use iced::{Element, Length, Task};
 
-use strelka_core::{BufferId, Core};
+use strelka_api::BufferId;
+use strelka_core::Core;
 
 use crate::message::Message;
 

@@ -2854,6 +2854,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d08889ec5408683408db66ad89e0e1f93dff55c73a4ccc71c427d5b277ee47e6"
 
 [[package]]
+name = "strelka_api"
+version = "0.1.0"
+
+[[package]]
 name = "strelka_core"
 version = "0.1.0"
 dependencies = [
@@ -2861,6 +2865,7 @@ dependencies = [
  "dashmap",
  "ropey",
  "smol_str",
+ "strelka_api",
  "tokio",
  "tracing",
 ]
@@ -2871,6 +2876,7 @@ version = "0.1.0"
 dependencies = [
  "crossbeam-channel",
  "iced",
+ "strelka_api",
  "strelka_core",
  "tokio",
  "tracing",
