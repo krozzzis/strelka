@@ -4,7 +4,8 @@ use std::sync::{Arc, RwLock};
 use iced::widget::{button, column, container, text};
 use iced::{Element, Task};
 
-use strelka_api::message::{CoreAction, CoreCommand, CoreEvent};
+use strelka_api::core::CoreAPI;
+use strelka_api::message::{CoreAction, CoreMessage};
 use strelka_core::Core;
 
 use crate::BufferView;
@@ -17,7 +18,7 @@ pub enum FileExplorerMessage {
     Open(PathBuf),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FileExplorer {
     path: PathBuf,
     files: Arc<RwLock<Vec<PathBuf>>>,
@@ -78,10 +79,9 @@ impl FileExplorer {
             FileExplorerMessage::Open(path) => {
                 let core = core.clone();
                 let task = async move {
-                    let action = CoreAction::OpenFile(path);
-                    let command = CoreCommand::new(action);
-                    if let Some(CoreEvent::DocumentOpened(buffer_id)) =
-                        core.handle_command(command).await
+                    let message = CoreMessage::OpenFile(path);
+                    if let Some(CoreAction::DocumentOpened(buffer_id)) =
+                        core.handle_command(message).await
                     {
                         let screen = BufferView::new(buffer_id);
                         let message = Message::SetScreen(Box::new(Screen::BufferView(screen)));

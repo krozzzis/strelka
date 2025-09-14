@@ -1,12 +1,14 @@
 use crate::screen::{Screen, ScreenMessage};
-use strelka_api::message::{CoreCommand, WindowMessage};
+use strelka_api::message::{CoreMessage, WindowMessage};
+use strelka_plugin::ActionId;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Message {
     SetScreen(Box<Screen>),
-    CoreCommand(CoreCommand),
+    CoreMessage(CoreMessage),
     Screen(ScreenMessage),
     Window(WindowMessage),
     SetWindowId(iced::window::Id),
+    Action(ActionId),
     None,
 }

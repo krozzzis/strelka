@@ -11,13 +11,13 @@ use iced::{Element, Task};
 use crate::message::Message;
 use strelka_core::Core;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ScreenMessage {
     BufferView(BufferViewMessage),
     FileExplorer(FileExplorerMessage),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Screen {
     BufferView(BufferView),
     FileExplorer(FileExplorer),

@@ -11,3 +11,4 @@ tracing = { workspace = true }
 
 strelka_core = { path = "../strelka_core" }
 strelka_api = { path = "../strelka_api" }
+strelka_plugin = { path = "../strelka_plugin" }

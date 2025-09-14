@@ -7,8 +7,10 @@ use std::sync::Arc;
 use iced::widget::column;
 use iced::{Element, Task};
 
-use strelka_api::message::WindowMessage;
+use strelka_api::core::CoreAPI;
+use strelka_api::message::{PluginMessage, WindowMessage};
 use strelka_core::Core;
+use strelka_plugin::ActionRegistry;
 
 use crate::header_bar::header_bar;
 use message::Message;
@@ -17,15 +19,23 @@ use screen::{BufferView, FileExplorer, Screen, ScreenMessage};
 struct Strelka {
     core: Arc<Core>,
     screen: Screen,
+    action_registry: Arc<ActionRegistry>,
     window_id: Option<iced::window::Id>,
 }
 
 impl Strelka {
     fn new() -> (Self, Task<Message>) {
         let core = Arc::new(Core::new());
+        let action_registry = Arc::new(ActionRegistry::new(core.clone()));
+
+        action_registry.register("print_hello", async |_core| {
+            println!("Hello");
+            PluginMessage::None
+        });
+
         let mut tasks = Vec::new();
 
-        let obtain_id = iced::window::get_latest()
+        let obtain_id = iced::window::latest()
             .map(|id| Message::SetWindowId(id.expect("Cannot get window id")));
         tasks.push(obtain_id);
 
@@ -38,6 +48,7 @@ impl Strelka {
         (
             Self {
                 core,
+                action_registry,
                 window_id: None,
                 screen: Screen::FileExplorer(explorer),
             },
@@ -48,7 +59,7 @@ impl Strelka {
     fn update(&mut self, message: Message) -> Task<Message> {
         println!("Message: {message:?}");
         match message {
-            Message::CoreCommand(cmd) => {
+            Message::CoreMessage(cmd) => {
                 let core = self.core.clone();
                 Task::perform(async move { core.handle_command(cmd).await }, |_| {
                     Message::None
@@ -91,13 +102,19 @@ impl Strelka {
                 self.window_id = Some(id);
                 Task::none()
             }
+            Message::Action(action) => {
+                let registry = self.action_registry.clone();
+                Task::perform(async move { registry.execute(action).await }, |_| {
+                    Message::None
+                })
+            }
             Message::None => Task::none(),
         }
     }
 
     fn view(&self) -> Element<'_, Message> {
         column![
-            header_bar().map(|e| Message::Window(e)),
+            header_bar().map(Message::Window),
             self.screen.view(&self.core),
         ]
         .into()

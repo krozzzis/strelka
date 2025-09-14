@@ -13,24 +13,20 @@ pub enum WindowMessage {
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreEvent {
+pub enum CoreAction {
     DocumentOpened(BufferId),
     None,
 }
 
 #[derive(Debug, Clone)]
-pub struct CoreCommand {
-    pub action: CoreAction,
-}
-
-impl CoreCommand {
-    pub fn new(action: CoreAction) -> Self {
-        Self { action }
-    }
+pub enum CoreMessage {
+    InsertText(BufferId, Arc<String>),
+    OpenFile(PathBuf),
 }
 
 #[derive(Debug, Clone)]
-pub enum CoreAction {
-    InsertText(BufferId, Arc<String>),
-    OpenFile(PathBuf),
+pub enum PluginMessage {
+    Core(CoreMessage),
+    Window(WindowMessage),
+    None,
 }

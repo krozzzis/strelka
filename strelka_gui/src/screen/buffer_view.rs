@@ -14,7 +14,7 @@ pub enum BufferViewMessage {
     None,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BufferView {
     pub buffer_id: BufferId,
     content: text_editor::Content,

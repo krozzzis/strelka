@@ -1,11 +1,13 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use async_trait::async_trait;
 use dashmap::DashMap;
 use tokio::fs;
 
 use strelka_api::BufferId;
-use strelka_api::message::{CoreAction, CoreCommand, CoreEvent};
+use strelka_api::core::CoreAPI;
+use strelka_api::message::{CoreAction, CoreMessage};
 
 #[derive(Debug)]
 pub struct Core {
@@ -22,25 +24,28 @@ impl Core {
             next_buffer_id: AtomicU64::new(1),
         }
     }
+}
 
-    pub async fn handle_command(&self, cmd: CoreCommand) -> Option<CoreEvent> {
+#[async_trait]
+impl CoreAPI for Core {
+    async fn handle_command(&self, cmd: CoreMessage) -> Option<CoreAction> {
         println!("Command: {cmd:?}");
 
-        match cmd.action {
-            CoreAction::InsertText(buffer_id, text) => {
+        match cmd {
+            CoreMessage::InsertText(buffer_id, text) => {
                 let buffer = self.buffers.get_mut(&buffer_id);
                 if let Some(mut buffer) = buffer {
                     let len = buffer.content.len();
                     buffer.content.insert_str(len, text.as_str());
-                    return Some(CoreEvent::None);
+                    return Some(CoreAction::None);
                 }
             }
-            CoreAction::OpenFile(path) => {
+            CoreMessage::OpenFile(path) => {
                 if let Ok(content) = fs::read_to_string(&path).await {
                     let buffer_id = self.next_buffer_id.fetch_add(1, Ordering::SeqCst);
                     let buffer = Buffer { content };
                     self.buffers.insert(buffer_id, buffer);
-                    return Some(CoreEvent::DocumentOpened(buffer_id));
+                    return Some(CoreAction::DocumentOpened(buffer_id));
                 }
             }
         }

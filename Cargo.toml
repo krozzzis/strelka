@@ -1,5 +1,5 @@
 [workspace]
-members = [ "strelka_api","strelka_core", "strelka_gui"]
+members = [ "strelka_api","strelka_core", "strelka_gui", "strelka_plugin"]
 resolver = "3"
 
 [profile.release]
@@ -28,3 +28,4 @@ tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "fs"] }
 smol_str = "0.2"
 dashmap = "6.1"
 ropey = "1.6"
+async-trait = "0.1.89"
