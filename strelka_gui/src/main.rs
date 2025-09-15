@@ -28,7 +28,7 @@ impl Strelka {
         let core = Arc::new(Core::new());
         let action_registry = Arc::new(ActionRegistry::new(core.clone()));
 
-        action_registry.register("print_hello", async |_core| {
+        action_registry.register("print_hello", async |_core, _arg| {
             println!("Hello");
             PluginMessage::None
         });
@@ -102,9 +102,9 @@ impl Strelka {
                 self.window_id = Some(id);
                 Task::none()
             }
-            Message::Action(action) => {
+            Message::Action(action, arg) => {
                 let registry = self.action_registry.clone();
-                Task::perform(async move { registry.execute(action).await }, |_| {
+                Task::perform(async move { registry.execute(action, arg).await }, |_| {
                     Message::None
                 })
             }
