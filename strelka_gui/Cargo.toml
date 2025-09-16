@@ -5,8 +5,7 @@ edition = "2024"
 
 [dependencies]
 tokio = { workspace = true }
-iced = { git = "https://github.com/iced-rs/iced.git", features = ["tokio"] }
-crossbeam-channel = { workspace = true }
+iced = { git = "https://github.com/iced-rs/iced.git", features = ["tokio", "sipper"] }
 tracing = { workspace = true }
 
 strelka_core = { path = "../strelka_core" }

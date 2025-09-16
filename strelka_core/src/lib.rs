@@ -1,3 +1,7 @@
+mod gui_service;
+
+pub use gui_service::MessageBasedGuiService;
+
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 

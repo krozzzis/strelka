@@ -1,18 +1,18 @@
 use iced::widget::{MouseArea, Space, Stack, button, container, row, text};
 use iced::{Alignment, Element, Length};
 
-use strelka_api::message::WindowMessage;
+use crate::message::Message;
 
-pub fn header_bar<'a>() -> Element<'a, WindowMessage> {
+pub fn header_bar<'a>() -> Element<'a, Message> {
     // Кнопки управления
-    let close_btn = button(text("×")).on_press(WindowMessage::Close).padding(4);
+    let close_btn = button(text("×")).on_press("close_window".into()).padding(4);
 
     let minimize_btn = button(text("–"))
-        .on_press(WindowMessage::Collapse)
+        .on_press("collapse_window".into())
         .padding(4);
 
     let maximize_btn = button(text("▢"))
-        .on_press(WindowMessage::ToggleMaximize)
+        .on_press("toggle_maximize_window".into())
         .padding(4);
 
     let drag_area = MouseArea::new(
@@ -20,8 +20,8 @@ pub fn header_bar<'a>() -> Element<'a, WindowMessage> {
             .style(iced::widget::container::secondary)
             .height(Length::Fill),
     )
-    .on_press(WindowMessage::DragStart)
-    .on_release(WindowMessage::DragEnd);
+    .on_press("start_drag_window".into())
+    .on_release("end_drag_window".into());
 
     Stack::with_children(vec![
         drag_area.into(),

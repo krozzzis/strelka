@@ -21,10 +21,9 @@ debug = false
 
 
 [workspace.dependencies]
-crossbeam-channel = "0.5"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "fs"] }
+tokio = { version = "1.47", features = ["rt-multi-thread", "macros", "fs", "sync"] }
 smol_str = "0.2"
 dashmap = "6.1"
 ropey = "1.6"
