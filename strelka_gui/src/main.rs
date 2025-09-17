@@ -20,8 +20,8 @@ use strelka_core::MessageBasedGuiService;
 use strelka_plugin::ActionRegistry;
 
 use crate::header_bar::header_bar;
+use crate::screen::{BufferView, FileExplorer, Screen, ScreenMessage};
 use message::Message;
-use screen::{BufferView, FileExplorer, Screen, ScreenMessage};
 
 struct Strelka {
     core: Arc<Core>,
@@ -72,6 +72,13 @@ impl Strelka {
             Message::Screen(screen_event) => match screen_event {
                 ScreenMessage::BufferView(e) => {
                     if let Screen::BufferView(state) = &mut self.screen {
+                        state.update(&self.core, e)
+                    } else {
+                        Task::none()
+                    }
+                }
+                ScreenMessage::BufferList(e) => {
+                    if let Screen::BufferList(state) = &mut self.screen {
                         state.update(&self.core, e)
                     } else {
                         Task::none()

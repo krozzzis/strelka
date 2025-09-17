@@ -1,6 +1,8 @@
+mod buffer_list;
 mod buffer_view;
 mod file_explorer;
 
+pub use buffer_list::*;
 pub use buffer_view::*;
 pub use file_explorer::*;
 
@@ -14,12 +16,14 @@ use strelka_core::Core;
 #[derive(Debug, Clone)]
 pub enum ScreenMessage {
     BufferView(BufferViewMessage),
+    BufferList(BufferListMessage),
     FileExplorer(FileExplorerMessage),
 }
 
 #[derive(Debug, Clone)]
 pub enum Screen {
     BufferView(BufferView),
+    BufferList(BufferList),
     FileExplorer(FileExplorer),
 }
 
@@ -29,6 +33,9 @@ impl Screen {
             Screen::BufferView(state) => state
                 .view(core)
                 .map(|e| Message::Screen(ScreenMessage::BufferView(e))),
+            Screen::BufferList(state) => state
+                .view(core)
+                .map(|e| Message::Screen(ScreenMessage::BufferList(e))),
             Screen::FileExplorer(state) => state
                 .view(core)
                 .map(|e| Message::Screen(ScreenMessage::FileExplorer(e))),
@@ -40,6 +47,9 @@ impl Screen {
             Screen::BufferView(state) => state
                 .init(core)
                 .map(|e| Message::Screen(ScreenMessage::BufferView(e))),
+            Screen::BufferList(state) => state
+                .init(core)
+                .map(|e| Message::Screen(ScreenMessage::BufferList(e))),
             Screen::FileExplorer(state) => state
                 .init(core)
                 .map(|e| Message::Screen(ScreenMessage::FileExplorer(e))),
