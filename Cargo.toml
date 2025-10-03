@@ -2,6 +2,12 @@
 members = [ "strelka_api","strelka_core", "strelka_gui", "strelka_plugin"]
 resolver = "3"
 
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
 [profile.release]
 opt-level = 2
 lto = false
