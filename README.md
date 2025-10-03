@@ -4,7 +4,10 @@
 
 <h1 align="center">Strelka</h1>
 
-## 🛠 Installation
+> [!WARNING]
+> A WORK IN PROGRESS! USE AT YOUR OWN RISK!
+
+## 🛠Compiling
 
 ```bash
 git clone https://github.com/krozzzis/strelka.git
