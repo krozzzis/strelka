@@ -1,12 +1,11 @@
-# Strelka
+<p align="center">
+<img width="900" alt="Banner" src="https://github.com/krozzzis/strelka/blob/main/assets/banner.png">
+</p>
 
-![assets/banner.png]
-
----
+<h1 align="center">Strelka</h1>
 
 ## 🛠 Installation
 
-### Linux
 ```bash
 git clone https://github.com/krozzzis/strelka.git
 cd strelka
