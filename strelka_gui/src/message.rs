@@ -11,7 +11,6 @@ pub enum Message {
     CoreMessage(CoreMessage),
     Screen(ScreenMessage),
     Window(WindowMessage),
-    SetWindowId(iced::window::Id),
     Action(ActionId, Value),
     GUIChannelEstablised(Sender<WindowMessage>),
     None,

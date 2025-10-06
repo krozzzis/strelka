@@ -43,6 +43,14 @@ impl ScreenManager {
         panes.width(iced::Fill).height(iced::Fill).into()
     }
 
+    pub fn get_screen(&self, screen_id: ScreenId) -> Option<&Screen> {
+        self.screens.get(&screen_id)
+    }
+
+    pub fn get_screen_mut(&mut self, screen_id: ScreenId) -> Option<&mut Screen> {
+        self.screens.get_mut(&screen_id)
+    }
+
     pub fn split_with(
         &mut self,
         screen_id: ScreenId,

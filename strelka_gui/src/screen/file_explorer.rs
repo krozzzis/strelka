@@ -8,8 +8,8 @@ use strelka_api::core::CoreAPI;
 use strelka_api::message::{CoreAction, CoreMessage};
 use strelka_core::Core;
 
-use crate::BufferView;
 use crate::message::Message;
+use crate::screen::BufferView;
 use crate::screen::Screen;
 
 #[derive(Debug, Clone)]

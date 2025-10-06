@@ -10,6 +10,8 @@ pub enum WindowMessage {
     Collapse,
     DragStart,
     DragEnd,
+    ExitRequest,
+    Exit,
 }
 
 #[derive(Debug, Clone)]
