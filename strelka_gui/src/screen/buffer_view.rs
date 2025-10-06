@@ -7,6 +7,7 @@ use strelka_api::BufferId;
 use strelka_core::Core;
 
 use crate::message::Message;
+use crate::screen::Screen;
 
 #[derive(Debug, Clone)]
 pub enum BufferViewMessage {
@@ -60,5 +61,11 @@ impl BufferView {
             BufferViewMessage::None => {}
         }
         Task::none()
+    }
+}
+
+impl From<BufferView> for Screen {
+    fn from(screen: BufferView) -> Screen {
+        Screen::BufferView(screen)
     }
 }

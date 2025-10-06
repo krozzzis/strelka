@@ -84,8 +84,9 @@ impl FileExplorer {
                         core.handle_command(message).await
                     {
                         let screen = BufferView::new(buffer_id);
-                        let message = Message::SetScreen(Box::new(Screen::BufferView(screen)));
-                        return message;
+                        //let message = Message::SetScreen(Box::new(Screen::BufferView(screen)));
+                        //return message;
+                        return Message::None;
                     }
                     Message::None
                 };
@@ -93,5 +94,11 @@ impl FileExplorer {
                 Task::perform(task, |e| e)
             }
         }
+    }
+}
+
+impl From<FileExplorer> for Screen {
+    fn from(screen: FileExplorer) -> Screen {
+        Screen::FileExplorer(screen)
     }
 }

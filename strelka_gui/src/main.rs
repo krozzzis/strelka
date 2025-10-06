@@ -7,7 +7,6 @@ use std::sync::Arc;
 use iced::Subscription;
 use iced::futures::{Stream, sink::SinkExt};
 use iced::stream;
-use iced::widget::column;
 use iced::{Element, Task};
 
 use tokio::sync::mpsc::{Sender, channel};
@@ -19,14 +18,13 @@ use strelka_core::Core;
 use strelka_core::MessageBasedGuiService;
 use strelka_plugin::ActionRegistry;
 
-use crate::header_bar::header_bar;
-use crate::screen::{BufferView, FileExplorer, Screen, ScreenMessage};
+use crate::screen::{BufferView, FileExplorer, Screen, ScreenManager, ScreenMessage};
 use message::Message;
 
 struct Strelka {
     core: Arc<Core>,
-    screen: Screen,
     action_registry: Option<Arc<ActionRegistry>>,
+    screen_manager: ScreenManager,
     window_id: Option<iced::window::Id>,
 }
 
@@ -39,18 +37,14 @@ impl Strelka {
             .map(|id| Message::SetWindowId(id.expect("Cannot get window id")));
         tasks.push(obtain_id);
 
-        let explorer = FileExplorer::new("./");
-        let init = explorer
-            .init(&core)
-            .map(|e| Message::Screen(ScreenMessage::FileExplorer(e)));
-        tasks.push(init);
+        let screen_manager = ScreenManager::new();
 
         (
             Self {
                 core,
                 action_registry: None,
                 window_id: None,
-                screen: Screen::FileExplorer(explorer),
+                screen_manager,
             },
             Task::batch(tasks),
         )
@@ -65,33 +59,29 @@ impl Strelka {
                     Message::None
                 })
             }
-            Message::SetScreen(screen) => {
-                self.screen = *screen;
-                self.screen.init(&self.core)
+            Message::Screen(screen_event) => Task::none(), /*match screen_event {
+            ScreenMessage::BufferView(e) => {
+            if let Screen::BufferView(state) = &mut self.screen {
+            state.update(&self.core, e)
+            } else {
+            Task::none()
             }
-            Message::Screen(screen_event) => match screen_event {
-                ScreenMessage::BufferView(e) => {
-                    if let Screen::BufferView(state) = &mut self.screen {
-                        state.update(&self.core, e)
-                    } else {
-                        Task::none()
-                    }
-                }
-                ScreenMessage::BufferList(e) => {
-                    if let Screen::BufferList(state) = &mut self.screen {
-                        state.update(&self.core, e)
-                    } else {
-                        Task::none()
-                    }
-                }
-                ScreenMessage::FileExplorer(e) => {
-                    if let Screen::FileExplorer(state) = &mut self.screen {
-                        state.update(&self.core, e)
-                    } else {
-                        Task::none()
-                    }
-                }
-            },
+            }
+            ScreenMessage::BufferList(e) => {
+            if let Screen::BufferList(state) = &mut self.screen {
+            state.update(&self.core, e)
+            } else {
+            Task::none()
+            }
+            }
+            ScreenMessage::FileExplorer(e) => {
+            if let Screen::FileExplorer(state) = &mut self.screen {
+            state.update(&self.core, e)
+            } else {
+            Task::none()
+            }
+            }
+            }, */
             Message::Window(msg) => {
                 if let Some(window_id) = self.window_id {
                     match msg {
@@ -127,7 +117,7 @@ impl Strelka {
     }
 
     fn view(&self) -> Element<'_, Message> {
-        column![header_bar(), self.screen.view(&self.core),].into()
+        self.screen_manager.view(&self.core)
     }
 
     fn title(&self) -> String {

@@ -8,7 +8,6 @@ use crate::screen::{Screen, ScreenMessage};
 
 #[derive(Debug, Clone)]
 pub enum Message {
-    SetScreen(Box<Screen>),
     CoreMessage(CoreMessage),
     Screen(ScreenMessage),
     Window(WindowMessage),

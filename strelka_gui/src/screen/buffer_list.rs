@@ -45,10 +45,17 @@ impl BufferList {
             BufferListMessage::Open(buffer_id) => {
                 let task = async move {
                     let screen = BufferView::new(buffer_id);
-                    Message::SetScreen(Box::new(Screen::BufferView(screen)))
+                    //Message::SetScreen(Box::new(Screen::BufferView(screen)))
+                    Message::None
                 };
                 Task::perform(task, |e| e)
             }
         }
+    }
+}
+
+impl From<BufferList> for Screen {
+    fn from(screen: BufferList) -> Screen {
+        Screen::BufferList(screen)
     }
 }
