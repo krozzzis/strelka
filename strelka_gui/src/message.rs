@@ -4,14 +4,14 @@ use strelka_api::Value;
 use strelka_api::message::{CoreMessage, WindowMessage};
 use strelka_plugin::ActionId;
 
-use crate::screen::{Screen, ScreenMessage};
+use crate::widget::file_manager;
 
 #[derive(Debug, Clone)]
 pub enum Message {
     CoreMessage(CoreMessage),
-    Screen(ScreenMessage),
     Window(WindowMessage),
     Action(ActionId, Value),
+    FileManager(file_manager::Message),
     GUIChannelEstablised(Sender<WindowMessage>),
     None,
 }

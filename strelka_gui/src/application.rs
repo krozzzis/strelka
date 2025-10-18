@@ -15,33 +15,39 @@ use strelka_core::MessageBasedGuiService;
 use strelka_plugin::ActionRegistry;
 
 use crate::message::Message;
-use crate::screen::{Screen, ScreenManager, ScreenMessageRaw};
+use crate::widget::file_manager;
 
 pub struct Strelka {
-    core: Arc<Core>,
-    action_registry: Option<Arc<ActionRegistry>>,
-    screen_manager: ScreenManager,
+    pub core: Arc<Core>,
+    pub action_registry: Option<Arc<ActionRegistry>>,
+    file_manager: file_manager::State,
+    context: Option<ActionContext>,
     window_id: iced::window::Id,
 }
 
 impl Strelka {
     pub fn new() -> (Self, Task<Message>) {
         let core = Arc::new(Core::new());
-        let screen_manager = ScreenManager::new();
 
         let (main_window_id, open_main_window) = iced::window::open(iced::window::Settings {
             exit_on_close_request: false,
             ..iced::window::Settings::default()
         });
 
-        let tasks = vec![open_main_window.then(|_| Task::none())];
+        let (file_manager_state, file_manager_init) = file_manager::State::new("./");
+
+        let tasks = vec![
+            open_main_window.then(|_| Task::none()),
+            file_manager_init.map(Message::FileManager),
+        ];
 
         (
             Self {
                 core,
+                file_manager: file_manager_state,
                 action_registry: None,
                 window_id: main_window_id,
-                screen_manager,
+                context: None,
             },
             Task::batch(tasks),
         )
@@ -52,72 +58,57 @@ impl Strelka {
         match message {
             Message::CoreMessage(cmd) => {
                 let core = self.core.clone();
-                Task::perform(async move { core.handle_command(cmd).await }, |_| {
+                return Task::perform(async move { core.handle_command(cmd).await }, |_| {
                     Message::None
-                })
-            }
-            Message::Screen(message) => {
-                let screen_id = message.screen_id;
-                if let Some(screen) = self.screen_manager.get_screen_mut(screen_id) {
-                    match message.raw {
-                        ScreenMessageRaw::BufferView(e) => {
-                            if let Screen::BufferView(state) = screen {
-                                state.update(&self.core, e)
-                            } else {
-                                Task::none()
-                            }
-                        }
-                        ScreenMessageRaw::BufferList(e) => {
-                            if let Screen::BufferList(state) = screen {
-                                state.update(&self.core, e)
-                            } else {
-                                Task::none()
-                            }
-                        }
-                        ScreenMessageRaw::FileExplorer(e) => {
-                            if let Screen::FileExplorer(state) = screen {
-                                state.update(&self.core, e)
-                            } else {
-                                Task::none()
-                            }
-                        }
-                    }
-                } else {
-                    Task::none()
-                }
+                });
             }
             Message::Window(msg) => match msg {
-                WindowMessage::Close => iced::window::close(self.window_id),
-                WindowMessage::ToggleMaximize => iced::window::toggle_maximize(self.window_id),
-                WindowMessage::Collapse => iced::window::minimize(self.window_id, true),
-                WindowMessage::DragStart => iced::window::drag(self.window_id),
-                WindowMessage::DragEnd => Task::none(),
-                WindowMessage::ExitRequest => iced::exit(),
-                WindowMessage::Exit => iced::exit(),
+                WindowMessage::Close => return iced::window::close(self.window_id),
+                WindowMessage::ToggleMaximize => {
+                    return iced::window::toggle_maximize(self.window_id);
+                }
+                WindowMessage::Collapse => return iced::window::minimize(self.window_id, true),
+                WindowMessage::DragStart => return iced::window::drag(self.window_id),
+                WindowMessage::DragEnd => {}
+                WindowMessage::ExitRequest => return iced::exit(),
+                WindowMessage::Exit => return iced::exit(),
             },
             Message::Action(action, arg) => {
                 if let Some(registry) = self.action_registry.clone() {
-                    Task::perform(async move { registry.execute(action, arg).await }, |_| {
-                        Message::None
-                    })
-                } else {
-                    Task::none()
+                    return Task::perform(
+                        async move { registry.execute(action, arg).await },
+                        |_| Message::None,
+                    );
                 }
             }
+            Message::FileManager(message) => match message {
+                file_manager::Message::Action(action) => {
+                    return self
+                        .file_manager
+                        .take_action(action)
+                        .map(Message::FileManager);
+                }
+                file_manager::Message::Open(path) => println!("Open {}", path.display()),
+            },
             Message::GUIChannelEstablised(sender) => {
                 self.init_action_registry(sender);
-                Task::none()
             }
-            Message::None => Task::none(),
+            Message::None => {}
         }
+
+        Task::none()
     }
 
     pub fn view(&self, _window_id: iced::window::Id) -> Element<'_, Message> {
-        self.screen_manager.view(&self.core)
+        self.file_manager.view().map(Message::FileManager)
     }
 
     pub fn title(&self, _window_id: iced::window::Id) -> String {
         String::from("Strelka")
+    }
+
+    pub fn get_context(&self) -> Option<ActionContext> {
+        self.context.clone()
     }
 
     fn init_action_registry(&mut self, sender: Sender<WindowMessage>) {
@@ -127,6 +118,8 @@ impl Strelka {
             core: self.core.clone(),
             gui: Arc::new(gui_service),
         };
+
+        self.context = Some(context.clone());
 
         let action_registry = Arc::new(ActionRegistry::new(context));
 
@@ -187,7 +180,6 @@ impl Strelka {
             iced::window::close_requests()
                 .with(main_window_id)
                 .map(|(main_window_id, id)| {
-                    println!("{id}");
                     if id == main_window_id {
                         Message::Window(WindowMessage::ExitRequest)
                     } else {
