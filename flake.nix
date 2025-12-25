@@ -28,12 +28,11 @@
           stdenv.cc # Provides the 'cc' linker
 
           # Graphics and windowing system dependencies (X11 and Wayland)
-          alsa-lib
           vulkan-loader
           libxkbcommon
           wayland
           dbus
-          
+
           # Corrected X11 library names
           xorg.libX11
           xorg.libXcursor
@@ -82,4 +81,3 @@
         formatter = pkgs.nixpkgs-fmt;
       });
 }
-

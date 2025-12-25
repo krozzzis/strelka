@@ -1,0 +1,18 @@
+[package]
+name = "strelka-gui"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "strelka"
+path = "src/main.rs"
+
+[dependencies.iced]
+git = "https://github.com/iced-rs/iced.git"
+
+[dependencies.anyhow]
+workspace = true
+
+[dependencies.tracing]
+workspace = true
